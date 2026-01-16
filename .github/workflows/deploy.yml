@@ -29,16 +29,15 @@ jobs:
         run: bun run test
 
   migrate:
-    name: Prisma Migrate (via SSH Tunnel)
+    name: Prisma Migrate (SSH Tunnel)
     runs-on: ubuntu-latest
-    # Nur bei Migration-Änderungen oder main/deploy
     #if: github.event_name == 'push' && (contains(github.event.paths, 'prisma/migrations/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/pb01-01-deployment')
     needs: test
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Bun  # Dein Bun-Setup
+      - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
@@ -49,49 +48,52 @@ jobs:
       - name: Prisma Generate
         run: bunx prisma generate
       
-      - name: Deploy via SSH (Tunnel für DB-Migration)
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Setup SSH Tunnel
         env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          JUMP_SSH_KEY: ${{ secrets.JUMP_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+      
+      - name: Run Prisma Migrate via Tunnel
+        env:
+          JUMP_HOST: ${{ secrets.JUMP_HOST }}
+          JUMP_USER: ${{ secrets.JUMP_USER }}
+          JUMP_PORT: ${{ secrets.JUMP_PORT || 22 }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
+          DB_HOST: localhost  # DB vom DEPLOY_HOST aus (z.B. localhost wenn Postgres lokal)
+          DB_PORT: 5432
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: localhost  # Vom Deploy-Server aus
-          DB_PORT: 5432
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT || 22 }}
-          proxy_host: ${{ secrets.JUMP_HOST }}
-          proxy_username: ${{ secrets.JUMP_USER }}
-          proxy_key: ${{ secrets.JUMP_SSH_KEY }}
-          proxy_port: ${{ secrets.JUMP_PORT || 22 }}
-          script: |
-            # SSH-Tunnel zum DB-Server starten (auf Deploy-Server)
-            # Angenommen DB läuft lokal oder internal; passe DB_HOST an
-            nohup ssh -fNT -L 5432:$DB_HOST:$DB_PORT user@db-server-or-localhost &
-            TUNNEL_PID=$!
-            sleep 3
-            
-            # Test Tunnel
-            timeout 5 bash -c "echo > /dev/tcp/127.0.0.1/5432" || (kill $TUNNEL_PID; exit 1)
-            
-            # Code von GitHub pullen (für schema)
-            apt update && apt install -y git
-            
-            cd /tmp
-            git clone ${{ github.repository }} . --depth 1 --branch ${{ github.ref_name }}
-            cd doz-manager-app  # Passe Repo-Ordner an
-            bun install
-            
-            # Migrate über Tunnel
-            export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}?schema=public"
-            bunx prisma generate
-            bunx prisma migrate deploy
-            
-            # Cleanup
-            kill $TUNNEL_PID || true
-            rm -rf /tmp/doz-manager-app
+        run: |
+          # Starte Tunnel: Runner:5432 → DB_HOST:5432 via Deploy (Jump)
+          ssh -i ~/.ssh/id_rsa -J ${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT} \
+              -p $DEPLOY_PORT -fNT -L 5432:$DB_HOST:$DB_PORT $DEPLOY_USER@$DEPLOY_HOST &
+          TUNNEL_PID=$!
+          sleep 5
+          
+          # Test Tunnel
+          timeout 10 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/5432' || (kill $TUNNEL_PID 2>/dev/null; exit 1)
+          
+          # Migrate lokal über Tunnel
+          export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}?schema=public"
+          bunx prisma migrate deploy
+          
+          # Cleanup
+          kill $TUNNEL_PID 2>/dev/null || true
+          ssh -O exit $DEPLOY_USER@$DEPLOY_HOST 2>/dev/null || true
+      
+      - name: Cleanup SSH
+        if: always()
+        run: rm -f ~/.ssh/id_rsa
+
 
   build-push:
     name: Build and Push to GHCR
