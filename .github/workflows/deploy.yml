@@ -31,7 +31,7 @@ jobs:
   migrate:
     name: Prisma Migrate (SSH Tunnel)
     runs-on: ubuntu-latest
-    #if: github.event_name == 'push' && (contains(github.event.paths, 'prisma/migrations/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/pb01-01-deployment')
+    if: github.event_name == 'push' && (contains(github.event.paths, 'prisma/migrations/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/pb01-01-deployment')
     needs: test
     steps:
       - name: Checkout code
@@ -42,24 +42,33 @@ jobs:
         with:
           bun-version: latest
       
-      - name: Install dependencies
-        run: bun install
-      
-      - name: Prisma Generate
-        run: bunx prisma generate
-      
-      - name: Setup SSH Tunnel
-        env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          JUMP_SSH_KEY: ${{ secrets.JUMP_SSH_KEY }}
+      - name: Install dependencies & Prisma
         run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
-          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
-          echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+          bun install
+          bunx prisma generate
       
-      - name: Run Prisma Migrate via Tunnel
+      - name: Prisma Migrate (Tunnel via SSH)
+        env:
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: localhost  # DB vom DEPLOY_HOST aus
+          DB_PORT: 5432
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          proxy_host: ${{ secrets.JUMP_HOST }}
+          proxy_username: ${{ secrets.JUMP_USER }}
+          proxy_key: ${{ secrets.JUMP_SSH_KEY }}
+          proxy_port: ${{ secrets.JUMP_PORT || 22 }}
+          script: |
+            echo "SSH successful - Tunnel nicht nötig hier"
+            # Dummy - wir tunneled bereits
+        # Paralleler Tunnel-Schritt (läuft vor SSH)
+      - name: SSH Tunnel & Migrate
         env:
           JUMP_HOST: ${{ secrets.JUMP_HOST }}
           JUMP_USER: ${{ secrets.JUMP_USER }}
@@ -67,32 +76,29 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
-          DB_HOST: localhost  # DB vom DEPLOY_HOST aus (z.B. localhost wenn Postgres lokal)
+          DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          # Starte Tunnel: Runner:5432 → DB_HOST:5432 via Deploy (Jump)
-          ssh -i ~/.ssh/id_rsa -J ${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT} \
-              -p $DEPLOY_PORT -fNT -L 5432:$DB_HOST:$DB_PORT $DEPLOY_USER@$DEPLOY_HOST &
-          TUNNEL_PID=$!
+          # Kein keyscan - direkt tunnel
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
+              -p $DEPLOY_PORT -fNT -L 5432:$DB_HOST:$DB_PORT \
+              $DEPLOY_USER@$DEPLOY_HOST &
+          PID=$!
           sleep 5
           
-          # Test Tunnel
-          timeout 10 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/5432' || (kill $TUNNEL_PID 2>/dev/null; exit 1)
+          # Test
+          nc -zv 127.0.0.1 5432 || (kill $PID; exit 1)
           
-          # Migrate lokal über Tunnel
+          # Migrate
           export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}?schema=public"
           bunx prisma migrate deploy
           
-          # Cleanup
-          kill $TUNNEL_PID 2>/dev/null || true
-          ssh -O exit $DEPLOY_USER@$DEPLOY_HOST 2>/dev/null || true
-      
-      - name: Cleanup SSH
-        if: always()
-        run: rm -f ~/.ssh/id_rsa
+          kill $PID || ssh -O exit $DEPLOY_USER@$DEPLOY_HOST
+
 
 
   build-push:
