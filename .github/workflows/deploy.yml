@@ -31,7 +31,7 @@ jobs:
   migrate:
     name: Prisma Migrate (SSH Tunnel)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (contains(github.event.paths, 'prisma/migrations/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/pb01-01-deployment')
+    #if: github.event_name == 'push' && (contains(github.event.paths, 'prisma/migrations/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/pb01-01-deployment')
     needs: test
     steps:
       - name: Checkout code
