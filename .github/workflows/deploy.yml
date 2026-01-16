@@ -29,46 +29,23 @@ jobs:
         run: bun run test
 
   migrate:
-    name: Prisma Migrate (SSH Tunnel)
+    name: Prisma Migrate via Tunnel
     runs-on: ubuntu-latest
-    #if: github.event_name == 'push' && (contains(github.event.paths, 'prisma/migrations/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/pb01-01-deployment')
     needs: test
+    #if: github.event_name == 'push' && (contains(github.event.paths, 'prisma/migrations/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/pb01-01-deployment')
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
       
-      - name: Install dependencies & Prisma
+      - name: Install & Generate Prisma
         run: |
           bun install
           bunx prisma generate
       
-      - name: Prisma Migrate (Tunnel via SSH)
-        env:
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: localhost  # DB vom DEPLOY_HOST aus
-          DB_PORT: 5432
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT || 22 }}
-          proxy_host: ${{ secrets.JUMP_HOST }}
-          proxy_username: ${{ secrets.JUMP_USER }}
-          proxy_key: ${{ secrets.JUMP_SSH_KEY }}
-          proxy_port: ${{ secrets.JUMP_PORT || 22 }}
-          script: |
-            echo "SSH successful - Tunnel nicht nötig hier"
-            # Dummy - wir tunneled bereits
-        # Paralleler Tunnel-Schritt (läuft vor SSH)
-      - name: SSH Tunnel & Migrate
+      - name: SSH Tunnel + Migrate
         env:
           JUMP_HOST: ${{ secrets.JUMP_HOST }}
           JUMP_USER: ${{ secrets.JUMP_USER }}
@@ -76,28 +53,46 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}  # z.B. localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         run: |
-          # Kein keyscan - direkt tunnel
-          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-              -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
-              -p $DEPLOY_PORT -fNT -L 5432:$DB_HOST:$DB_PORT \
-              $DEPLOY_USER@$DEPLOY_HOST &
+          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null 
+                    -o ConnectTimeout=10 -o ConnectionAttempts=3 -o LogLevel=ERROR"
+          
+          # SSH-Test (wichtig!)
+          echo "✅ Testing SSH..."
+          ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
+                -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "echo 'SSH OK'"
+          
+          # Tunnel: Runner:5432 → POSTGRES_HOST:5432 via Deploy/Jump
+          echo "🔗 Starting tunnel -> $POSTGRES_HOST:$POSTGRES_PORT"
+          ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
+                -p $DEPLOY_PORT -fNT -L 5432:$POSTGRES_HOST:$POSTGRES_PORT \
+                $DEPLOY_USER@$DEPLOY_HOST &
           PID=$!
+          
           sleep 5
           
-          # Test
-          nc -zv 127.0.0.1 5432 || (kill $PID; exit 1)
+          # Warte + Test
+          for i in {1..12}; do
+            if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/5432' 2>/dev/null; then
+              echo "✅ Tunnel ready!"
+              break
+            fi
+            sleep 2
+          done || { echo "❌ Tunnel failed"; kill $PID 2>/dev/null; exit 1; }
           
-          # Migrate
-          export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}?schema=public"
+          # Migrate!
+          export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?schema=public"
           bunx prisma migrate deploy
           
-          kill $PID || ssh -O exit $DEPLOY_USER@$DEPLOY_HOST
+          # Cleanup
+          kill $PID 2>/dev/null || true
+          ssh $SSH_OPTS -O exit $DEPLOY_USER@$DEPLOY_HOST 2>/dev/null || true
+
 
 
 
