@@ -53,7 +53,7 @@ All combinations of workflows are supported.
 
 1. Clone the repository:
    ```bash
-   git clone https://gitlab.devops.telekom.de/jonas.mauelshagen/projektmanagement-dozentenverwaltung.git
+   git clone https://github.com/atlas-cluster/doz-manager.git
    cd projektmanagement-dozentenverwaltung
    ```
 2. Install bun:
