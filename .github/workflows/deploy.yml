@@ -69,12 +69,12 @@ jobs:
           script: |
             # SSH-Tunnel zum DB-Server starten (auf Deploy-Server)
             # Angenommen DB läuft lokal oder internal; passe DB_HOST an
-            nohup ssh -fNT -L 5433:$DB_HOST:$DB_PORT user@db-server-or-localhost &
+            nohup ssh -fNT -L 5432:$DB_HOST:$DB_PORT user@db-server-or-localhost &
             TUNNEL_PID=$!
             sleep 3
             
             # Test Tunnel
-            timeout 5 bash -c "echo > /dev/tcp/127.0.0.1/5433" || (kill $TUNNEL_PID; exit 1)
+            timeout 5 bash -c "echo > /dev/tcp/127.0.0.1/5432" || (kill $TUNNEL_PID; exit 1)
             
             # Code von GitHub pullen (für schema)
             apt update && apt install -y git
@@ -85,7 +85,7 @@ jobs:
             bun install
             
             # Migrate über Tunnel
-            export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5433/${DB_NAME}?schema=public"
+            export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}?schema=public"
             bunx prisma generate
             bunx prisma migrate deploy
             
