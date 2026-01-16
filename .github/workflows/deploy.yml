@@ -11,20 +11,6 @@ env:
   CONTAINER_NAME: doz-manager-app
 
 jobs:
-  check-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      migration: ${{ steps.filter.outputs.migration }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          filters: |
-            migration:
-              - 'prisma/**'
-              - 'Dockerfile.migration'
-
   test:
     name: Run Tests
     runs-on: ubuntu-latest
@@ -72,39 +58,11 @@ jobs:
           docker push $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:latest
 
-  build-push-migration:
-    name: Build and Push Migration Image
-    needs: check-changes
-    if: needs.check-changes.outputs.migration == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and Push Migration Docker image
-        run: |
-          IMAGE_ID=${{ env.REGISTRY }}/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')-migration
-          VERSION=${{ github.sha }}
-
-          docker build -f Dockerfile.migration -t $IMAGE_ID:$VERSION -t $IMAGE_ID:latest .
-          docker push $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:latest
-
   deploy:
     name: Deploy to Server
-    needs: [build-push, check-changes, build-push-migration]
-    if: needs.build-push.result == 'success' && needs.check-changes.result == 'success' && (needs.build-push-migration.result == 'success' || needs.build-push-migration.result == 'skipped')
+    needs: build-push
     runs-on: ubuntu-latest
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Deploy via SSH (through Jump Host)
         uses: appleboy/ssh-action@v1.0.3
@@ -116,8 +74,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.actor }}
-          SHOULD_MIGRATE: ${{ needs.check-changes.outputs.migration }}
         with:
+          # Ziel-Server Konfiguration (Privates Netz)
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -130,7 +88,7 @@ jobs:
           proxy_port: ${{ secrets.JUMP_PORT || 22 }}
 
           # Umgebungsvariablen an Skript übergeben
-          envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,DATABASE_URL,REGISTRY_TOKEN,USERNAME,SHOULD_MIGRATE
+          envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,DATABASE_URL,REGISTRY_TOKEN,USERNAME
 
           script: |
             # Convert repository name to lowercase for the image name
@@ -141,19 +99,6 @@ jobs:
 
             # Pull the new image
             docker pull $FULL_IMAGE_NAME:$IMAGE_TAG
-
-            # Run Migrations
-            if [ "$SHOULD_MIGRATE" = "true" ]; then
-              echo "Migration changes detected. Running migrations..."
-              MIGRATION_IMAGE_NAME="${FULL_IMAGE_NAME}-migration"
-              docker pull $MIGRATION_IMAGE_NAME:$IMAGE_TAG
-              
-              docker run --rm \
-                -e DATABASE_URL="$DATABASE_URL" \
-                $MIGRATION_IMAGE_NAME:$IMAGE_TAG
-            else
-              echo "No migration changes detected. Skipping migration."
-            fi
 
             # Stop and remove existing container
             echo "Stopping old container..."
