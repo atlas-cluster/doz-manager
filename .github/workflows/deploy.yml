@@ -3,6 +3,8 @@ name: CI/CD Pipeline
 on:
   push:
     branches: ['main', 'feat/pb01-01-deployment']
+    paths:  # Für migrate separat
+      - 'prisma/migrations/**'
   pull_request:
     branches: ['main']
 
@@ -17,43 +19,100 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-
       - name: Install dependencies
         run: bun install
-
       - name: Run tests
         run: bun run test
 
+  migrate:
+    name: Prisma Migrate (via SSH Tunnel)
+    runs-on: ubuntu-latest
+    # Nur bei Migration-Änderungen oder main/deploy
+    #if: github.event_name == 'push' && (contains(github.event.paths, 'prisma/migrations/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/pb01-01-deployment')
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Bun  # Dein Bun-Setup
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Prisma Generate
+        run: bunx prisma generate
+      
+      - name: Deploy via SSH (Tunnel für DB-Migration)
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: localhost  # Vom Deploy-Server aus
+          DB_PORT: 5432
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          proxy_host: ${{ secrets.JUMP_HOST }}
+          proxy_username: ${{ secrets.JUMP_USER }}
+          proxy_key: ${{ secrets.JUMP_SSH_KEY }}
+          proxy_port: ${{ secrets.JUMP_PORT || 22 }}
+          script: |
+            # SSH-Tunnel zum DB-Server starten (auf Deploy-Server)
+            # Angenommen DB läuft lokal oder internal; passe DB_HOST an
+            nohup ssh -fNT -L 5433:$DB_HOST:$DB_PORT user@db-server-or-localhost &
+            TUNNEL_PID=$!
+            sleep 3
+            
+            # Test Tunnel
+            timeout 5 bash -c "echo > /dev/tcp/127.0.0.1/5433" || (kill $TUNNEL_PID; exit 1)
+            
+            # Code von GitHub pullen (für schema)
+            apt update && apt install -y git
+            
+            cd /tmp
+            git clone ${{ github.repository }} . --depth 1 --branch ${{ github.ref_name }}
+            cd doz-manager-app  # Passe Repo-Ordner an
+            bun install
+            
+            # Migrate über Tunnel
+            export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5433/${DB_NAME}?schema=public"
+            bunx prisma generate
+            bunx prisma migrate deploy
+            
+            # Cleanup
+            kill $TUNNEL_PID || true
+            rm -rf /tmp/doz-manager-app
+
   build-push:
     name: Build and Push to GHCR
-    needs: test
+    needs: [test, migrate]  # Nach Migration
     runs-on: ubuntu-latest
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build and Push Docker image
         run: |
-          # Convert repository name to lowercase
           IMAGE_ID=${{ env.REGISTRY }}/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           VERSION=${{ github.sha }}
-
           docker build -f Dockerfile.prod -t $IMAGE_ID:$VERSION -t $IMAGE_ID:latest .
           docker push $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:latest
@@ -62,7 +121,6 @@ jobs:
     name: Deploy to Server
     needs: build-push
     runs-on: ubuntu-latest
-    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Deploy via SSH (through Jump Host)
         uses: appleboy/ssh-action@v1.0.3
@@ -75,38 +133,21 @@ jobs:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.actor }}
         with:
-          # Ziel-Server Konfiguration (Privates Netz)
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT || 22 }}
-
-          # Jump Host Konfiguration (Öffentliches Netz)
           proxy_host: ${{ secrets.JUMP_HOST }}
           proxy_username: ${{ secrets.JUMP_USER }}
           proxy_key: ${{ secrets.JUMP_SSH_KEY }}
           proxy_port: ${{ secrets.JUMP_PORT || 22 }}
-
-          # Umgebungsvariablen an Skript übergeben
           envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,DATABASE_URL,REGISTRY_TOKEN,USERNAME
-
           script: |
-            # Convert repository name to lowercase for the image name
             FULL_IMAGE_NAME=$(echo "$REGISTRY/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
-
-            # Login to GHCR
             echo "$REGISTRY_TOKEN" | docker login $REGISTRY -u $USERNAME --password-stdin
-
-            # Pull the new image
             docker pull $FULL_IMAGE_NAME:$IMAGE_TAG
-
-            # Stop and remove existing container
-            echo "Stopping old container..."
             docker stop $CONTAINER_NAME || true
             docker rm $CONTAINER_NAME || true
-
-            # Start new container
-            echo "Starting new container..."
             docker run -d \
               --name $CONTAINER_NAME \
               --restart unless-stopped \
@@ -114,6 +155,4 @@ jobs:
               -e DATABASE_URL="$DATABASE_URL" \
               -e NODE_ENV=production \
               $FULL_IMAGE_NAME:$IMAGE_TAG
-
-            # Cleanup unused images
             docker image prune -a -f --filter "until=24h"
