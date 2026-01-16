@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'feat/pb01-01-deployment']
   pull_request:
     branches: ['main']
 
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Deploy via SSH
+      - name: Deploy via SSH (through Jump Host)
         uses: appleboy/ssh-action@v1.0.3
         env:
           REGISTRY: ${{ env.REGISTRY }}
@@ -75,10 +75,21 @@ jobs:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.actor }}
         with:
+          # Ziel-Server Konfiguration (Privates Netz)
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          
+          # Jump Host Konfiguration (Öffentliches Netz)
+          proxy_host: ${{ secrets.JUMP_HOST }}
+          proxy_username: ${{ secrets.JUMP_USER }}
+          proxy_key: ${{ secrets.JUMP_KEY }}
+          proxy_port: ${{ secrets.JUMP_PORT || 22 }}
+          
+          # Umgebungsvariablen an Skript übergeben
           envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,DATABASE_URL,REGISTRY_TOKEN,USERNAME
+          
           script: |
             # Convert repository name to lowercase for the image name
             FULL_IMAGE_NAME=$(echo "$REGISTRY/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
