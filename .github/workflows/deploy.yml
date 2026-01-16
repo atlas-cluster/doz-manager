@@ -43,6 +43,23 @@ jobs:
         run: |
           bun install
           bunx prisma generate
+
+      - name: Prepare SSH (known_hosts + key)
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # private key
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # IMPORTANT: beide Hosts scannen (Jump + Deploy)
+          ssh-keyscan -p ${{ secrets.JUMP_PORT || 22 }} -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -p ${{ secrets.DEPLOY_PORT || 22 }} -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
       
       - name: SSH Tunnel + Migrate
         env:
@@ -58,8 +75,10 @@ jobs:
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         run: |
-          SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null 
-                    -o ConnectTimeout=10 -o ConnectionAttempts=3 -o LogLevel=ERROR"
+          SSH_OPTS="-i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o ConnectTimeout=10 -o ConnectionAttempts=3"
+
+          ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"
+
           
           # SSH-Test
           echo "✅ Testing SSH..."
