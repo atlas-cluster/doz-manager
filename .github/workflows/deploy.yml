@@ -62,7 +62,7 @@ jobs:
     name: Deploy to Server
     needs: build-push
     runs-on: ubuntu-latest
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    #if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Deploy via SSH (through Jump Host)
         uses: appleboy/ssh-action@v1.0.3
@@ -76,15 +76,15 @@ jobs:
           USERNAME: ${{ github.actor }}
         with:
           # Ziel-Server Konfiguration (Privates Netz)
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
           
           # Jump Host Konfiguration (Öffentliches Netz)
           proxy_host: ${{ secrets.JUMP_HOST }}
           proxy_username: ${{ secrets.JUMP_USER }}
-          proxy_key: ${{ secrets.JUMP_KEY }}
+          proxy_key: ${{ secrets.JUMP_SSH_KEY }}
           proxy_port: ${{ secrets.JUMP_PORT || 22 }}
           
           # Umgebungsvariablen an Skript übergeben
