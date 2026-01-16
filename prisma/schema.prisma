@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../features/shared/lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Lecturer {
+  id                    String       @id @default(cuid())
+  title                 String?
+  firstName             String
+  secondName            String?
+  lastName              String
+  email                 String    @unique
+  phone                 String    @unique
+  type                  LecturerType
+  courseLevelPreference CourseLevelPreference
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // // Relations to junction tables
+  // teaches               LecturerTeaches[]
+  // canTeach              LecturerCanTeach[]
+}
+
+enum LecturerType {
+  internal
+  external
+}
+
+enum CourseLevelPreference {
+  bachelor
+  master
+  both
+}
+
+// model Course {
+//   id          Int       @id @default(autoincrement())
+//   name        String
+//   isOpen      Boolean
+//   courseLevel CourseLevel
+//   semester    Int?
+//   createdAt   DateTime  @default(now())
+//   updatedAt   DateTime  @updatedAt
+//
+//   // Relations to junction tables
+//   taughtBy      LecturerTeaches[]
+//   canBeTaughtBy LecturerCanTeach[]
+// }
+//
+// enum CourseLevel {
+//   bachelor
+//   master
+// }
+//
+// model LecturerTeaches {
+//   lecturerId Int
+//   courseId   Int
+//   createdAt  DateTime @default(now())
+//
+//   lecturer Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+//   course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+//
+//   @@id([lecturerId, courseId])
+// }
+//
+// model LecturerCanTeach {
+//   lecturerId     Int
+//   courseId       Int
+//   leadTime       LeadTimeOption
+//   experience     ExperienceOption
+//   createdAt      DateTime @default(now())
+//   updatedAt      DateTime @updatedAt
+//
+//   lecturer Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+//   course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+//
+//   @@id([lecturerId, courseId])
+// }
+//
+// enum LeadTimeOption {
+//   short          // S - immediately
+//   four_weeks     // 4 - four weeks
+//   more_weeks     // M - more than four weeks
+// }
+//
+// enum ExperienceOption {
+//   provadis       // P - at Provadis
+//   other_uni      // A - at another university
+//   none           // N - not yet
+// }
