@@ -1,11 +1,10 @@
 'use client'
 
 import { updateLecturer } from '../../actions/update'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { createLecturer } from '@/features/lecturers/actions/create'
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer.schema'
 import { Button } from '@/features/shared/components/ui/button'
 import {
@@ -14,7 +13,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/features/shared/components/ui/dialog'
 import {
   Field,
@@ -36,12 +34,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 export function UpdateDialog({
   lecturerId,
   lecturerData,
+  open,
+  onOpenChange,
 }: {
   lecturerId: string
   lecturerData: z.infer<typeof lecturerSchema>
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const [open, setOpen] = useState(false)
-
   const form = useForm<z.infer<typeof lecturerSchema>>({
     resolver: zodResolver(lecturerSchema),
     defaultValues: lecturerData,
@@ -54,19 +54,14 @@ export function UpdateDialog({
   }, [form, open])
 
   function onSubmit(data: z.infer<typeof lecturerSchema>) {
-    updateLecturer(lecturerId, lecturerData).then(() => {
-      setOpen(false)
-      form.reset()
+    updateLecturer(lecturerId, data).then(() => {
+      onOpenChange(false) // Close the dialog
+      form.reset(data)
     })
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button onClick={() => setOpen(true)} suppressHydrationWarning>
-          Dozent bearbeiten
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Dozent bearbeiten</DialogTitle>

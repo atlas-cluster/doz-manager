@@ -7,6 +7,7 @@ import {
   PencilIcon,
   TrashIcon,
 } from 'lucide-react'
+import { useState } from 'react'
 
 import { deleteLecturer } from '@/features/lecturers/actions/delete'
 import { LecturerCourseLevelPreferenceBadge } from '@/features/lecturers/components/lecturer-course-level-preference-badge'
@@ -22,6 +23,53 @@ import {
   DropdownMenuTrigger,
 } from '@/features/shared/components/ui/dropdown-menu'
 import { ColumnDef } from '@tanstack/table-core'
+
+function ActionsCell({ row }: { row: { original: Lecturer } }) {
+  const [isDialogOpen, setDialogOpen] = useState(false)
+
+  return (
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size={'icon'}>
+            <span className={'sr-only'}>Menü öffnen</span>
+            <MoreHorizontalIcon />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
+            <PencilIcon />
+            Bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant={'destructive'}
+            onSelect={() => deleteLecturer(row.original.id)}>
+            <TrashIcon />
+            Löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Render the UpdateDialog */}
+      <UpdateDialog
+        lecturerId={row.original.id}
+        lecturerData={{
+          title: row.original.title,
+          firstName: row.original.firstName,
+          secondName: row.original.secondName,
+          lastName: row.original.lastName,
+          email: row.original.email,
+          phone: row.original.phone,
+          type: row.original.type,
+          courseLevelPreference: row.original.courseLevelPreference,
+        }}
+        open={isDialogOpen}
+        onOpenChange={setDialogOpen}
+      />
+    </div>
+  )
+}
 
 export const columns: ColumnDef<Lecturer>[] = [
   {
@@ -128,48 +176,6 @@ export const columns: ColumnDef<Lecturer>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
-      return (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size={'icon'} suppressHydrationWarning>
-                <span className={'sr-only'}>Menü öffnen</span>
-                <MoreHorizontalIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-              <DropdownMenuItem>
-                <UpdateDialog
-                  lecturerId={row.original.id}
-                  lecturerData={{
-                    title: row.original.title,
-                    firstName: row.original.firstName,
-                    secondName: row.original.secondName,
-                    lastName: row.original.lastName,
-                    email: row.original.email,
-                    phone: row.original.phone,
-                    type: row.original.type,
-                    courseLevelPreference: row.original.courseLevelPreference,
-                  }}
-                />
-                <PencilIcon />
-                Bearbeiten
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant={'destructive'}
-                onSelect={() => deleteLecturer(row.original.id)}>
-                <TrashIcon />
-                Löschen
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )
-    },
-    enableSorting: false,
-    enableHiding: false,
-    enableGlobalFilter: false,
+    cell: ({ row }) => <ActionsCell row={row} />,
   },
 ]
