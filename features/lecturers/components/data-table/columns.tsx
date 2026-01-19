@@ -1,5 +1,6 @@
 'use client'
 
+import { UpdateDialog } from '../dialog/update'
 import {
   ArrowUpDown,
   MoreHorizontalIcon,
@@ -140,6 +141,19 @@ export const columns: ColumnDef<Lecturer>[] = [
             <DropdownMenuContent>
               <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
               <DropdownMenuItem>
+                <UpdateDialog
+                  lecturerId={row.original.id}
+                  lecturerData={{
+                    title: row.original.title,
+                    firstName: row.original.firstName,
+                    secondName: row.original.secondName,
+                    lastName: row.original.lastName,
+                    email: row.original.email,
+                    phone: row.original.phone,
+                    type: row.original.type,
+                    courseLevelPreference: row.original.courseLevelPreference,
+                  }}
+                />
                 <PencilIcon />
                 Bearbeiten
               </DropdownMenuItem>
