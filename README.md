@@ -47,26 +47,40 @@ All combinations of workflows are supported.
 ### Prerequisites
 
 - Docker Desktop
-- Sia-Proxy
+- Sia-Proxy(http://sia-lb.telekom.de:8080)
 
 ### Steps
 
 1. Clone the repository:
    ```bash
-   git clone https://gitlab.devops.telekom.de/jonas.mauelshagen/projektmanagement-dozentenverwaltung.git
-   cd projektmanagement-dozentenverwaltung
+   git clone https://github.com/atlas-cluster/doz-manager.git
+   cd doz-manager
    ```
-2. Install bun:
-   ```bash
-   winget install -e --id Oven-sh.Bun
+2. Set Proxy:
+   ```Dockerfile
+   #As Windows environment variable
+   #In Docker Desktop under settings->Resources->Proxies
+   #In Dockerfile.dev
+   ENV HTTP_PROXY=http://sia-lb.telekom.de:8080
+   ENV HTTPS_PROXY=http://sia-lb.telekom.de:8080
+   ENV NO_PROXY=localhost,127.0.0.1
    ```
-3. Install Dependencies:
+3. Install bun:
    ```bash
-   bun install
+   winget install -e --id Oven-sh.Bun #restart vs-code to apply changes
    ```
-4. Start the Docker-Container:
+4. Install Dependencies:
    ```bash
-   bun run docker:dev
+   bun install #restart vs-code to apply changes
+   ```
+5. Generate Prisma Client:
+   ```bash
+   bun prisma:generate
+   ```
+6. Start the Docker-Container:
+   ```bash
+   bun run docker:dev #main way
+   docker compose -f docker-compose.dev.yml up --build #if you get an error
    ```
 
 </details>
