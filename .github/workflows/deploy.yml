@@ -3,10 +3,6 @@ name: CI/CD Pipeline
 on:
   push:
     branches: ['main', 'feat/pb01-01-deployment']
-    paths:
-      - 'prisma/migrations/**' # Migrate-Trigger
-  pull_request:
-    branches: ['main']
 
 env:
   REGISTRY: ghcr.io
@@ -29,7 +25,7 @@ jobs:
         run: bun run test
 
   migrate:
-    name: Prisma Migrate via Tunnel
+    name: Run Migrations
     runs-on: ubuntu-latest
     needs: test
     steps:
@@ -53,7 +49,7 @@ jobs:
           echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          # Known_hosts dynamisch für beide Hosts generieren (ohne Maskierung)
+          # Generate Known_hosts dynamically for both hosts (unmasked)
           echo "Generating known_hosts..."
           JUMP_HOST="${{ secrets.JUMP_HOST }}"
           JUMP_PORT="${{ secrets.JUMP_PORT || 22 }}"
@@ -83,14 +79,8 @@ jobs:
 
           ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"
 
-
-          # SSH-Test
-          echo "✅ Testing SSH..."
-          ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
-                -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"
-
-          # Tunnel starten
-          echo "🔗 Tunnel -> $POSTGRES_HOST:$POSTGRES_PORT"
+          # Start Tunnel
+          echo "Tunnel -> $POSTGRES_HOST:$POSTGRES_PORT"
           ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
                 -p $DEPLOY_PORT -fNT -L 5432:$POSTGRES_HOST:$POSTGRES_PORT \
                 $DEPLOY_USER@$DEPLOY_HOST &
@@ -98,28 +88,28 @@ jobs:
 
           sleep 5
 
-          # Tunnel-Test mit Retry
+          # Wait for Tunnel
           for i in {1..12}; do
             if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/5432' 2>/dev/null; then
-              echo "✅ Tunnel ready!"
+              echo "Tunnel ready!"
               break
             fi
             echo "Waiting... $i/12"
             sleep 2
-          done || { echo "❌ Tunnel failed"; kill $PID 2>/dev/null; exit 1; }
+          done || { echo "Tunnel failed"; kill $PID 2>/dev/null; exit 1; }
 
           # Migrate
           export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?schema=public"
-          echo "🚀 Running prisma migrate deploy..."
+          echo "Running prisma migrate deploy..."
           bunx prisma migrate deploy
 
           # Cleanup
           kill $PID 2>/dev/null || true
           ssh $SSH_OPTS -O exit $DEPLOY_USER@$DEPLOY_HOST 2>/dev/null || true
-          echo "✅ Cleanup done"
+          echo "Cleanup done"
 
-  build-push:
-    name: Build and Push to GHCR
+  build:
+    name: Build Image
     needs: [test, migrate]
     runs-on: ubuntu-latest
     permissions:
@@ -143,8 +133,8 @@ jobs:
           docker push $IMAGE_ID:latest
 
   deploy:
-    name: Deploy to Server
-    needs: build-push
+    name: Deploy Application
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH (through Jump Host)
