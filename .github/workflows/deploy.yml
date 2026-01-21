@@ -4,7 +4,7 @@ on:
   push:
     branches: ['main', 'feat/pb01-01-deployment']
     paths:
-      - 'prisma/migrations/**'  # Migrate-Trigger
+      - 'prisma/migrations/**' # Migrate-Trigger
   pull_request:
     branches: ['main']
 
@@ -34,11 +34,11 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-      
+
       - name: Install & Generate Prisma
         run: |
           bun install
@@ -52,21 +52,19 @@ jobs:
           chmod 700 ~/.ssh
           echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          
+
           # Known_hosts dynamisch für beide Hosts generieren (ohne Maskierung)
           echo "Generating known_hosts..."
           JUMP_HOST="${{ secrets.JUMP_HOST }}"
           JUMP_PORT="${{ secrets.JUMP_PORT || 22 }}"
           DEPLOY_HOST="${{ secrets.DEPLOY_HOST }}"
           DEPLOY_PORT="${{ secrets.DEPLOY_PORT || 22 }}"
-          
+
           timeout 10 ssh-keyscan -p "$JUMP_PORT" -H "$JUMP_HOST" >> ~/.ssh/known_hosts || echo "JUMP warn: retry later"
           timeout 10 ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts || echo "DEPLOY warn: retry later"
-          
+
           chmod 600 ~/.ssh/known_hosts
 
-
-      
       - name: SSH Tunnel + Migrate
         env:
           JUMP_HOST: ${{ secrets.JUMP_HOST }}
@@ -85,21 +83,21 @@ jobs:
 
           ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"
 
-          
+
           # SSH-Test
           echo "✅ Testing SSH..."
           ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
                 -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"
-          
+
           # Tunnel starten
           echo "🔗 Tunnel -> $POSTGRES_HOST:$POSTGRES_PORT"
           ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
                 -p $DEPLOY_PORT -fNT -L 5432:$POSTGRES_HOST:$POSTGRES_PORT \
                 $DEPLOY_USER@$DEPLOY_HOST &
           PID=$!
-          
+
           sleep 5
-          
+
           # Tunnel-Test mit Retry
           for i in {1..12}; do
             if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/5432' 2>/dev/null; then
@@ -109,12 +107,12 @@ jobs:
             echo "Waiting... $i/12"
             sleep 2
           done || { echo "❌ Tunnel failed"; kill $PID 2>/dev/null; exit 1; }
-          
+
           # Migrate
           export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?schema=public"
           echo "🚀 Running prisma migrate deploy..."
           bunx prisma migrate deploy
-          
+
           # Cleanup
           kill $PID 2>/dev/null || true
           ssh $SSH_OPTS -O exit $DEPLOY_USER@$DEPLOY_HOST 2>/dev/null || true

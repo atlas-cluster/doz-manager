@@ -1,4 +1,4 @@
-import {
+import type {
   CourseLevelPreference as PrismaCourseLevelPreference,
   Lecturer as PrismaLecturer,
   LecturerType as PrismaLecturerType,
