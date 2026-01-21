@@ -50,15 +50,21 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-
-          # private key
           echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-
-          # IMPORTANT: beide Hosts scannen (Jump + Deploy)
-          ssh-keyscan -p ${{ secrets.JUMP_PORT || 22 }} -H ${{ secrets.JUMP_HOST }} >> ~/.ssh/known_hosts
-          ssh-keyscan -p ${{ secrets.DEPLOY_PORT || 22 }} -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          
+          # Known_hosts dynamisch für beide Hosts generieren (ohne Maskierung)
+          echo "Generating known_hosts..."
+          JUMP_HOST="${{ secrets.JUMP_HOST }}"
+          JUMP_PORT="${{ secrets.JUMP_PORT || 22 }}"
+          DEPLOY_HOST="${{ secrets.DEPLOY_HOST }}"
+          DEPLOY_PORT="${{ secrets.DEPLOY_PORT || 22 }}"
+          
+          timeout 10 ssh-keyscan -p "$JUMP_PORT" -H "$JUMP_HOST" >> ~/.ssh/known_hosts || echo "JUMP warn: retry later"
+          timeout 10 ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts || echo "DEPLOY warn: retry later"
+          
           chmod 600 ~/.ssh/known_hosts
+
 
       
       - name: SSH Tunnel + Migrate
