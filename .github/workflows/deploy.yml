@@ -1,0 +1,180 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ['main']
+
+env:
+  REGISTRY: ghcr.io
+  CONTAINER_NAME: doz-manager-app
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install
+      - name: Run Linter
+        run: bun run lint
+      - name: Run tests
+        run: bun run test
+
+  build:
+    name: Build Image
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and Push Docker image
+        run: |
+          IMAGE_ID=${{ env.REGISTRY }}/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          VERSION=${{ github.sha }}
+          docker build -f Dockerfile.prod -t $IMAGE_ID:$VERSION -t $IMAGE_ID:latest .
+          docker push $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:latest
+
+  migrate:
+    name: Run Migrations
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install & Generate Prisma
+        run: |
+          bun install
+          bunx prisma generate
+
+      - name: Prepare SSH (known_hosts + key)
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # Generate Known_hosts dynamically for both hosts (unmasked)
+          echo "Generating known_hosts..."
+          JUMP_HOST="${{ secrets.JUMP_HOST }}"
+          JUMP_PORT="${{ secrets.JUMP_PORT || 22 }}"
+          DEPLOY_HOST="${{ secrets.DEPLOY_HOST }}"
+          DEPLOY_PORT="${{ secrets.DEPLOY_PORT || 22 }}"
+
+          timeout 10 ssh-keyscan -p "$JUMP_PORT" -H "$JUMP_HOST" >> ~/.ssh/known_hosts || echo "JUMP warn: retry later"
+          timeout 10 ssh-keyscan -p "$DEPLOY_PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts || echo "DEPLOY warn: retry later"
+
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: SSH Tunnel + Migrate
+        env:
+          JUMP_HOST: ${{ secrets.JUMP_HOST }}
+          JUMP_USER: ${{ secrets.JUMP_USER }}
+          JUMP_PORT: ${{ secrets.JUMP_PORT || 22 }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: |
+          SSH_OPTS="-i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o ConnectionAttempts=3"
+
+          ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"
+
+          # Start Tunnel
+          echo "Tunnel -> $POSTGRES_HOST:$POSTGRES_PORT"
+          ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
+                -p $DEPLOY_PORT -fNT -L 5432:$POSTGRES_HOST:$POSTGRES_PORT \
+                $DEPLOY_USER@$DEPLOY_HOST &
+          PID=$!
+
+          sleep 5
+
+          # Wait for Tunnel
+          for i in {1..12}; do
+            if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/5432' 2>/dev/null; then
+              echo "Tunnel ready!"
+              break
+            fi
+            echo "Waiting... $i/12"
+            sleep 2
+          done || { echo "Tunnel failed"; kill $PID 2>/dev/null; exit 1; }
+
+          # Migrate
+          export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?schema=public"
+          echo "Running prisma migrate deploy..."
+          bunx prisma migrate deploy
+
+          # Cleanup
+          kill $PID 2>/dev/null || true
+          ssh $SSH_OPTS -O exit $DEPLOY_USER@$DEPLOY_HOST 2>/dev/null || true
+          echo "Cleanup done"
+
+  deploy:
+    name: Deploy Application
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH (through Jump Host)
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ github.repository }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.actor }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          proxy_host: ${{ secrets.JUMP_HOST }}
+          proxy_username: ${{ secrets.JUMP_USER }}
+          proxy_key: ${{ secrets.JUMP_SSH_KEY }}
+          proxy_port: ${{ secrets.JUMP_PORT || 22 }}
+          envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,POSTGRES_HOST,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REGISTRY_TOKEN,USERNAME
+          script: |
+            FULL_IMAGE_NAME=$(echo "$REGISTRY/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
+            DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB?schema=public"
+
+            echo "$REGISTRY_TOKEN" | docker login $REGISTRY -u $USERNAME --password-stdin
+            docker pull $FULL_IMAGE_NAME:$IMAGE_TAG
+            docker stop $CONTAINER_NAME || true
+            docker rm $CONTAINER_NAME || true
+            docker run -d \
+              --name $CONTAINER_NAME \
+              --restart unless-stopped \
+              --network host \
+              -e DATABASE_URL="$DATABASE_URL" \
+              -e NODE_ENV=production \
+              $FULL_IMAGE_NAME:$IMAGE_TAG
+            docker image prune -a -f --filter "until=24h"

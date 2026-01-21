@@ -6,6 +6,8 @@ import {
 import { DataTableTopActions } from '@/features/shared/components/data-table-top-actions'
 import { prisma } from '@/features/shared/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 export default async function LecturersPage() {
   const lecturers = await prisma.lecturer.findMany({
     orderBy: {
