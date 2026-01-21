@@ -2,6 +2,7 @@ import { CheckIcon, ChevronsUpDown } from 'lucide-react'
 import * as React from 'react'
 import * as RPNInput from 'react-phone-number-input'
 import flags from 'react-phone-number-input/flags'
+import de from 'react-phone-number-input/locale/de.json'
 
 import { Button } from '@/features/shared/components/ui/button'
 import {
@@ -41,6 +42,7 @@ const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
           inputComponent={InputComponent}
           smartCaret={false}
           value={value || undefined}
+          labels={de}
           /**
            * Handles the onChange event.
            *
@@ -132,11 +134,11 @@ const CountrySelect = ({
                 }
               }, 0)
             }}
-            placeholder="Search country..."
+            placeholder="Land suchen..."
           />
           <CommandList>
             <ScrollArea ref={scrollAreaRef} className="h-72">
-              <CommandEmpty>No country found.</CommandEmpty>
+              <CommandEmpty>Kein Land gefunden.</CommandEmpty>
               <CommandGroup>
                 {countryList.map(({ value, label }) =>
                   value ? (
