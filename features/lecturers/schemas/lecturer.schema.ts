@@ -4,19 +4,32 @@ export const lecturerSchema = z.object({
   title: z
     .string()
     .max(20, 'Der Titel darf maximal 20 Zeichen lang sein.')
+    .regex(/^[a-zA-ZäöüÄÖÜß\s]*$/, 'Der Titel darf nur Buchstaben enthalten.')
     .nullable(),
   firstName: z
     .string()
     .min(2, 'Der Vorname muss mindestens 2 Zeichen lang sein.')
-    .max(20, 'Der Vorname darf maximal 20 Zeichen lang sein.'),
+    .max(20, 'Der Vorname darf maximal 20 Zeichen lang sein.')
+    .regex(
+      /^[a-zA-ZäöüÄÖÜß\s]*$/,
+      'Der Vorname darf nur Buchstaben enthalten.'
+    ),
   secondName: z
     .string()
     .max(20, 'Der zweite Vorname darf maximal 20 Zeichen lang sein.')
+    .regex(
+      /^[a-zA-ZäöüÄÖÜß\s]*$/,
+      'Der zweite Vorname darf nur Buchstaben enthalten.'
+    )
     .nullable(),
   lastName: z
     .string()
     .min(2, 'Der Nachname muss mindestens 2 Zeichen lang sein.')
-    .max(50, 'Der Nachname darf maximal 50 Zeichen lang sein.'),
+    .max(50, 'Der Nachname darf maximal 50 Zeichen lang sein.')
+    .regex(
+      /^[a-zA-ZäöüÄÖÜß\s]*$/,
+      'Der Nachname darf nur Buchstaben enthalten.'
+    ),
   email: z
     .email('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
     .toLowerCase()
