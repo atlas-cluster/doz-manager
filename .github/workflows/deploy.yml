@@ -154,7 +154,10 @@ jobs:
           IMAGE_NAME: ${{ github.repository }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           IMAGE_TAG: ${{ github.sha }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.actor }}
         with:
@@ -166,9 +169,11 @@ jobs:
           proxy_username: ${{ secrets.JUMP_USER }}
           proxy_key: ${{ secrets.JUMP_SSH_KEY }}
           proxy_port: ${{ secrets.JUMP_PORT || 22 }}
-          envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,DATABASE_URL,REGISTRY_TOKEN,USERNAME
+          envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,POSTGRES_HOST,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REGISTRY_TOKEN,USERNAME
           script: |
             FULL_IMAGE_NAME=$(echo "$REGISTRY/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
+            DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB?schema=public"
+
             echo "$REGISTRY_TOKEN" | docker login $REGISTRY -u $USERNAME --password-stdin
             docker pull $FULL_IMAGE_NAME:$IMAGE_TAG
             docker stop $CONTAINER_NAME || true
