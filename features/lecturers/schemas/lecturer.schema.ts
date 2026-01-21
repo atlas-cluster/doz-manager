@@ -5,7 +5,7 @@ export const lecturerSchema = z.object({
     .string()
     .max(20, 'Der Titel darf maximal 20 Zeichen lang sein.')
     .regex(
-      /^[a-zA-ZäöüÄÖÜß\s.]*$/,
+      /^[\p{L}\s.]*$/u,
       'Der Titel darf nur Buchstaben, Leerzeichen und Punkte enthalten.'
     )
     .nullable(),
@@ -14,15 +14,15 @@ export const lecturerSchema = z.object({
     .min(2, 'Der Vorname muss mindestens 2 Zeichen lang sein.')
     .max(20, 'Der Vorname darf maximal 20 Zeichen lang sein.')
     .regex(
-      /^[a-zA-ZäöüÄÖÜß\s]*$/,
-      'Der Vorname darf nur Buchstaben und Leerzeichen enthalten.'
+      /^[\p{L}\s']*$/u,
+      'Der Vorname darf nur Buchstaben, Leerzeichen und Apostrophe enthalten.'
     ),
   secondName: z
     .string()
     .max(20, 'Der zweite Vorname darf maximal 20 Zeichen lang sein.')
     .regex(
-      /^[a-zA-ZäöüÄÖÜß\s]*$/,
-      'Der zweite Vorname darf nur Buchstaben und Leerzeichen enthalten.'
+      /^[\p{L}\s']*$/u,
+      'Der zweite Vorname darf nur Buchstaben, Leerzeichen und Apostrophe enthalten.'
     )
     .nullable(),
   lastName: z
@@ -30,18 +30,15 @@ export const lecturerSchema = z.object({
     .min(2, 'Der Nachname muss mindestens 2 Zeichen lang sein.')
     .max(50, 'Der Nachname darf maximal 50 Zeichen lang sein.')
     .regex(
-      /^[a-zA-ZäöüÄÖÜß\s-]*$/,
-      'Der Nachname darf nur Buchstaben, Leerzeichen und Bindestriche enthalten.'
+      /^[\p{L}\s'-]*$/u,
+      'Der Nachname darf nur Buchstaben, Leerzeichen, Bindestriche und Apostrophe enthalten.'
     ),
-  email: z
-    .email('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
-    .toLowerCase()
-    .trim(),
+  email: z.email('Bitte geben Sie eine gültige E-Mail-Adresse ein.'),
   phone: z
     .string()
     .min(1, 'Bitte geben Sie eine Telefonnummer ein.')
     .max(20, 'Die Telefonnummer ist zu lang.')
-    .regex(/^[+\d\s()-]+$/, 'Ungültiges Telefonnummernformat.')
+    .regex(/^[+\d]+$/, 'Ungültiges Telefonnummernformat.')
     .trim(),
   type: z.enum(['internal', 'external'], {
     message: 'Bitte wählen Sie einen Dozententyp aus.',
