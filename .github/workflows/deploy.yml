@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: ['main', 'feat/pb01-01-deployment']
+    branches: ['main']
 
 env:
   REGISTRY: ghcr.io
