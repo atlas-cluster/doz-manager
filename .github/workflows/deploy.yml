@@ -176,7 +176,7 @@ jobs:
             docker run -d \
               --name $CONTAINER_NAME \
               --restart unless-stopped \
-              -p 3000:3000 \
+              --network host \
               -e DATABASE_URL="$DATABASE_URL" \
               -e NODE_ENV=production \
               $FULL_IMAGE_NAME:$IMAGE_TAG
