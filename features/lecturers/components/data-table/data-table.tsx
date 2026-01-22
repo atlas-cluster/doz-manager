@@ -55,6 +55,7 @@ export function DataTable<TData, TValue>({
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [globalFilter, setGlobalFilter] = useState<string>('')
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
@@ -68,6 +69,7 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    onGlobalFilterChange: setGlobalFilter,
 
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -83,10 +85,9 @@ export function DataTable<TData, TValue>({
       columnFilters,
       columnVisibility,
       rowSelection,
+      globalFilter,
     },
   })
-
-  const nameFilter = (table.getColumn('name')?.getFilterValue() ?? '') as string
 
   return (
     <div>
@@ -95,10 +96,8 @@ export function DataTable<TData, TValue>({
           <Input
             className="h-9 w-full sm:w-48"
             placeholder="Dozenten suchen..."
-            value={nameFilter}
-            onChange={(e) =>
-              table.getColumn('name')?.setFilterValue(e.target.value)
-            }
+            value={globalFilter}
+            onChange={(e) => table.setGlobalFilter(String(e.target.value))}
           />
           <DataTableFacetedFilter
             title={'Typ'}

@@ -44,6 +44,7 @@ export const columns: ColumnDef<Lecturer>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
+    enableGlobalFilter: false,
   },
   {
     accessorFn: (row) =>
@@ -61,6 +62,7 @@ export const columns: ColumnDef<Lecturer>[] = [
     },
     enableSorting: true,
     enableHiding: false,
+    enableGlobalFilter: true,
   },
   {
     accessorKey: 'email',
@@ -77,12 +79,14 @@ export const columns: ColumnDef<Lecturer>[] = [
     },
     enableSorting: true,
     enableHiding: false,
+    enableGlobalFilter: true,
   },
   {
     accessorKey: 'phone',
     header: 'Telefonnummer',
     enableSorting: false,
     enableHiding: true,
+    enableGlobalFilter: true,
   },
   {
     accessorKey: 'type',
@@ -92,6 +96,7 @@ export const columns: ColumnDef<Lecturer>[] = [
     },
     enableSorting: false,
     enableHiding: true,
+    enableGlobalFilter: false,
   },
   {
     accessorKey: 'courseLevelPreference',
@@ -105,6 +110,7 @@ export const columns: ColumnDef<Lecturer>[] = [
     },
     enableSorting: false,
     enableHiding: false,
+    enableGlobalFilter: false,
   },
   {
     id: 'actions',
@@ -135,5 +141,8 @@ export const columns: ColumnDef<Lecturer>[] = [
         </div>
       )
     },
+    enableSorting: false,
+    enableHiding: false,
+    enableGlobalFilter: false,
   },
 ]
