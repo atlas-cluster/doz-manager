@@ -1,12 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { RefreshCwIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState, useTransition } from 'react'
 
 import { CreateLecturerDialog } from '@/features/lecturers'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableTopActions } from '@/features/shared/components/data-table-top-actions'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
+import { Button } from '@/features/shared/components/ui/button'
+import { Input } from '@/features/shared/components/ui/input'
 import {
   Table,
   TableBody,
@@ -34,12 +38,22 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  refreshAction?: () => Promise<TData[]>
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  refreshAction,
 }: DataTableProps<TData, TValue>) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [tableData, setTableData] = useState<TData[]>(data)
+
+  useEffect(() => {
+    setTableData(data)
+  }, [data])
+
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
@@ -47,7 +61,7 @@ export function DataTable<TData, TValue>({
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
-    data,
+    data: tableData,
     columns,
 
     enableRowSelection: true,
@@ -73,11 +87,21 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const nameFilter = (table.getColumn('name')?.getFilterValue() ?? '') as string
+
   return (
     <div>
       <DataTableTopActions
         left={
           <>
+            <Input
+              className="h-9 w-full sm:w-48"
+              placeholder="Dozenten suchen..."
+              value={nameFilter}
+              onChange={(e) =>
+                table.getColumn('name')?.setFilterValue(e.target.value)
+              }
+            />
             <DataTableFacetedFilter
               title={'Typ'}
               options={[
@@ -115,6 +139,27 @@ export function DataTable<TData, TValue>({
         right={
           <>
             <DataTableViewOptions table={table} />
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              type="button"
+              disabled={isPending}
+              onClick={() => {
+                startTransition(async () => {
+                  if (refreshAction) {
+                    const newData = await refreshAction()
+                    setTableData(newData)
+                  } else {
+                    router.refresh()
+                  }
+                })
+              }}>
+              <RefreshCwIcon
+                className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`}
+              />
+              <span className={'sr-only'}>Daten aktualisieren</span>
+            </Button>
             <CreateLecturerDialog />
           </>
         }

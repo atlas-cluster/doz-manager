@@ -1,4 +1,4 @@
-import { LecturerDataTable, lecturerColumns } from '@/features/lecturers'
+import { LecturerDataTable, get, lecturerColumns } from '@/features/lecturers'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -12,7 +12,11 @@ export default async function LecturersPage() {
 
   return (
     <div>
-      <LecturerDataTable columns={lecturerColumns} data={lecturers} />
+      <LecturerDataTable
+        columns={lecturerColumns}
+        data={lecturers}
+        refreshAction={get}
+      />
     </div>
   )
 }
