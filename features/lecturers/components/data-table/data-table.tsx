@@ -4,7 +4,7 @@ import { RefreshCwIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 
-import { CreateLecturerDialog } from '@/features/lecturers'
+import { CreateDialog } from '@/features/lecturers/components/dialog/create'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
@@ -165,7 +165,7 @@ export function DataTable<TData, TValue>({
             />
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
-          <CreateLecturerDialog />
+          <CreateDialog />
         </div>
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
