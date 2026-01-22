@@ -105,7 +105,7 @@ export function DataTable<TData, TValue>({
       <div className="mb-3 flex items-center justify-between">
         <div className={'flex items-center justify-start gap-3'}>
           <Input
-            className="h-9 w-full sm:w-48"
+            className="h-9 w-48"
             placeholder="Dozenten suchen..."
             value={globalFilter}
             onChange={(e) => table.setGlobalFilter(String(e.target.value))}

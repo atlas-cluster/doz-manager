@@ -14,17 +14,17 @@ datasource db {
 }
 
 model Lecturer {
-  id                    String       @id @default(cuid())
+  id                    String                @id @default(cuid())
   title                 String?
   firstName             String
   secondName            String?
   lastName              String
-  email                 String    @unique
-  phone                 String    @unique
+  email                 String                @unique
+  phone                 String                @unique
   type                  LecturerType
   courseLevelPreference CourseLevelPreference
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 
   // // Relations to junction tables
   // teaches               LecturerTeaches[]
