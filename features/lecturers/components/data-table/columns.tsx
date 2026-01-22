@@ -48,6 +48,7 @@ export const columns: ColumnDef<Lecturer>[] = [
   {
     accessorFn: (row) =>
       `${row.title ? row.title : ''} ${row.firstName} ${row.secondName ? row.secondName : ''} ${row.lastName}`,
+    id: 'name',
     header: ({ column }) => {
       return (
         <Button
@@ -58,10 +59,12 @@ export const columns: ColumnDef<Lecturer>[] = [
         </Button>
       )
     },
-    id: 'name',
+    enableSorting: true,
+    enableHiding: false,
   },
   {
     accessorKey: 'email',
+    id: 'email',
     header: ({ column }) => {
       return (
         <Button
@@ -72,10 +75,14 @@ export const columns: ColumnDef<Lecturer>[] = [
         </Button>
       )
     },
+    enableSorting: true,
+    enableHiding: false,
   },
   {
     accessorKey: 'phone',
     header: 'Telefonnummer',
+    enableSorting: false,
+    enableHiding: true,
   },
   {
     accessorKey: 'type',
@@ -83,6 +90,8 @@ export const columns: ColumnDef<Lecturer>[] = [
     cell: ({ row }) => {
       return <LecturerTypeBadge type={row.original.type} />
     },
+    enableSorting: false,
+    enableHiding: true,
   },
   {
     accessorKey: 'courseLevelPreference',
@@ -94,6 +103,8 @@ export const columns: ColumnDef<Lecturer>[] = [
         />
       )
     },
+    enableSorting: false,
+    enableHiding: false,
   },
   {
     id: 'actions',
