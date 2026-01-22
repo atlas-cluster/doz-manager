@@ -101,11 +101,11 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div>
-      <div className="mb-3 flex items-center justify-between">
-        <div className={'flex items-center justify-start gap-3'}>
+    <div className="w-full space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex w-full flex-wrap items-center gap-2">
           <Input
-            className="h-9 w-48"
+            className="h-9 w-full sm:w-[260px]"
             placeholder="Dozenten suchen..."
             value={globalFilter}
             onChange={(e) => table.setGlobalFilter(String(e.target.value))}
@@ -140,7 +140,7 @@ export function DataTable<TData, TValue>({
             facets={prefCounts}
           />
         </div>
-        <div className={'flex items-center justify-end gap-3'}>
+        <div className="flex items-center gap-2">
           <DataTableViewOptions table={table} />
           <Button
             variant="outline"
