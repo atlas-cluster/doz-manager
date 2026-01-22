@@ -1,7 +1,6 @@
 'use client'
 
 import { RefreshCwIcon } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 
 import { CreateDialog } from '@/features/lecturers/components/dialog/create'
@@ -45,7 +44,6 @@ export function DataTable<TData, TValue>({
   data,
   refreshAction,
 }: DataTableProps<TData, TValue>) {
-  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [tableData, setTableData] = useState<TData[]>(data)
 
@@ -155,8 +153,6 @@ export function DataTable<TData, TValue>({
                 if (refreshAction) {
                   const newData = await refreshAction()
                   setTableData(newData)
-                } else {
-                  router.refresh()
                 }
               })
             }}>
