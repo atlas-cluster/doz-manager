@@ -280,7 +280,7 @@ export function UpdateDialog({
               />
             </div>
             <div className="mt-4 flex justify-end">
-              <Button type="submit">Bearbeiten</Button>
+              <Button type="submit">Speichern</Button>
             </div>
           </FieldGroup>
         </form>
