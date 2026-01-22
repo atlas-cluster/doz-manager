@@ -31,12 +31,14 @@ export function DataTableFacetedFilter<TData>({
   column,
   title,
   options,
+  facets: customFacets,
 }: {
   column?: Column<TData, unknown>
   title: string
   options: FacetOption[]
+  facets?: Map<string, number>
 }) {
-  const facets = column?.getFacetedUniqueValues()
+  const facets = customFacets ?? column?.getFacetedUniqueValues()
   const selectedValues = new Set<string>(
     (column?.getFilterValue() as string[]) ?? []
   )

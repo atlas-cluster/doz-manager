@@ -89,6 +89,19 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const prefColumn = table.getColumn('courseLevelPreference')
+  const prefUniqueValues = prefColumn?.getFacetedUniqueValues()
+
+  const prefCounts = new Map<string, number>()
+  if (prefUniqueValues) {
+    const both = prefUniqueValues.get('both') ?? 0
+    const bachelor = prefUniqueValues.get('bachelor') ?? 0
+    const master = prefUniqueValues.get('master') ?? 0
+
+    prefCounts.set('bachelor', bachelor + both)
+    prefCounts.set('master', master + both)
+  }
+
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
@@ -124,12 +137,9 @@ export function DataTable<TData, TValue>({
                 value: 'master',
                 label: 'Master',
               },
-              {
-                value: 'both',
-                label: 'Bachelor & Master',
-              },
             ]}
-            column={table.getColumn('courseLevelPreference')}
+            column={prefColumn}
+            facets={prefCounts}
           />
         </div>
         <div className={'flex items-center justify-end gap-3'}>

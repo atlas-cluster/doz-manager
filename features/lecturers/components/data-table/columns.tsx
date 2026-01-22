@@ -108,6 +108,25 @@ export const columns: ColumnDef<Lecturer>[] = [
         />
       )
     },
+    filterFn: (row, id, value: string[]) => {
+      const rowValue = row.getValue(id) as string
+      const wantsBachelor = value.includes('bachelor')
+      const wantsMaster = value.includes('master')
+
+      if (wantsBachelor && wantsMaster) {
+        return rowValue === 'both'
+      }
+
+      if (wantsBachelor) {
+        return rowValue === 'bachelor' || rowValue === 'both'
+      }
+
+      if (wantsMaster) {
+        return rowValue === 'master' || rowValue === 'both'
+      }
+
+      return true
+    },
     enableSorting: false,
     enableHiding: false,
     enableGlobalFilter: false,
