@@ -78,7 +78,7 @@ export const columns: ColumnDef<Lecturer>[] = [
       )
     },
     enableSorting: true,
-    enableHiding: false,
+    enableHiding: true,
     enableGlobalFilter: true,
   },
   {
@@ -128,7 +128,7 @@ export const columns: ColumnDef<Lecturer>[] = [
       return true
     },
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: true,
     enableGlobalFilter: false,
   },
   {

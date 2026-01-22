@@ -21,9 +21,9 @@ export function DataTableViewOptions<TData>({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" size={'icon'}>
           <Settings2 />
-          Optionen
+          <span className={'sr-only'}>Spalten ausblenden</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>

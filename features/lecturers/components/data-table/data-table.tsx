@@ -1,6 +1,6 @@
 'use client'
 
-import { RefreshCwIcon } from 'lucide-react'
+import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
 
 import { CreateDialog } from '@/features/lecturers/components/dialog/create'
@@ -139,6 +139,18 @@ export function DataTable<TData, TValue>({
             column={prefColumn}
             facets={prefCounts}
           />
+          {(table.getState().columnFilters.length > 0 || globalFilter) && (
+            <Button
+              variant="ghost"
+              size={'icon'}
+              onClick={() => {
+                table.resetColumnFilters()
+                table.setGlobalFilter('')
+              }}>
+              <XIcon />
+              <span className={'sr-only'}>Filter löschen</span>
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <DataTableViewOptions table={table} />
