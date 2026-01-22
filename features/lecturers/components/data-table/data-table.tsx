@@ -7,7 +7,6 @@ import { useEffect, useState, useTransition } from 'react'
 import { CreateLecturerDialog } from '@/features/lecturers'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
-import { DataTableTopActions } from '@/features/shared/components/data-table-top-actions'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
 import { Button } from '@/features/shared/components/ui/button'
 import { Input } from '@/features/shared/components/ui/input'
@@ -91,79 +90,75 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <DataTableTopActions
-        left={
-          <>
-            <Input
-              className="h-9 w-full sm:w-48"
-              placeholder="Dozenten suchen..."
-              value={nameFilter}
-              onChange={(e) =>
-                table.getColumn('name')?.setFilterValue(e.target.value)
-              }
+      <div className="mb-3 flex items-center justify-between">
+        <div className={'flex items-center justify-start gap-3'}>
+          <Input
+            className="h-9 w-full sm:w-48"
+            placeholder="Dozenten suchen..."
+            value={nameFilter}
+            onChange={(e) =>
+              table.getColumn('name')?.setFilterValue(e.target.value)
+            }
+          />
+          <DataTableFacetedFilter
+            title={'Typ'}
+            options={[
+              {
+                value: 'internal',
+                label: 'Intern',
+              },
+              {
+                value: 'external',
+                label: 'Extern',
+              },
+            ]}
+            column={table.getColumn('type')}
+          />
+          <DataTableFacetedFilter
+            title={'Vorlesungspräferenz'}
+            options={[
+              {
+                value: 'bachelor',
+                label: 'Bachelor',
+              },
+              {
+                value: 'master',
+                label: 'Master',
+              },
+              {
+                value: 'both',
+                label: 'Bachelor & Master',
+              },
+            ]}
+            column={table.getColumn('courseLevelPreference')}
+          />
+        </div>
+        <div className={'flex items-center justify-end gap-3'}>
+          <DataTableViewOptions table={table} />
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            type="button"
+            disabled={isPending}
+            onClick={() => {
+              startTransition(async () => {
+                if (refreshAction) {
+                  const newData = await refreshAction()
+                  setTableData(newData)
+                } else {
+                  router.refresh()
+                }
+              })
+            }}>
+            <RefreshCwIcon
+              className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`}
             />
-            <DataTableFacetedFilter
-              title={'Typ'}
-              options={[
-                {
-                  value: 'internal',
-                  label: 'Intern',
-                },
-                {
-                  value: 'external',
-                  label: 'Extern',
-                },
-              ]}
-              column={table.getColumn('type')}
-            />
-            <DataTableFacetedFilter
-              title={'Vorlesungspräferenz'}
-              options={[
-                {
-                  value: 'bachelor',
-                  label: 'Bachelor',
-                },
-                {
-                  value: 'master',
-                  label: 'Master',
-                },
-                {
-                  value: 'both',
-                  label: 'Bachelor & Master',
-                },
-              ]}
-              column={table.getColumn('courseLevelPreference')}
-            />
-          </>
-        }
-        right={
-          <>
-            <DataTableViewOptions table={table} />
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              type="button"
-              disabled={isPending}
-              onClick={() => {
-                startTransition(async () => {
-                  if (refreshAction) {
-                    const newData = await refreshAction()
-                    setTableData(newData)
-                  } else {
-                    router.refresh()
-                  }
-                })
-              }}>
-              <RefreshCwIcon
-                className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`}
-              />
-              <span className={'sr-only'}>Daten aktualisieren</span>
-            </Button>
-            <CreateLecturerDialog />
-          </>
-        }
-      />
+            <span className={'sr-only'}>Daten aktualisieren</span>
+          </Button>
+          <CreateLecturerDialog />
+        </div>
+      </div>
       <div className="overflow-hidden rounded-md border mb-3">
         <Table>
           <TableHeader>
