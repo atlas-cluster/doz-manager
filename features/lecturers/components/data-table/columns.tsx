@@ -1,6 +1,11 @@
 'use client'
 
-import { MoreHorizontalIcon, PencilIcon, TrashIcon } from 'lucide-react'
+import {
+  ArrowUpDown,
+  MoreHorizontalIcon,
+  PencilIcon,
+  TrashIcon,
+} from 'lucide-react'
 
 import { deleteLecturer } from '@/features/lecturers/actions/delete'
 import { LecturerCourseLevelPreferenceBadge } from '@/features/lecturers/components/lecturer-course-level-preference-badge'
@@ -39,20 +44,49 @@ export const columns: ColumnDef<Lecturer>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
+    enableGlobalFilter: false,
   },
   {
     accessorFn: (row) =>
       `${row.title ? row.title : ''} ${row.firstName} ${row.secondName ? row.secondName : ''} ${row.lastName}`,
-    header: 'Name',
     id: 'name',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+          Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    enableSorting: true,
+    enableHiding: false,
+    enableGlobalFilter: true,
   },
   {
     accessorKey: 'email',
-    header: 'E-Mail',
+    id: 'email',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+          Email
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    },
+    enableSorting: true,
+    enableHiding: false,
+    enableGlobalFilter: true,
   },
   {
     accessorKey: 'phone',
     header: 'Telefonnummer',
+    enableSorting: false,
+    enableHiding: true,
+    enableGlobalFilter: true,
   },
   {
     accessorKey: 'type',
@@ -60,6 +94,9 @@ export const columns: ColumnDef<Lecturer>[] = [
     cell: ({ row }) => {
       return <LecturerTypeBadge type={row.original.type} />
     },
+    enableSorting: false,
+    enableHiding: true,
+    enableGlobalFilter: false,
   },
   {
     accessorKey: 'courseLevelPreference',
@@ -71,6 +108,28 @@ export const columns: ColumnDef<Lecturer>[] = [
         />
       )
     },
+    filterFn: (row, id, value: string[]) => {
+      const rowValue = row.getValue(id) as string
+      const wantsBachelor = value.includes('bachelor')
+      const wantsMaster = value.includes('master')
+
+      if (wantsBachelor && wantsMaster) {
+        return rowValue === 'both'
+      }
+
+      if (wantsBachelor) {
+        return rowValue === 'bachelor' || rowValue === 'both'
+      }
+
+      if (wantsMaster) {
+        return rowValue === 'master' || rowValue === 'both'
+      }
+
+      return true
+    },
+    enableSorting: false,
+    enableHiding: false,
+    enableGlobalFilter: false,
   },
   {
     id: 'actions',
@@ -101,5 +160,8 @@ export const columns: ColumnDef<Lecturer>[] = [
         </div>
       )
     },
+    enableSorting: false,
+    enableHiding: false,
+    enableGlobalFilter: false,
   },
 ]

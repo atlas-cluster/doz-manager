@@ -31,12 +31,14 @@ export function DataTableFacetedFilter<TData>({
   column,
   title,
   options,
+  facets: customFacets,
 }: {
   column?: Column<TData, unknown>
   title: string
   options: FacetOption[]
+  facets?: Map<string, number>
 }) {
-  const facets = column?.getFacetedUniqueValues()
+  const facets = customFacets ?? column?.getFacetedUniqueValues()
   const selectedValues = new Set<string>(
     (column?.getFilterValue() as string[]) ?? []
   )
@@ -65,7 +67,7 @@ export function DataTableFacetedFilter<TData>({
                   <Badge
                     variant="secondary"
                     className="rounded-sm px-1 font-normal">
-                    {selectedValues.size} selected
+                    {selectedValues.size} ausgewählt
                   </Badge>
                 ) : (
                   options
@@ -85,11 +87,11 @@ export function DataTableFacetedFilter<TData>({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-[220px] p-0" align="start">
+      <PopoverContent className="w-55 p-0" align="start">
         <Command>
-          <CommandInput placeholder={`Filter ${title.toLowerCase()}...`} />
+          <CommandInput placeholder={`Filtere ${title}...`} />
           <CommandList>
-            <CommandEmpty>No results.</CommandEmpty>
+            <CommandEmpty>Keine Ergebnisse.</CommandEmpty>
 
             <CommandGroup>
               {options.map((option) => {
@@ -141,7 +143,7 @@ export function DataTableFacetedFilter<TData>({
                   <CommandItem
                     onSelect={() => column?.setFilterValue(undefined)}
                     className="justify-center text-center">
-                    Clear filters
+                    Filter löschen
                   </CommandItem>
                 </CommandGroup>
               </>
