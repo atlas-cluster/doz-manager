@@ -1,6 +1,6 @@
 'use client'
 
-import { RefreshCwIcon, XIcon } from 'lucide-react'
+import { GraduationCap, RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
 
 import { CreateDialog } from '@/features/lecturers/components/dialog/create'
@@ -125,7 +125,7 @@ export function DataTable<TData, TValue>({
             column={table.getColumn('type')}
           />
           <DataTableFacetedFilter
-            title={'Vorlesungspräferenz'}
+            title={'Präferenz'}
             options={[
               {
                 value: 'bachelor',
