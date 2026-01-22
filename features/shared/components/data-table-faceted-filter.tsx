@@ -65,7 +65,7 @@ export function DataTableFacetedFilter<TData>({
                   <Badge
                     variant="secondary"
                     className="rounded-sm px-1 font-normal">
-                    {selectedValues.size} ausgewählt
+                    {selectedValues.size} selected
                   </Badge>
                 ) : (
                   options
@@ -85,11 +85,11 @@ export function DataTableFacetedFilter<TData>({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-55 p-0" align="start">
+      <PopoverContent className="w-[220px] p-0" align="start">
         <Command>
-          <CommandInput placeholder={`Filtere ${title}...`} />
+          <CommandInput placeholder={`Filter ${title.toLowerCase()}...`} />
           <CommandList>
-            <CommandEmpty>Keine Ergebnisse.</CommandEmpty>
+            <CommandEmpty>No results.</CommandEmpty>
 
             <CommandGroup>
               {options.map((option) => {
@@ -141,7 +141,7 @@ export function DataTableFacetedFilter<TData>({
                   <CommandItem
                     onSelect={() => column?.setFilterValue(undefined)}
                     className="justify-center text-center">
-                    Filter löschen
+                    Clear filters
                   </CommandItem>
                 </CommandGroup>
               </>

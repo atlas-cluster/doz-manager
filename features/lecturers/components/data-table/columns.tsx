@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  ArrowUpDown,
-  MoreHorizontalIcon,
-  PencilIcon,
-  TrashIcon,
-} from 'lucide-react'
+import { MoreHorizontalIcon, PencilIcon, TrashIcon } from 'lucide-react'
 
 import { deleteLecturer } from '@/features/lecturers/actions/delete'
 import { LecturerCourseLevelPreferenceBadge } from '@/features/lecturers/components/lecturer-course-level-preference-badge'
@@ -48,30 +43,12 @@ export const columns: ColumnDef<Lecturer>[] = [
   {
     accessorFn: (row) =>
       `${row.title ? row.title : ''} ${row.firstName} ${row.secondName ? row.secondName : ''} ${row.lastName}`,
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
+    header: 'Name',
     id: 'name',
   },
   {
     accessorKey: 'email',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Email
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
+    header: 'E-Mail',
   },
   {
     accessorKey: 'phone',
