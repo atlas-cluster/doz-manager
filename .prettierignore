@@ -4,4 +4,4 @@ dist
 build
 .out
 public
-bun.lock
+package-lock.json

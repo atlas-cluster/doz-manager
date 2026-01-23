@@ -11,15 +11,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: 22
+          cache: 'npm'
 
       - name: Install & Generate Prisma
         run: |
-          bun install
-          bunx prisma generate
+          npm ci
+          npx prisma generate
 
       - name: Prepare SSH (known_hosts + key)
         env:
@@ -84,10 +85,10 @@ jobs:
           export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?schema=public"
 
           echo "Running prisma migrate reset..."
-          bunx prisma migrate reset --force
+          npx prisma migrate reset --force
 
           echo "Seeding database..."
-          bunx prisma db seed
+          npx prisma db seed
 
           # Cleanup
           kill $PID 2>/dev/null || true
