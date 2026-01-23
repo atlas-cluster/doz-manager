@@ -60,6 +60,9 @@ export const columns: ColumnDef<Lecturer>[] = [
         </Button>
       )
     },
+    sortingFn: (rowA, rowB) => {
+      return rowA.original.lastName.localeCompare(rowB.original.lastName)
+    },
     enableSorting: true,
     enableHiding: false,
     enableGlobalFilter: true,
@@ -67,17 +70,8 @@ export const columns: ColumnDef<Lecturer>[] = [
   {
     accessorKey: 'email',
     id: 'email',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Email
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    enableSorting: true,
+    header: 'E-Mail',
+    enableSorting: false,
     enableHiding: true,
     enableGlobalFilter: true,
   },
