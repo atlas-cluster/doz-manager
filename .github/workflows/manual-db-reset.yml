@@ -82,7 +82,7 @@ jobs:
 
           # Reset & Seed
           # Using 127.0.0.1 to route through the tunnel
-          export DATABASE_URL="mysql://${DB_ROOT_USER}:${DB_ROOT_PASSWORD}@127.0.0.1:3306/${DB_NAME}"
+          export DB_ROOT_URL="mysql://${DB_ROOT_USER}:${DB_ROOT_PASSWORD}@127.0.0.1:3306/${DB_NAME}"
 
           echo "Running prisma migrate reset..."
           npx prisma migrate reset --force
