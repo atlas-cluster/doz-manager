@@ -78,8 +78,6 @@ jobs:
             sleep 2
           done || { echo "Tunnel failed"; kill $PID 2>/dev/null; exit 1; }
 
-          export DB_ROOT_URL="mysql://${DB_ROOT_USER}:${DB_ROOT_PASSWORD}@127.0.0.1:3306/${DB_NAME}"
-
           echo "Seeding database..."
           npx prisma db seed
 
