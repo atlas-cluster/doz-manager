@@ -79,7 +79,7 @@ jobs:
           done || { echo "Tunnel failed"; kill $PID 2>/dev/null; exit 1; }
 
           echo "Running prisma migrate reset..."
-          npx prisma migrate reset --force --skip-seed
+          npx prisma migrate reset --force
 
           # Cleanup
           kill $PID 2>/dev/null || true
