@@ -1,15 +1,16 @@
 import 'dotenv/config'
-import { Pool } from 'pg'
 
 import { PrismaClient } from '@/features/shared/lib/generated/prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 
-const connectionString =
-  process.env.DATABASE_URL ??
-  `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}?schema=public`
+const adapter = new PrismaMariaDb({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  connectionLimit: 5,
+})
 
-const pool = new Pool({ connectionString })
-const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
 export { prisma }

@@ -100,20 +100,20 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
-          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: 3306
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_ROOT_USER: ${{ secrets.DB_ROOT_USER }}
+          DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
         run: |
           SSH_OPTS="-i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o ConnectionAttempts=3"
 
           ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"
 
           # Start Tunnel
-          echo "Tunnel -> $POSTGRES_HOST:$POSTGRES_PORT"
+          echo "Tunnel -> $DB_HOST:$DB_PORT"
           ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}" \
-                -p $DEPLOY_PORT -fNT -L 5432:$POSTGRES_HOST:$POSTGRES_PORT \
+                -p $DEPLOY_PORT -fNT -L 3306:$DB_HOST:$DB_PORT \
                 $DEPLOY_USER@$DEPLOY_HOST &
           PID=$!
 
@@ -121,7 +121,7 @@ jobs:
 
           # Wait for Tunnel
           for i in {1..12}; do
-            if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/5432' 2>/dev/null; then
+            if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/3306' 2>/dev/null; then
               echo "Tunnel ready!"
               break
             fi
@@ -130,7 +130,7 @@ jobs:
           done || { echo "Tunnel failed"; kill $PID 2>/dev/null; exit 1; }
 
           # Migrate
-          export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?schema=public"
+          export DATABASE_URL="mysql://${DB_ROOT_USER}:${DB_ROOT_PASSWORD}@127.0.0.1:3306/${DB_NAME}"
           echo "Running prisma migrate deploy..."
           npx prisma migrate deploy
 
@@ -151,10 +151,10 @@ jobs:
           IMAGE_NAME: ${{ github.repository }}
           CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
           IMAGE_TAG: ${{ github.sha }}
-          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.actor }}
         with:
@@ -166,10 +166,10 @@ jobs:
           proxy_username: ${{ secrets.JUMP_USER }}
           proxy_key: ${{ secrets.JUMP_SSH_KEY }}
           proxy_port: ${{ secrets.JUMP_PORT || 22 }}
-          envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,POSTGRES_HOST,POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD,REGISTRY_TOKEN,USERNAME
+          envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,REGISTRY_TOKEN,USERNAME
           script: |
             FULL_IMAGE_NAME=$(echo "$REGISTRY/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
-            DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB?schema=public"
+            DATABASE_URL="mysql://$DB_USER:$DB_PASSWORD@$DB_HOST:3306/$DB_NAME"
 
             echo "$REGISTRY_TOKEN" | docker login $REGISTRY -u $USERNAME --password-stdin
             docker pull $FULL_IMAGE_NAME:$IMAGE_TAG
