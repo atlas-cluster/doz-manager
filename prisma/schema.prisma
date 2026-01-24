@@ -26,9 +26,8 @@ model Lecturer {
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 
-  // // Relations to junction tables
-  // teaches               LecturerTeaches[]
-  // canTeach              LecturerCanTeach[]
+  assignments    CourseAssignment[]
+  qualifications CourseQualification[]
 }
 
 enum LecturerType {
@@ -42,49 +41,48 @@ enum CourseLevelPreference {
   both
 }
 
-// model Course {
-//   id          Int       @id @default(autoincrement())
-//   name        String
-//   isOpen      Boolean
-//   courseLevel CourseLevel
-//   semester    Int?
-//   createdAt   DateTime  @default(now())
-//   updatedAt   DateTime  @updatedAt
-//
-//   // Relations to junction tables
-//   taughtBy      LecturerTeaches[]
-//   canBeTaughtBy LecturerCanTeach[]
-// }
-//
-// enum CourseLevel {
-//   bachelor
-//   master
-// }
-//
-// model LecturerTeaches {
-//   lecturerId Int
-//   courseId   Int
-//   createdAt  DateTime @default(now())
-//
-//   lecturer Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
-//   course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-//
-//   @@id([lecturerId, courseId])
-// }
-//
-// model LecturerCanTeach {
-//   lecturerId     Int
-//   courseId       Int
-//   leadTime       LeadTimeOption
-//   experience     ExperienceOption
-//   createdAt      DateTime @default(now())
-//   updatedAt      DateTime @updatedAt
-//
-//   lecturer Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
-//   course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-//
-//   @@id([lecturerId, courseId])
-// }
+model Course {
+  id          String      @id @default(cuid())
+  name        String
+  isOpen      Boolean
+  courseLevel CourseLevel
+  semester    Int?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  assignments    CourseAssignment[]
+  qualifications CourseQualification[]
+}
+
+enum CourseLevel {
+  bachelor
+  master
+}
+
+model CourseAssignment {
+  lecturer   Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  lecturerId String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@id([lecturerId, courseId])
+}
+
+model CourseQualification {
+  lecturer   Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  lecturerId String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId   String
+  // leadTime   LeadTimeOption
+  // experience ExperienceOption
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@id([lecturerId, courseId])
+}
+
 //
 // enum LeadTimeOption {
 //   short          // S - immediately

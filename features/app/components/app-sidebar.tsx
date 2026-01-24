@@ -1,6 +1,6 @@
 'use client'
 
-import { UsersIcon } from 'lucide-react'
+import { LibraryBigIcon, UsersIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -20,7 +20,7 @@ import {
 const navItems = [
   // { url: '/dashboard', icon: HomeIcon },
   { url: '/lecturers', icon: UsersIcon },
-  // { url: '/courses', icon: LibraryBigIcon },
+  { url: '/courses', icon: LibraryBigIcon },
 ]
 
 export function AppSidebar() {

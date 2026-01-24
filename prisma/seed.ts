@@ -1,6 +1,9 @@
 import 'dotenv/config'
 
-import { PrismaClient } from '@/features/shared/lib/generated/prisma/client'
+import {
+  CourseLevel,
+  PrismaClient,
+} from '@/features/shared/lib/generated/prisma/client'
 import {
   CourseLevelPreference,
   LecturerType,
@@ -181,6 +184,81 @@ const lecturers = [
   },
 ]
 
+const courses = [
+  {
+    name: 'Einführung in die Informatik',
+    isOpen: true,
+    courseLevel: CourseLevel.bachelor,
+    semester: 1,
+  },
+  {
+    name: 'Software Engineering I',
+    isOpen: true,
+    courseLevel: CourseLevel.bachelor,
+    semester: 3,
+  },
+  {
+    name: 'Grundlagen der BWL',
+    isOpen: false,
+    courseLevel: CourseLevel.bachelor,
+    semester: 1,
+  },
+  {
+    name: 'Fortgeschrittene Datenstrukturen',
+    isOpen: true,
+    courseLevel: CourseLevel.master,
+    semester: 1,
+  },
+  {
+    name: 'Cloud Computing Architekturen',
+    isOpen: true,
+    courseLevel: CourseLevel.master,
+    semester: 2,
+  },
+  {
+    name: 'Marketing Management',
+    isOpen: true,
+    courseLevel: CourseLevel.bachelor,
+    semester: 4,
+  },
+  {
+    name: 'Angewandte Künstliche Intelligenz',
+    isOpen: true,
+    courseLevel: CourseLevel.master,
+    semester: 3,
+  },
+  {
+    name: 'Web-Technologien',
+    isOpen: true,
+    courseLevel: CourseLevel.bachelor,
+    semester: 2,
+  },
+  {
+    name: 'Strategische Unternehmensfinanzierung',
+    isOpen: false,
+    courseLevel: CourseLevel.master,
+    semester: 2,
+  },
+  {
+    name: 'Agiles Projektmanagement',
+    isOpen: true,
+    courseLevel: CourseLevel.bachelor,
+    semester: 5,
+  },
+  {
+    name: 'Datenbanksysteme',
+    isOpen: true,
+    courseLevel: CourseLevel.bachelor,
+    semester: 2,
+  },
+  {
+    name: 'IT-Sicherheit & Compliance',
+    isOpen: true,
+    courseLevel: CourseLevel.master,
+    semester: 1,
+  },
+]
+
 async function main() {
   console.log(`Start seeding ...`)
   for (const lecturer of lecturers) {
@@ -191,6 +269,25 @@ async function main() {
     })
     console.log(`Created lecturer with id: ${user.id}`)
   }
+
+  for (const course of courses) {
+    const existingCourse = await prisma.course.findFirst({
+      where: {
+        name: course.name,
+        courseLevel: course.courseLevel,
+      },
+    })
+
+    if (!existingCourse) {
+      const newCourse = await prisma.course.create({
+        data: course,
+      })
+      console.log(`Created course with id: ${newCourse.id}`)
+    } else {
+      console.log(`Course already exists: ${course.name}`)
+    }
+  }
+
   console.log(`Seeding finished.`)
 }
 

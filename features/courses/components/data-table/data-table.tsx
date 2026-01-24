@@ -3,8 +3,6 @@
 import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
 
-import { CreateDialog } from '@/features/lecturers/components/dialog/create'
-import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
 import { Button } from '@/features/shared/components/ui/button'
@@ -87,57 +85,15 @@ export function DataTable<TData, TValue>({
     },
   })
 
-  const prefColumn = table.getColumn('courseLevelPreference')
-  const prefUniqueValues = prefColumn?.getFacetedUniqueValues()
-
-  const prefCounts = new Map<string, number>()
-  if (prefUniqueValues) {
-    const both = prefUniqueValues.get('both') ?? 0
-    const bachelor = prefUniqueValues.get('bachelor') ?? 0
-    const master = prefUniqueValues.get('master') ?? 0
-
-    prefCounts.set('bachelor', bachelor + both)
-    prefCounts.set('master', master + both)
-  }
-
   return (
     <div className="w-full space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full flex-wrap items-center gap-2">
           <Input
             className="h-9 w-full sm:w-[260px]"
-            placeholder="Dozenten suchen..."
+            placeholder="Vorlesungen suchen..."
             value={globalFilter}
             onChange={(e) => table.setGlobalFilter(String(e.target.value))}
-          />
-          <DataTableFacetedFilter
-            title={'Typ'}
-            options={[
-              {
-                value: 'internal',
-                label: 'Intern',
-              },
-              {
-                value: 'external',
-                label: 'Extern',
-              },
-            ]}
-            column={table.getColumn('type')}
-          />
-          <DataTableFacetedFilter
-            title={'Präferenz'}
-            options={[
-              {
-                value: 'bachelor',
-                label: 'Bachelor',
-              },
-              {
-                value: 'master',
-                label: 'Master',
-              },
-            ]}
-            column={prefColumn}
-            facets={prefCounts}
           />
           {(table.getState().columnFilters.length > 0 || globalFilter) && (
             <Button
@@ -173,7 +129,7 @@ export function DataTable<TData, TValue>({
             />
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
-          <CreateDialog />
+          {/*<CreateDialog />*/}
         </div>
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
@@ -217,7 +173,7 @@ export function DataTable<TData, TValue>({
                 <TableCell
                   colSpan={columns.length}
                   className="h-24 text-center">
-                  Keine Dozenten gefunden.
+                  Keine Vorlesungen gefunden.
                 </TableCell>
               </TableRow>
             )}
