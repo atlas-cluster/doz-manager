@@ -169,7 +169,6 @@ jobs:
           envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,REGISTRY_TOKEN,USERNAME
           script: |
             FULL_IMAGE_NAME=$(echo "$REGISTRY/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
-            DATABASE_URL="mysql://$DB_USER:$DB_PASSWORD@$DB_HOST:3306/$DB_NAME"
 
             echo "$REGISTRY_TOKEN" | docker login $REGISTRY -u $USERNAME --password-stdin
             docker pull $FULL_IMAGE_NAME:$IMAGE_TAG
@@ -179,7 +178,10 @@ jobs:
               --name $CONTAINER_NAME \
               --restart unless-stopped \
               --network host \
-              -e DATABASE_URL="$DATABASE_URL" \
+              -e DB_HOST="$DB_HOST" \
+              -e DB_USER="$DB_USER" \
+              -e DB_PASSWORD="$DB_PASSWORD" \
+              -e DB_NAME="$DB_NAME" \
               -e NODE_ENV=production \
               $FULL_IMAGE_NAME:$IMAGE_TAG
             docker image prune -a -f --filter "until=24h"
