@@ -6,9 +6,11 @@ import {
   PencilIcon,
   TrashIcon,
 } from 'lucide-react'
+import { useState } from 'react'
 
 import { deleteCourse } from '@/features/courses/actions/delete'
 import { CourseOpenBadge } from '@/features/courses/components/course-open-badge'
+import { CourseDialog } from '@/features/courses/components/dialog'
 import { Course } from '@/features/courses/types'
 import { LecturerCourseLevelPreferenceBadge } from '@/features/lecturers/components/lecturer-course-level-preference-badge'
 import { Button } from '@/features/shared/components/ui/button'
@@ -21,6 +23,37 @@ import {
   DropdownMenuTrigger,
 } from '@/features/shared/components/ui/dropdown-menu'
 import { ColumnDef } from '@tanstack/table-core'
+
+function ActionsCell({ course }: { course: Course }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="flex justify-end">
+      <CourseDialog course={course} open={open} onOpenChange={setOpen} />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size={'icon'} suppressHydrationWarning>
+            <span className={'sr-only'}>Menü öffnen</span>
+            <MoreHorizontalIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => setOpen(true)}>
+            <PencilIcon className="mr-2 h-4 w-4" />
+            Bearbeiten
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant={'destructive'}
+            onSelect={() => deleteCourse(course.id)}>
+            <TrashIcon className="mr-2 h-4 w-4" />
+            Löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}
 
 export const columns: ColumnDef<Course>[] = [
   {
@@ -97,33 +130,7 @@ export const columns: ColumnDef<Course>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
-      return (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size={'icon'} suppressHydrationWarning>
-                <span className={'sr-only'}>Menü öffnen</span>
-                <MoreHorizontalIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-              <DropdownMenuItem>
-                <PencilIcon />
-                Bearbeiten
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant={'destructive'}
-                onSelect={() => deleteCourse(row.original.id)}>
-                <TrashIcon />
-                Löschen
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )
-    },
+    cell: ({ row }) => <ActionsCell course={row.original} />,
     enableSorting: false,
     enableHiding: false,
     enableGlobalFilter: false,

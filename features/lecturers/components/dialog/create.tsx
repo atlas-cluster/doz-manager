@@ -1,5 +1,6 @@
 'use client'
 
+import { CirclePlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -65,8 +66,11 @@ export function CreateDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button onClick={() => setOpen(true)} suppressHydrationWarning>
-          Dozent erstellen
+        <Button
+          variant={'outline'}
+          onClick={() => setOpen(true)}
+          suppressHydrationWarning>
+          Dozenten erstellen
         </Button>
       </DialogTrigger>
       <DialogContent>

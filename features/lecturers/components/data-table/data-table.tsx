@@ -8,6 +8,7 @@ import { DataTableFacetedFilter } from '@/features/shared/components/data-table-
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
 import { Button } from '@/features/shared/components/ui/button'
+import { ButtonGroup } from '@/features/shared/components/ui/button-group'
 import { Input } from '@/features/shared/components/ui/input'
 import {
   Table,
@@ -152,7 +153,7 @@ export function DataTable<TData, TValue>({
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <ButtonGroup>
           <DataTableViewOptions table={table} />
           <Button
             variant="outline"
@@ -174,7 +175,7 @@ export function DataTable<TData, TValue>({
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
           <CreateDialog />
-        </div>
+        </ButtonGroup>
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
         <Table>
