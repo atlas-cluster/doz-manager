@@ -10,6 +10,14 @@ export default defineConfig({
     seed: 'tsx prisma/seed.ts',
   },
   datasource: {
-    url: process.env.DB_ROOT_URL ?? process.env.DB_URL,
+    url:
+      'mysql://' +
+      process.env.DB_ROOT_USER +
+      ':' +
+      process.env.DB_ROOT_PASSWORD +
+      '@' +
+      process.env.DB_HOST +
+      '/' +
+      process.env.DB_NAME,
   },
 })

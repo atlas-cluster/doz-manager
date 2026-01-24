@@ -130,7 +130,7 @@ jobs:
           done || { echo "Tunnel failed"; kill $PID 2>/dev/null; exit 1; }
 
           # Migrate
-          export DATABASE_URL="mysql://${DB_ROOT_USER}:${DB_ROOT_PASSWORD}@127.0.0.1:3306/${DB_NAME}"
+          export DB_ROOT_URL="mysql://${DB_ROOT_USER}:${DB_ROOT_PASSWORD}@127.0.0.1:3306/${DB_NAME}"
           echo "Running prisma migrate deploy..."
           npx prisma migrate deploy
 
