@@ -51,20 +51,20 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || 22 }}
-          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: 3306
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_ROOT_USER: ${{ secrets.DB_ROOT_USER }}
+          DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
         run: |
           SSH_OPTS="-i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o ConnectionAttempts=3"
 
           ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" -p $DEPLOY_PORT $DEPLOY_USER@$DEPLOY_HOST "echo SSH OK"
 
           # Start Tunnel
-          echo "Tunnel -> $POSTGRES_HOST:$POSTGRES_PORT"
+          echo "Tunnel -> $DB_HOST:$DB_PORT"
           ssh $SSH_OPTS -J "${JUMP_USER}@${JUMP_HOST}:${JUMP_PORT}" \
-                -p $DEPLOY_PORT -fNT -L 5432:$POSTGRES_HOST:$POSTGRES_PORT \
+                -p $DEPLOY_PORT -fNT -L 3306:$DB_HOST:$DB_PORT \
                 $DEPLOY_USER@$DEPLOY_HOST &
           PID=$!
 
@@ -72,7 +72,7 @@ jobs:
 
           # Wait for Tunnel
           for i in {1..12}; do
-            if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/5432' 2>/dev/null; then
+            if timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/3306' 2>/dev/null; then
               echo "Tunnel ready!"
               break
             fi
@@ -82,7 +82,7 @@ jobs:
 
           # Reset & Seed
           # Using 127.0.0.1 to route through the tunnel
-          export DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}?schema=public"
+          export DATABASE_URL="mysql://${DB_ROOT_USER}:${DB_ROOT_PASSWORD}@127.0.0.1:3306/${DB_NAME}"
 
           echo "Running prisma migrate reset..."
           npx prisma migrate reset --force
