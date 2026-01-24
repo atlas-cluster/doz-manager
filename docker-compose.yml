@@ -1,26 +1,25 @@
 services:
-  postgres:
-    image: postgres:18
-    container_name: doz-manager-postgres-dev
+  db-dev:
+    image: mysql:8.4.8
+    container_name: doz-manager-db-dev
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     ports:
-      - '5432:5432'
+      - '3306:3306'
     volumes:
-      - postgres_data_dev:/var/lib/postgresql
+      - db_data_dev:/var/lib/mysql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      test:
+        [
+          'CMD-SHELL',
+          'mysqladmin ping -h 127.0.0.1 -uroot -p"${DB_ROOT_PASSWORD}" --silent',
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - doz-manager-network
 
 volumes:
-  postgres_data_dev:
-
-networks:
-  doz-manager-network:
-    driver: bridge
+  db_data_dev:
