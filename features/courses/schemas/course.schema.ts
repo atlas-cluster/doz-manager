@@ -11,7 +11,7 @@ export const courseSchema = z.object({
     ),
   isOpen: z.boolean(),
   courseLevel: z.enum(['bachelor', 'master'], {
-    message: 'Bitte wählen Sie eine Kursstufen aus.',
+    message: 'Bitte wählen Sie eine Vorlesungsstufe aus.',
   }),
   semester: z
     .int()

@@ -115,7 +115,7 @@ export const columns: ColumnDef<Course>[] = [
         <LecturerCourseLevelPreferenceBadge pref={row.original.courseLevel} />
       )
     },
-    header: 'Kursstufe',
+    header: 'Vorlesungsstufe',
     enableSorting: false,
     enableHiding: true,
     enableGlobalFilter: false,

@@ -3,7 +3,7 @@
 import { refresh } from 'next/cache'
 import { z } from 'zod'
 
-import { lecturerSchema } from '@/features/lecturers/schemas/lecturer.schema'
+import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function createLecturer(data: z.infer<typeof lecturerSchema>) {

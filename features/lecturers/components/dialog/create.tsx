@@ -1,12 +1,11 @@
 'use client'
 
-import { CirclePlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { createLecturer } from '@/features/lecturers/actions/create'
-import { lecturerSchema } from '@/features/lecturers/schemas/lecturer.schema'
+import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,

@@ -98,12 +98,12 @@ export function CourseDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Kurs bearbeiten' : 'Kurs erstellen'}
+            {isEditing ? 'Vorlesung bearbeiten' : 'Vorlesung erstellen'}
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? 'Hier können Sie den bestehenden Kurs bearbeiten.'
-              : 'Hier können Sie einen neuen Kurs anlegen.'}
+              ? 'Hier können Sie eine bestehende Vorlesung bearbeiten.'
+              : 'Hier können Sie eine neue Vorlesung anlegen.'}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -196,7 +196,8 @@ export function CourseDialog({
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="courseLevel">
                       <span>
-                        Kursstufe<sup className={'text-destructive'}>*</sup>
+                        Vorlesungsstufe
+                        <sup className={'text-destructive'}>*</sup>
                       </span>
                     </FieldLabel>
                     <Select
