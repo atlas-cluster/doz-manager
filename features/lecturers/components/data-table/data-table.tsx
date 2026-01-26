@@ -56,6 +56,7 @@ export function DataTable<TData, TValue>({
   const [globalFilter, setGlobalFilter] = useState<string>('')
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [isDialogOpen, setDialogOpen] = useState(false)
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -173,7 +174,10 @@ export function DataTable<TData, TValue>({
             />
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
-          <CreateDialog />
+          <Button onClick={() => setDialogOpen(true)} suppressHydrationWarning>
+            Dozent erstellen
+          </Button>
+          <CreateDialog open={isDialogOpen} onOpenChange={setDialogOpen} />
         </div>
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
