@@ -5,7 +5,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from './ui/dialog'
 import { Field, FieldError, FieldGroup, FieldLabel } from './ui/field'
 import { Input } from './ui/input'
@@ -22,7 +21,6 @@ import { Controller, SubmitHandler, useForm } from 'react-hook-form'
 import z from 'zod'
 
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer.schema'
-import { zodResolver } from '@hookform/resolvers/zod'
 
 export function BaseDialog({
   open,
