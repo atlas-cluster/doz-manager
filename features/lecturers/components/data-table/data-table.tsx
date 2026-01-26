@@ -1,6 +1,6 @@
 'use client'
 
-import { GraduationCap, RefreshCwIcon, XIcon } from 'lucide-react'
+import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
 
 import { CreateDialog } from '@/features/lecturers/components/dialog/create'
