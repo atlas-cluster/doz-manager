@@ -14,9 +14,8 @@ export const courseSchema = z.object({
     message: 'Bitte wählen Sie eine Vorlesungsstufe aus.',
   }),
   semester: z
-    .int()
+    .int('Das Semester muss eine ganze Zahl sein.')
     .min(1, 'Das Semester muss mindestens 1 sein.')
     .max(12, 'Das Semester darf maximal 12 sein.')
-    .nullable()
-    .optional(),
+    .nullable(),
 })

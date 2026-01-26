@@ -97,6 +97,14 @@ export const columns: ColumnDef<Course>[] = [
     enableGlobalFilter: true,
   },
   {
+    accessorKey: 'semester',
+    id: 'semester',
+    header: 'Semester',
+    enableSorting: false,
+    enableHiding: true,
+    enableGlobalFilter: false,
+  },
+  {
     accessorKey: 'isOpen',
     id: 'isOpen',
     header: 'Offen',
@@ -116,14 +124,6 @@ export const columns: ColumnDef<Course>[] = [
       )
     },
     header: 'Vorlesungsstufe',
-    enableSorting: false,
-    enableHiding: true,
-    enableGlobalFilter: false,
-  },
-  {
-    accessorKey: 'semester',
-    id: 'semester',
-    header: 'Semester',
     enableSorting: false,
     enableHiding: true,
     enableGlobalFilter: false,

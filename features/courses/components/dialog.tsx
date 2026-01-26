@@ -1,5 +1,6 @@
 'use client'
 
+import { Minus, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -9,6 +10,7 @@ import { updateCourse } from '@/features/courses/actions/update'
 import { courseSchema } from '@/features/courses/schemas/course.schema'
 import { Course } from '@/features/courses/types'
 import { Button } from '@/features/shared/components/ui/button'
+import { ButtonGroup } from '@/features/shared/components/ui/button-group'
 import {
   Dialog,
   DialogContent,
@@ -59,6 +61,7 @@ export function CourseDialog({
       name: '',
       isOpen: true,
       courseLevel: 'bachelor',
+      semester: null,
     },
   })
 
@@ -76,6 +79,7 @@ export function CourseDialog({
           name: '',
           isOpen: true,
           courseLevel: 'bachelor',
+          semester: null,
         })
       }
     }
@@ -142,49 +146,98 @@ export function CourseDialog({
               <Controller
                 name={'semester'}
                 control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="semester">
-                      <span>
-                        Semester<sup className={'text-destructive'}>*</sup>
-                      </span>
-                    </FieldLabel>
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        Hat Semester?
-                      </span>
-                      <Switch
-                        checked={field.value !== null}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            field.onChange(1)
-                          } else {
-                            field.onChange(null)
+                render={({ field, fieldState }) => {
+                  const isSemesterEnabled = field.value !== null
+                  const currentValue =
+                    field.value !== null && !Number.isNaN(field.value)
+                      ? field.value
+                      : 1
+
+                  return (
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor="semester">
+                        <span>
+                          Semester<sup className={'text-destructive'}>*</sup>
+                        </span>
+                      </FieldLabel>
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          Hat Semester?
+                        </span>
+                        <Switch
+                          checked={isSemesterEnabled}
+                          onCheckedChange={(checked) => {
+                            if (!checked) {
+                              // Disable semester: represent as null
+                              field.onChange(null)
+                            } else if (field.value === null) {
+                              // Enable semester: start at 1
+                              field.onChange(1)
+                            }
+                          }}
+                        />
+                      </div>
+                      <ButtonGroup>
+                        <Button
+                          type={'button'}
+                          variant={'outline'}
+                          size={'icon'}
+                          disabled={!isSemesterEnabled || currentValue <= 1}
+                          onClick={() => {
+                            if (!isSemesterEnabled) return
+                            const next = Math.max(1, currentValue - 1)
+                            field.onChange(next)
+                          }}>
+                          <Minus />
+                          <span className={'sr-only'}>Semester verringern</span>
+                        </Button>
+                        <Input
+                          id="semester"
+                          disabled={!isSemesterEnabled}
+                          placeholder="1"
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            if (value === '') {
+                              field.onChange(NaN)
+                              return
+                            }
+                            const parsed = parseInt(value, 10)
+                            if (Number.isNaN(parsed)) {
+                              field.onChange(NaN)
+                              return
+                            }
+                            const clamped = Math.min(12, Math.max(1, parsed))
+                            field.onChange(clamped)
+                          }}
+                          value={
+                            field.value === null || Number.isNaN(field.value)
+                              ? ''
+                              : field.value
                           }
-                        }}
-                      />
-                    </div>
-                    <Input
-                      id="semester"
-                      type="number"
-                      min={1}
-                      max={12}
-                      disabled={field.value === null}
-                      placeholder="1"
-                      {...field}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value)
-                        field.onChange(isNaN(val) ? 0 : val)
-                      }}
-                      value={field.value ?? ''}
-                      aria-invalid={fieldState.invalid}
-                      autoComplete={'off'}
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
+                          aria-invalid={fieldState.invalid}
+                          autoComplete={'off'}
+                        />
+                        <Button
+                          variant={'outline'}
+                          size={'icon'}
+                          type={'button'}
+                          disabled={!isSemesterEnabled || currentValue >= 12}
+                          onClick={() => {
+                            if (!isSemesterEnabled) return
+                            const next = Math.min(12, currentValue + 1)
+                            field.onChange(next)
+                          }}>
+                          <Plus />
+                          <span className={'sr-only'}>Semester erhöhen</span>
+                        </Button>
+                      </ButtonGroup>
+                      {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                      )}
+                    </Field>
+                  )
+                }}
               />
 
               <div aria-hidden="true" className="hidden sm:block"></div>

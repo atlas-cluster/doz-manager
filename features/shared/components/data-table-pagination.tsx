@@ -23,7 +23,9 @@ export function DataTablePagination<TData>({
   table,
 }: DataTablePaginationProps<TData>) {
   return (
-    <div className="flex items-center justify-between px-2">
+    <div
+      className="flex items-center justify-between px-2"
+      suppressHydrationWarning>
       <div className="text-muted-foreground flex-1 text-sm">
         {table.getFilteredSelectedRowModel().rows.length} von{' '}
         {table.getFilteredRowModel().rows.length} Zeile(n) ausgewählt.
@@ -56,7 +58,8 @@ export function DataTablePagination<TData>({
             size="icon"
             className="hidden size-8 lg:flex"
             onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}>
+            disabled={!table.getCanPreviousPage()}
+            suppressHydrationWarning>
             <span className="sr-only">Gehe zur ersten Seite</span>
             <ChevronsLeft />
           </Button>
