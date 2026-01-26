@@ -145,27 +145,21 @@ export function CourseDialog({
                 name={'semester'}
                 control={form.control}
                 render={({ field, fieldState }) => {
-                  const isSemesterEnabled = field.value !== null
-
                   return (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="semester">
-                        <span>
-                          Semester<sup className={'text-destructive'}>*</sup>
-                        </span>
-                      </FieldLabel>
-                      <div className="mb-2 flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          Hat Semester?
-                        </span>
+                      <div className={'flex gap-2'}>
+                        <FieldLabel htmlFor="semester">
+                          <span>
+                            Semester
+                            <sup className={'text-destructive'}>*</sup>
+                          </span>
+                        </FieldLabel>
                         <Switch
-                          checked={isSemesterEnabled}
+                          checked={field.value !== null}
                           onCheckedChange={(checked) => {
                             if (!checked) {
-                              // Disable semester: represent as null
                               field.onChange(null)
                             } else if (field.value === null) {
-                              // Enable semester: start at 1
                               field.onChange(1)
                             }
                           }}
@@ -173,9 +167,10 @@ export function CourseDialog({
                       </div>
                       <NumberInput
                         {...field}
-                        disabled={!isSemesterEnabled}
+                        disabled={field.value === null}
                         min={1}
                         max={12}
+                        className="w-full"
                         aria-invalid={fieldState.invalid}
                       />
                       {fieldState.invalid && (
@@ -185,8 +180,6 @@ export function CourseDialog({
                   )
                 }}
               />
-
-              <div aria-hidden="true" className="hidden sm:block"></div>
 
               <Controller
                 name={'courseLevel'}

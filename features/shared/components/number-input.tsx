@@ -22,12 +22,33 @@ function NumberInput({
 }) {
   const currentValue = value !== null && !Number.isNaN(value) ? value : min
 
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    const parsed = parseInt(val, 10)
+
+    if (val === '' || Number.isNaN(parsed)) {
+      onChange(min)
+    } else {
+      const clamped = Math.min(max, Math.max(min, parsed))
+      if (clamped !== parsed) {
+        onChange(clamped)
+      }
+    }
+
+    if (props.onBlur) {
+      props.onBlur(e)
+    }
+  }
+
   return (
     <ButtonGroup className={cn(className)}>
       <Button
         type="button"
         variant="outline"
         size="icon"
+        className={cn(
+          props['aria-invalid'] && 'border-destructive! ring-destructive/30!'
+        )}
         disabled={disabled || currentValue <= min}
         onClick={() => {
           if (disabled) return
@@ -38,6 +59,7 @@ function NumberInput({
         <span className="sr-only">Wert verringern</span>
       </Button>
       <Input
+        {...props}
         disabled={disabled}
         placeholder={min.toString()}
         value={value !== null && !Number.isNaN(value) ? value : ''}
@@ -49,22 +71,29 @@ function NumberInput({
           }
           const parsed = parseInt(val, 10)
           if (Number.isNaN(parsed)) {
-            onChange(NaN)
             return
           }
-          const clamped = Math.min(max, Math.max(min, parsed))
-          onChange(clamped)
+
+          if (parsed > max) {
+            onChange(max)
+            return
+          }
+
+          onChange(parsed)
         }}
+        onBlur={handleBlur}
         autoComplete="off"
-        className="text-center"
+        className={'text-center'}
         min={min}
         max={max}
-        {...props}
       />
       <Button
         type="button"
         variant="outline"
         size="icon"
+        className={cn(
+          props['aria-invalid'] && 'border-destructive! ring-destructive/30!'
+        )}
         disabled={disabled || currentValue >= max}
         onClick={() => {
           if (disabled) return
