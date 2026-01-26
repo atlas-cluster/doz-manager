@@ -1,6 +1,5 @@
 'use client'
 
-import { Minus, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -9,8 +8,8 @@ import { createCourse } from '@/features/courses/actions/create'
 import { updateCourse } from '@/features/courses/actions/update'
 import { courseSchema } from '@/features/courses/schemas/course.schema'
 import { Course } from '@/features/courses/types'
+import { NumberInput } from '@/features/shared/components/number-input'
 import { Button } from '@/features/shared/components/ui/button'
-import { ButtonGroup } from '@/features/shared/components/ui/button-group'
 import {
   Dialog,
   DialogContent,
@@ -130,9 +129,8 @@ export function CourseDialog({
                     </FieldLabel>
                     <Input
                       id="name"
-                      placeholder="Einführung in..."
+                      placeholder="Grundlagen der Informatik"
                       {...field}
-                      value={field.value ?? ''}
                       aria-invalid={fieldState.invalid}
                       autoComplete={'off'}
                     />
@@ -148,10 +146,6 @@ export function CourseDialog({
                 control={form.control}
                 render={({ field, fieldState }) => {
                   const isSemesterEnabled = field.value !== null
-                  const currentValue =
-                    field.value !== null && !Number.isNaN(field.value)
-                      ? field.value
-                      : 1
 
                   return (
                     <Field data-invalid={fieldState.invalid}>
@@ -177,61 +171,13 @@ export function CourseDialog({
                           }}
                         />
                       </div>
-                      <ButtonGroup>
-                        <Button
-                          type={'button'}
-                          variant={'outline'}
-                          size={'icon'}
-                          disabled={!isSemesterEnabled || currentValue <= 1}
-                          onClick={() => {
-                            if (!isSemesterEnabled) return
-                            const next = Math.max(1, currentValue - 1)
-                            field.onChange(next)
-                          }}>
-                          <Minus />
-                          <span className={'sr-only'}>Semester verringern</span>
-                        </Button>
-                        <Input
-                          id="semester"
-                          disabled={!isSemesterEnabled}
-                          placeholder="1"
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            if (value === '') {
-                              field.onChange(NaN)
-                              return
-                            }
-                            const parsed = parseInt(value, 10)
-                            if (Number.isNaN(parsed)) {
-                              field.onChange(NaN)
-                              return
-                            }
-                            const clamped = Math.min(12, Math.max(1, parsed))
-                            field.onChange(clamped)
-                          }}
-                          value={
-                            field.value === null || Number.isNaN(field.value)
-                              ? ''
-                              : field.value
-                          }
-                          aria-invalid={fieldState.invalid}
-                          autoComplete={'off'}
-                        />
-                        <Button
-                          variant={'outline'}
-                          size={'icon'}
-                          type={'button'}
-                          disabled={!isSemesterEnabled || currentValue >= 12}
-                          onClick={() => {
-                            if (!isSemesterEnabled) return
-                            const next = Math.min(12, currentValue + 1)
-                            field.onChange(next)
-                          }}>
-                          <Plus />
-                          <span className={'sr-only'}>Semester erhöhen</span>
-                        </Button>
-                      </ButtonGroup>
+                      <NumberInput
+                        {...field}
+                        disabled={!isSemesterEnabled}
+                        min={1}
+                        max={12}
+                        aria-invalid={fieldState.invalid}
+                      />
                       {fieldState.invalid && (
                         <FieldError errors={[fieldState.error]} />
                       )}
