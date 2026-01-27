@@ -11,11 +11,7 @@ export default async function LecturersPage() {
 
   return (
     <div>
-      <LecturerDataTable
-        columns={lecturerColumns}
-        data={lecturers}
-        refreshAction={getLecturers}
-      />
+      <LecturerDataTable data={lecturers} />
     </div>
   )
 }
