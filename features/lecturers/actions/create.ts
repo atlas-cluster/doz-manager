@@ -1,6 +1,5 @@
 'use server'
 
-import { refresh } from 'next/cache'
 import { z } from 'zod'
 
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer.schema'

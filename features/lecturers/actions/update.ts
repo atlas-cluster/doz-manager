@@ -1,7 +1,6 @@
 'use server'
 
 import { lecturerSchema } from '../schemas/lecturer.schema'
-import { refresh } from 'next/cache'
 import z from 'zod'
 
 import { prisma } from '@/features/shared/lib/prisma'

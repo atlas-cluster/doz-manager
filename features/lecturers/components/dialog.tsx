@@ -1,7 +1,7 @@
 import { lecturerSchema } from '../schemas/lecturer.schema'
 import { Lecturer } from '../types'
 import { ReactNode, useEffect, useState } from 'react'
-import { Controller, SubmitHandler, useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import z from 'zod'
 
 import { Button } from '@/features/shared/components/ui/button'
@@ -11,6 +11,11 @@ import {
   DialogTrigger,
 } from '@/features/shared/components/ui/dialog'
 import {
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/features/shared/components/ui/dialog'
+import {
   Field,
   FieldError,
   FieldGroup,
@@ -18,19 +23,14 @@ import {
 } from '@/features/shared/components/ui/field'
 import { Input } from '@/features/shared/components/ui/input'
 import { PhoneInput } from '@/features/shared/components/ui/phone-input'
-import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@radix-ui/react-dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@radix-ui/react-select'
+} from '@/features/shared/components/ui/select'
+import { zodResolver } from '@hookform/resolvers/zod'
 
 interface LecturerDialogProps {
   lecturer?: Lecturer
@@ -118,9 +118,7 @@ export function LecturerDialog({
                 name={'title'}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field
-                    data-invalid={fieldState.invalid}
-                    className="col-span-2">
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="title">Titel</FieldLabel>
                     <Input
                       id="title"
@@ -141,9 +139,7 @@ export function LecturerDialog({
                 name={'firstName'}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field
-                    data-invalid={fieldState.invalid}
-                    className="col-span-2">
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="firstName">
                       <span>
                         Vorname<sup className={'text-destructive'}>*</sup>
@@ -169,9 +165,7 @@ export function LecturerDialog({
                 name={'secondName'}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field
-                    data-invalid={fieldState.invalid}
-                    className="col-span-2">
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="secondName">
                       <span>Zweiter Vorname</span>
                     </FieldLabel>
@@ -194,9 +188,7 @@ export function LecturerDialog({
                 name={'lastName'}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field
-                    data-invalid={fieldState.invalid}
-                    className="col-span-2">
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="lastName">
                       <span>
                         Nachname<sup className={'text-destructive'}>*</sup>
@@ -222,9 +214,7 @@ export function LecturerDialog({
                 name={'email'}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field
-                    data-invalid={fieldState.invalid}
-                    className="col-span-2">
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="email">
                       <span>
                         E-Mail<sup className={'text-destructive'}>*</sup>
@@ -248,9 +238,7 @@ export function LecturerDialog({
                 name={'phone'}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field
-                    data-invalid={fieldState.invalid}
-                    className="col-span-2">
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="phone">
                       <span>
                         Telefonnummer<sup className={'text-destructive'}>*</sup>
@@ -276,9 +264,7 @@ export function LecturerDialog({
                 name={'type'}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field
-                    data-invalid={fieldState.invalid}
-                    className="col-span-2">
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="type">
                       <span>
                         Dozententyp<sup className={'text-destructive'}>*</sup>
@@ -306,9 +292,7 @@ export function LecturerDialog({
                 name={'courseLevelPreference'}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field
-                    data-invalid={fieldState.invalid}
-                    className="col-span-2">
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="courseLevelPreference">
                       <span>
                         Vorlesungspräferenz

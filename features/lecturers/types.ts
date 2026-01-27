@@ -1,7 +1,6 @@
-import { deleteLecturers } from './actions/delete-many'
-import { lecturerSchema } from './schemas/lecturer.schema'
 import z from 'zod'
 
+import { lecturerSchema } from '@/features/lecturers/schemas/lecturer.schema'
 import type {
   CourseLevelPreference as PrismaCourseLevelPreference,
   Lecturer as PrismaLecturer,

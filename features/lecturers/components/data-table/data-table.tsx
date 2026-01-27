@@ -27,7 +27,6 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import {
-  ColumnDef,
   ColumnFiltersState,
   RowSelectionState,
   SortingState,
