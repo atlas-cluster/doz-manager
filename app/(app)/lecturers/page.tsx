@@ -1,8 +1,4 @@
-import {
-  LecturerDataTable,
-  getLecturers,
-  lecturerColumns,
-} from '@/features/lecturers'
+import { LecturerDataTable, getLecturers } from '@/features/lecturers'
 
 export const dynamic = 'force-dynamic'
 

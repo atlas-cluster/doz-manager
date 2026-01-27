@@ -21,7 +21,7 @@ export function DataTableViewOptions<TData>({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size={'icon'}>
+        <Button variant="outline" size={'icon'} suppressHydrationWarning>
           <Settings2 />
           <span className={'sr-only'}>Spalten ausblenden</span>
         </Button>

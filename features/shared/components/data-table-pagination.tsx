@@ -23,24 +23,28 @@ export function DataTablePagination<TData>({
   table,
 }: DataTablePaginationProps<TData>) {
   return (
-    <div className="flex items-center justify-between px-2">
+    <div
+      className="flex flex-col items-center justify-between gap-4 px-2 sm:flex-row"
+      suppressHydrationWarning>
       <div className="text-muted-foreground flex-1 text-sm">
         {table.getFilteredSelectedRowModel().rows.length} von{' '}
         {table.getFilteredRowModel().rows.length} Zeile(n) ausgewählt.
       </div>
-      <div className="flex items-center space-x-6 lg:space-x-8">
+      <div className="flex items-center space-x-4 sm:space-x-6 lg:space-x-8">
         <div className="flex items-center space-x-2">
-          <p className="text-sm font-medium">Zeilen pro Seite</p>
+          <p className="hidden text-sm font-medium sm:block">
+            Zeilen pro Seite
+          </p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(v) => table.setPageSize(Number(v))}>
-            <SelectTrigger className="h-8 w-17.5">
+            <SelectTrigger>
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
-              {[10, 20, 25, 30, 40, 50].map((pageSize) => (
+              {[10, 20, 30, 40, 50, 999999999].map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
+                  {pageSize === 999999999 ? 'Alle' : pageSize}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -54,16 +58,16 @@ export function DataTablePagination<TData>({
           <Button
             variant="outline"
             size="icon"
-            className="hidden size-8 lg:flex"
+            className="hidden sm:flex"
             onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}>
+            disabled={!table.getCanPreviousPage()}
+            suppressHydrationWarning>
             <span className="sr-only">Gehe zur ersten Seite</span>
             <ChevronsLeft />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            className="size-8"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}>
             <span className="sr-only">Gehe zur vorherigen Seite</span>
@@ -72,7 +76,6 @@ export function DataTablePagination<TData>({
           <Button
             variant="outline"
             size="icon"
-            className="size-8"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}>
             <span className="sr-only">Gehe zur nächsten Seite</span>
@@ -81,7 +84,7 @@ export function DataTablePagination<TData>({
           <Button
             variant="outline"
             size="icon"
-            className="hidden size-8 lg:flex"
+            className="hidden sm:flex"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}>
             <span className="sr-only">Gehe zur letzten Seite</span>

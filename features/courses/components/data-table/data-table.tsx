@@ -1,19 +1,18 @@
 'use client'
 
-import { createLecturer } from '../../actions/create'
-import { deleteLecturer } from '../../actions/delete'
-import { deleteLecturers } from '../../actions/delete-many'
-import { getLecturers } from '../../actions/get'
-import { updateLecturer } from '../../actions/update'
-import { lecturerSchema } from '../../schemas/lecturer'
-import { Lecturer } from '../../types'
-import { LecturerDialog } from '../dialog'
-import { columns } from './columns'
 import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
-import z from 'zod'
+import { z } from 'zod'
 
-import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
+import { getCourses } from '@/features/courses'
+import { createCourse } from '@/features/courses/actions/create'
+import { deleteCourse } from '@/features/courses/actions/delete'
+import { deleteCourses } from '@/features/courses/actions/delete-many'
+import { updateCourse } from '@/features/courses/actions/update'
+import { columns } from '@/features/courses/components/data-table/columns'
+import { CourseDialog } from '@/features/courses/components/dialog'
+import { courseSchema } from '@/features/courses/schemas/course'
+import { Course } from '@/features/courses/types'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
 import { Button } from '@/features/shared/components/ui/button'
@@ -42,51 +41,51 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
-export function DataTable({ data }: { data: Lecturer[] }) {
+export function DataTable({ data }: { data: Course[] }) {
   const [isPending, startTransition] = useTransition()
-  const [tableData, setTableData] = useState<Lecturer[]>(data)
+  const [tableData, setTableData] = useState<Course[]>(data)
 
   useEffect(() => {
     setTableData(data)
   }, [data])
 
-  const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
+  const handleCreate = (data: z.infer<typeof courseSchema>) => {
     startTransition(async () => {
-      await createLecturer(data)
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
+      await createCourse(data)
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
     })
   }
 
-  const handleUpdate = (id: string, data: z.infer<typeof lecturerSchema>) => {
+  const handleUpdate = (id: string, data: z.infer<typeof courseSchema>) => {
     startTransition(async () => {
-      await updateLecturer(id, data)
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
+      await updateCourse(id, data)
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
     })
   }
 
   const handleDelete = (id: string) => {
     startTransition(async () => {
-      await deleteLecturer(id)
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
+      await deleteCourse(id)
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
     })
   }
 
   const handleDeleteMany = (ids: string[]) => {
     startTransition(async () => {
-      await deleteLecturers(ids)
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
+      await deleteCourses(ids)
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
       setRowSelection({})
     })
   }
 
   const handleRefresh = () => {
     startTransition(async () => {
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
     })
   }
 
@@ -102,11 +101,11 @@ export function DataTable({ data }: { data: Lecturer[] }) {
     columns,
 
     meta: {
-      createLecturer: handleCreate,
-      updateLecturer: handleUpdate,
-      deleteLecturer: handleDelete,
-      deleteLecturers: handleDeleteMany,
-      refreshLecturer: handleRefresh,
+      createCourse: handleCreate,
+      updateCourse: handleUpdate,
+      deleteCourse: handleDelete,
+      deleteCourses: handleDeleteMany,
+      refreshCourse: handleRefresh,
     },
 
     enableRowSelection: true,
@@ -134,57 +133,15 @@ export function DataTable({ data }: { data: Lecturer[] }) {
     },
   })
 
-  const prefColumn = table.getColumn('courseLevelPreference')
-  const prefUniqueValues = prefColumn?.getFacetedUniqueValues()
-
-  const prefCounts = new Map<string, number>()
-  if (prefUniqueValues) {
-    const both = prefUniqueValues.get('both') ?? 0
-    const bachelor = prefUniqueValues.get('bachelor') ?? 0
-    const master = prefUniqueValues.get('master') ?? 0
-
-    prefCounts.set('bachelor', bachelor + both)
-    prefCounts.set('master', master + both)
-  }
-
   return (
     <div className="w-full space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full flex-wrap items-center gap-2">
           <Input
             className="h-9 w-full sm:w-[260px]"
-            placeholder="Dozenten suchen..."
+            placeholder="Vorlesungen suchen..."
             value={globalFilter}
             onChange={(e) => table.setGlobalFilter(String(e.target.value))}
-          />
-          <DataTableFacetedFilter
-            title={'Typ'}
-            options={[
-              {
-                value: 'internal',
-                label: 'Intern',
-              },
-              {
-                value: 'external',
-                label: 'Extern',
-              },
-            ]}
-            column={table.getColumn('type')}
-          />
-          <DataTableFacetedFilter
-            title={'Präferenz'}
-            options={[
-              {
-                value: 'bachelor',
-                label: 'Bachelor',
-              },
-              {
-                value: 'master',
-                label: 'Master',
-              },
-            ]}
-            column={prefColumn}
-            facets={prefCounts}
           />
           {(table.getState().columnFilters.length > 0 || globalFilter) && (
             <Button
@@ -214,10 +171,10 @@ export function DataTable({ data }: { data: Lecturer[] }) {
             />
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
-          <LecturerDialog
+          <CourseDialog
             trigger={
               <Button variant={'outline'} suppressHydrationWarning>
-                Dozent erstellen
+                Vorlesung erstellen
               </Button>
             }
             onSubmit={handleCreate}
@@ -265,7 +222,7 @@ export function DataTable({ data }: { data: Lecturer[] }) {
                 <TableCell
                   colSpan={columns.length}
                   className="h-24 text-center">
-                  Keine Dozenten gefunden.
+                  Keine Vorlesungen gefunden.
                 </TableCell>
               </TableRow>
             )}
