@@ -109,9 +109,7 @@ export function CourseDialog({
                 name={'name'}
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field
-                    data-invalid={fieldState.invalid}
-                    className="col-span-2">
+                  <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="name">
                       <span>
                         Name<sup className={'text-destructive'}>*</sup>
