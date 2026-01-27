@@ -35,7 +35,7 @@ function ActionsCell({
   const lecturer = row.original
   const [open, setOpen] = useState(false)
 
-  const selectedRows = table.getPreFilteredRowModel().rows
+  const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
     <div className="flex justify-end">
       <LecturerDialog
