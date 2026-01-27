@@ -1,12 +1,18 @@
 'use server'
 
-import { z } from 'zod'
+import { lecturerSchema } from '../schemas/lecturer.schema'
+import z from 'zod'
 
-import { lecturerSchema } from '@/features/lecturers/schemas/lecturer.schema'
 import { prisma } from '@/features/shared/lib/prisma'
 
-export async function createLecturer(data: z.infer<typeof lecturerSchema>) {
-  await prisma.lecturer.create({
+export async function updateLecturer(
+  id: string,
+  data: z.infer<typeof lecturerSchema>
+) {
+  await prisma.lecturer.update({
+    where: {
+      id: id,
+    },
     data: {
       title: data.title,
       firstName: data.firstName,

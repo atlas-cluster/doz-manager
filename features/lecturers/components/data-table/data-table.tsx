@@ -1,13 +1,23 @@
 'use client'
 
-import { GraduationCap, RefreshCwIcon, XIcon } from 'lucide-react'
+import { createLecturer } from '../../actions/create'
+import { deleteLecturer } from '../../actions/delete'
+import { deleteLecturers } from '../../actions/delete-many'
+import { getLecturers } from '../../actions/get'
+import { updateLecturer } from '../../actions/update'
+import { lecturerSchema } from '../../schemas/lecturer.schema'
+import { Lecturer } from '../../types'
+import { LecturerDialog } from '../dialog'
+import { columns } from './columns'
+import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
+import z from 'zod'
 
-import { CreateDialog } from '@/features/lecturers/components/dialog/create'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
 import { Button } from '@/features/shared/components/ui/button'
+import { ButtonGroup } from '@/features/shared/components/ui/button-group'
 import { Input } from '@/features/shared/components/ui/input'
 import {
   Table,
@@ -18,7 +28,6 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import {
-  ColumnDef,
   ColumnFiltersState,
   RowSelectionState,
   SortingState,
@@ -33,23 +42,53 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  refreshAction?: () => Promise<TData[]>
-}
-
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  refreshAction,
-}: DataTableProps<TData, TValue>) {
+export function DataTable({ data }: { data: Lecturer[] }) {
   const [isPending, startTransition] = useTransition()
-  const [tableData, setTableData] = useState<TData[]>(data)
+  const [tableData, setTableData] = useState<Lecturer[]>(data)
 
   useEffect(() => {
     setTableData(data)
   }, [data])
+
+  const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
+    startTransition(async () => {
+      await createLecturer(data)
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+    })
+  }
+
+  const handleUpdate = (id: string, data: z.infer<typeof lecturerSchema>) => {
+    startTransition(async () => {
+      await updateLecturer(id, data)
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+    })
+  }
+
+  const handleDelete = (id: string) => {
+    startTransition(async () => {
+      await deleteLecturer(id)
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+    })
+  }
+
+  const handleDeleteMany = (ids: string[]) => {
+    startTransition(async () => {
+      await deleteLecturers(ids)
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+      setRowSelection({})
+    })
+  }
+
+  const handleRefresh = () => {
+    startTransition(async () => {
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+    })
+  }
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -61,6 +100,14 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data: tableData,
     columns,
+
+    meta: {
+      createLecturer: handleCreate,
+      updateLecturer: handleUpdate,
+      deleteLecturer: handleDelete,
+      deleteLecturers: handleDeleteMany,
+      refreshLecturer: handleRefresh,
+    },
 
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
@@ -152,7 +199,7 @@ export function DataTable<TData, TValue>({
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <ButtonGroup>
           <DataTableViewOptions table={table} />
           <Button
             variant="outline"
@@ -160,21 +207,22 @@ export function DataTable<TData, TValue>({
             className="h-9 w-9"
             type="button"
             disabled={isPending}
-            onClick={() => {
-              startTransition(async () => {
-                if (refreshAction) {
-                  const newData = await refreshAction()
-                  setTableData(newData)
-                }
-              })
-            }}>
+            suppressHydrationWarning
+            onClick={handleRefresh}>
             <RefreshCwIcon
               className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`}
             />
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
-          <CreateDialog />
-        </div>
+          <LecturerDialog
+            trigger={
+              <Button variant={'outline'} suppressHydrationWarning>
+                Dozent erstellen
+              </Button>
+            }
+            onSubmit={handleCreate}
+          />
+        </ButtonGroup>
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
         <Table>

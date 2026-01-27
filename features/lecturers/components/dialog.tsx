@@ -1,19 +1,19 @@
-'use client'
-
-import { useEffect, useState } from 'react'
+import { lecturerSchema } from '../schemas/lecturer.schema'
+import { Lecturer } from '../types'
+import { ReactNode, useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import { z } from 'zod'
+import z from 'zod'
 
-import { createLecturer } from '@/features/lecturers/actions/create'
-import { lecturerSchema } from '@/features/lecturers/schemas/lecturer.schema'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,
+  DialogHeader,
+  DialogTrigger,
+} from '@/features/shared/components/ui/dialog'
+import {
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/features/shared/components/ui/dialog'
 import {
   Field,
@@ -32,15 +32,35 @@ import {
 } from '@/features/shared/components/ui/select'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-export function CreateDialog() {
-  const [open, setOpen] = useState(false)
+interface LecturerDialogProps {
+  lecturer?: Lecturer
+  trigger?: ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  onSubmit?: (
+    data: z.infer<typeof lecturerSchema>
+  ) => Promise<unknown> | unknown
+}
+
+export function LecturerDialog({
+  lecturer,
+  trigger,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+  onSubmit,
+}: LecturerDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+
+  const open = controlledOpen ?? internalOpen
+  const setOpen = setControlledOpen ?? setInternalOpen
+  const isEditing = !!lecturer
 
   const form = useForm<z.infer<typeof lecturerSchema>>({
     resolver: zodResolver(lecturerSchema),
     defaultValues: {
-      title: '',
+      title: null,
       firstName: '',
-      secondName: '',
+      secondName: null,
       lastName: '',
       email: '',
       phone: '',
@@ -50,38 +70,50 @@ export function CreateDialog() {
   })
 
   useEffect(() => {
-    if (!open) {
-      form.reset()
+    if (open) {
+      if (lecturer) {
+        form.reset({
+          title: lecturer.title,
+          firstName: lecturer.firstName,
+          secondName: lecturer.secondName,
+          lastName: lecturer.lastName,
+          email: lecturer.email,
+          phone: lecturer.phone,
+          type: lecturer.type,
+          courseLevelPreference: lecturer.courseLevelPreference,
+        })
+      } else {
+        form.reset()
+      }
     }
-  }, [form, open])
+  }, [lecturer, form, open])
 
-  function onSubmit(data: z.infer<typeof lecturerSchema>) {
-    createLecturer(data).then(() => {
-      setOpen(false)
-      form.reset()
-    })
+  async function handleSubmit(data: z.infer<typeof lecturerSchema>) {
+    await onSubmit?.(data)
+    setOpen(false)
+    form.reset()
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button onClick={() => setOpen(true)} suppressHydrationWarning>
-          Dozent erstellen
-        </Button>
-      </DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Dozent erstellen</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Dozent bearbeiten' : 'Dozent erstellen'}
+          </DialogTitle>
           <DialogDescription>
-            Hier können Sie einen neuen Dozenten erstellen.
+            {isEditing
+              ? 'Hier können Sie den Dozent bearbeiten'
+              : 'Hier können Sie einen neuen Dozenten erstellen'}
           </DialogDescription>
         </DialogHeader>
         <form
-          id="create-lecturer"
-          onSubmit={form.handleSubmit(onSubmit)}
+          id="lecturer-form"
+          onSubmit={form.handleSubmit(handleSubmit)}
           className={'space-y-3'}>
           <FieldGroup>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
                 name={'title'}
                 control={form.control}
@@ -287,7 +319,9 @@ export function CreateDialog() {
               />
             </div>
             <div className="mt-4 flex justify-end">
-              <Button type="submit">Erstellen</Button>
+              <Button type="submit">
+                {isEditing ? 'Speichern' : 'Erstellen'}
+              </Button>
             </div>
           </FieldGroup>
         </form>
