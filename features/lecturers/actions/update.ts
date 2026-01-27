@@ -1,6 +1,6 @@
 'use server'
 
-import { lecturerSchema } from '../schemas/lecturer.schema'
+import { lecturerSchema } from '../schemas/lecturer'
 import z from 'zod'
 
 import { prisma } from '@/features/shared/lib/prisma'
