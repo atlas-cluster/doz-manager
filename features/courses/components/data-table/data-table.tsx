@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { getCourses } from '@/features/courses'
 import { createCourse } from '@/features/courses/actions/create'
 import { deleteCourse } from '@/features/courses/actions/delete'
+import { deleteCourses } from '@/features/courses/actions/delete-many'
 import { updateCourse } from '@/features/courses/actions/update'
 import { columns } from '@/features/courses/components/data-table/columns'
 import { CourseDialog } from '@/features/courses/components/dialog'
@@ -40,13 +41,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
-export interface CourseTableMeta {
-  createCourse: (data: z.infer<typeof courseSchema>) => void
-  updateCourse: (id: string, data: z.infer<typeof courseSchema>) => void
-  deleteCourse: (id: string) => void
-  refreshCourse: () => void
-}
-
 export function DataTable({ data }: { data: Course[] }) {
   const [isPending, startTransition] = useTransition()
   const [tableData, setTableData] = useState<Course[]>(data)
@@ -79,6 +73,15 @@ export function DataTable({ data }: { data: Course[] }) {
     })
   }
 
+  const handleDeleteMany = (ids: string[]) => {
+    startTransition(async () => {
+      await deleteCourses(ids)
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
+      setRowSelection({})
+    })
+  }
+
   const handleRefresh = () => {
     startTransition(async () => {
       const refreshed = await getCourses()
@@ -101,6 +104,7 @@ export function DataTable({ data }: { data: Course[] }) {
       createCourse: handleCreate,
       updateCourse: handleUpdate,
       deleteCourse: handleDelete,
+      deleteCourses: handleDeleteMany,
       refreshCourse: handleRefresh,
     },
 

@@ -9,9 +9,8 @@ import {
 import { useState } from 'react'
 
 import { CourseOpenBadge } from '@/features/courses/components/course-open-badge'
-import { CourseTableMeta } from '@/features/courses/components/data-table/data-table'
 import { CourseDialog } from '@/features/courses/components/dialog'
-import { Course } from '@/features/courses/types'
+import { Course, CourseTableMeta } from '@/features/courses/types'
 import { LecturerCourseLevelPreferenceBadge } from '@/features/lecturers/components/lecturer-course-level-preference-badge'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
@@ -22,17 +21,20 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/features/shared/components/ui/dropdown-menu'
-import { ColumnDef } from '@tanstack/table-core'
+import { ColumnDef, Row, Table } from '@tanstack/table-core'
 
 function ActionsCell({
-  course,
-  meta,
+  row,
+  table,
 }: {
-  course: Course
-  meta?: CourseTableMeta
+  row: Row<Course>
+  table: Table<Course>
 }) {
+  const meta = table.options.meta as CourseTableMeta | undefined
+  const course = row.original
   const [open, setOpen] = useState(false)
 
+  const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
     <div className="flex justify-end">
       <CourseDialog
@@ -50,16 +52,31 @@ function ActionsCell({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={() => setOpen(true)}>
-            <PencilIcon className="mr-2 h-4 w-4" />
-            Bearbeiten
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant={'destructive'}
-            onSelect={() => meta?.deleteCourse?.(course.id)}>
-            <TrashIcon className="mr-2 h-4 w-4" />
-            Löschen
-          </DropdownMenuItem>
+          {selectedRows.length <= 1 || !row.getIsSelected() ? (
+            <>
+              <DropdownMenuItem onSelect={() => setOpen(true)}>
+                <PencilIcon className="mr-2 h-4 w-4" />
+                Bearbeiten
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant={'destructive'}
+                onSelect={() => meta?.deleteCourse?.(course.id)}>
+                <TrashIcon className="mr-2 h-4 w-4" />
+                Löschen
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <>
+              <DropdownMenuItem
+                variant={'destructive'}
+                onSelect={() =>
+                  meta?.deleteCourses?.(selectedRows.map((r) => r.original.id))
+                }>
+                <TrashIcon className="mr-2 h-4 w-4" />
+                Löschen ({selectedRows.length})
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -141,10 +158,7 @@ export const columns: ColumnDef<Course>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row, table }) => {
-      const meta = table.options.meta as CourseTableMeta | undefined
-      return <ActionsCell course={row.original} meta={meta} />
-    },
+    cell: ({ row, table }) => <ActionsCell row={row} table={table} />,
     enableSorting: false,
     enableHiding: false,
     enableGlobalFilter: false,
