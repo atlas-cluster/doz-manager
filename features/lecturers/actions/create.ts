@@ -19,6 +19,4 @@ export async function createLecturer(data: z.infer<typeof lecturerSchema>) {
       courseLevelPreference: data.courseLevelPreference,
     },
   })
-
-  refresh()
 }

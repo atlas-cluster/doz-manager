@@ -1,6 +1,6 @@
 'use client'
 
-import { UpdateDialog } from '../dialog/update'
+import { LecturerDialog } from '../dialog'
 import {
   ArrowUpDown,
   MoreHorizontalIcon,
@@ -9,10 +9,10 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-import { deleteLecturer } from '@/features/lecturers/actions/delete'
 import { LecturerCourseLevelPreferenceBadge } from '@/features/lecturers/components/lecturer-course-level-preference-badge'
 import { LecturerTypeBadge } from '@/features/lecturers/components/lecturer-type-badge'
 import { Lecturer } from '@/features/lecturers/types'
+import { LecturerTableMeta } from '@/features/lecturers/types'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
@@ -22,51 +22,66 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/features/shared/components/ui/dropdown-menu'
-import { ColumnDef } from '@tanstack/table-core'
+import { ColumnDef, Row, Table } from '@tanstack/table-core'
 
-function ActionsCell({ row }: { row: { original: Lecturer } }) {
-  const [isDialogOpen, setDialogOpen] = useState(false)
+function ActionsCell({
+  row,
+  table,
+}: {
+  row: Row<Lecturer>
+  table: Table<Lecturer>
+}) {
+  const meta = table.options.meta as LecturerTableMeta | undefined
+  const lecturer = row.original
+  const [open, setOpen] = useState(false)
 
+  const selectedRows = table.getPreFilteredRowModel().rows
   return (
     <div className="flex justify-end">
+      <LecturerDialog
+        lecturer={lecturer}
+        open={open}
+        onOpenChange={setOpen}
+        onSubmit={(payload) => meta?.updateLecturer?.(lecturer.id, payload)}
+      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size={'icon'}>
+          <Button variant="ghost" size={'icon'} suppressHydrationWarning>
             <span className={'sr-only'}>Menü öffnen</span>
-            <MoreHorizontalIcon />
+            <MoreHorizontalIcon className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent align="end">
           <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-          <DropdownMenuItem onSelect={() => setDialogOpen(true)}>
-            <PencilIcon />
-            Bearbeiten
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            variant={'destructive'}
-            onSelect={() => deleteLecturer(row.original.id)}>
-            <TrashIcon />
-            Löschen
-          </DropdownMenuItem>
+          {selectedRows.length <= 1 || !row.getIsSelected() ? (
+            <>
+              <DropdownMenuItem onSelect={() => setOpen(true)}>
+                <PencilIcon className="mr-2 h-4 w-4" />
+                Bearbeiten
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant={'destructive'}
+                onSelect={() => meta?.deleteLecturer?.(lecturer.id)}>
+                <TrashIcon className="mr-2 h-4 w-4" />
+                Löschen
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <>
+              <DropdownMenuItem
+                variant={'destructive'}
+                onSelect={() =>
+                  meta?.deleteLecturers?.(
+                    selectedRows.map((r) => r.original.id)
+                  )
+                }>
+                <TrashIcon className="mr-2 h-4 w-4" />
+                Löschen ({selectedRows.length})
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
-
-      {/* Render the UpdateDialog */}
-      <UpdateDialog
-        lecturerId={row.original.id}
-        lecturerData={{
-          title: row.original.title,
-          firstName: row.original.firstName,
-          secondName: row.original.secondName,
-          lastName: row.original.lastName,
-          email: row.original.email,
-          phone: row.original.phone,
-          type: row.original.type,
-          courseLevelPreference: row.original.courseLevelPreference,
-        }}
-        open={isDialogOpen}
-        onOpenChange={setDialogOpen}
-      />
     </div>
   )
 }
@@ -176,6 +191,11 @@ export const columns: ColumnDef<Lecturer>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <ActionsCell row={row} />,
+    cell: ({ row, table }) => {
+      return <ActionsCell row={row} table={table} />
+    },
+    enableSorting: false,
+    enableHiding: false,
+    enableGlobalFilter: false,
   },
 ]

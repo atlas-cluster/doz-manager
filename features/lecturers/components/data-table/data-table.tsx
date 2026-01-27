@@ -1,13 +1,22 @@
 'use client'
 
+import { createLecturer } from '../../actions/create'
+import { deleteLecturer } from '../../actions/delete'
+import { deleteLecturers } from '../../actions/delete-many'
+import { getLecturers } from '../../actions/get'
+import { updateLecturer } from '../../actions/update'
+import { lecturerSchema } from '../../schemas/lecturer.schema'
+import { Lecturer } from '../../types'
+import { LecturerDialog } from '../dialog'
+import { columns } from './columns'
 import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
+import z from 'zod'
 
-import { CreateDialog } from '@/features/lecturers/components/dialog/create'
-import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
 import { Button } from '@/features/shared/components/ui/button'
+import { ButtonGroup } from '@/features/shared/components/ui/button-group'
 import { Input } from '@/features/shared/components/ui/input'
 import {
   Table,
@@ -33,35 +42,72 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  refreshAction?: () => Promise<TData[]>
-}
-
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  refreshAction,
-}: DataTableProps<TData, TValue>) {
+export function DataTable({ data }: { data: Lecturer[] }) {
   const [isPending, startTransition] = useTransition()
-  const [tableData, setTableData] = useState<TData[]>(data)
+  const [tableData, setTableData] = useState<Lecturer[]>(data)
 
   useEffect(() => {
     setTableData(data)
   }, [data])
+
+  const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
+    startTransition(async () => {
+      await createLecturer(data)
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+    })
+  }
+
+  const handleUpdate = (id: string, data: z.infer<typeof lecturerSchema>) => {
+    startTransition(async () => {
+      await updateLecturer(id, data)
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+    })
+  }
+
+  const handleDelete = (id: string) => {
+    startTransition(async () => {
+      await deleteLecturer(id)
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+    })
+  }
+
+  const handleDeleteMany = (ids: string[]) => {
+    startTransition(async () => {
+      await deleteLecturers(ids)
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+      setRowSelection({})
+    })
+  }
+
+  const handleRefresh = () => {
+    startTransition(async () => {
+      const refreshed = await getLecturers()
+      setTableData(refreshed as Lecturer[])
+    })
+  }
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = useState<string>('')
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-  const [isDialogOpen, setDialogOpen] = useState(false)
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: tableData,
     columns,
+
+    meta: {
+      createLecturer: handleCreate,
+      updateLecturer: handleUpdate,
+      deleteLecturer: handleDelete,
+      deleteLecturers: handleDeleteMany,
+      refreshLecturer: handleRefresh,
+    },
 
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
@@ -88,19 +134,6 @@ export function DataTable<TData, TValue>({
     },
   })
 
-  const prefColumn = table.getColumn('courseLevelPreference')
-  const prefUniqueValues = prefColumn?.getFacetedUniqueValues()
-
-  const prefCounts = new Map<string, number>()
-  if (prefUniqueValues) {
-    const both = prefUniqueValues.get('both') ?? 0
-    const bachelor = prefUniqueValues.get('bachelor') ?? 0
-    const master = prefUniqueValues.get('master') ?? 0
-
-    prefCounts.set('bachelor', bachelor + both)
-    prefCounts.set('master', master + both)
-  }
-
   return (
     <div className="w-full space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -110,35 +143,6 @@ export function DataTable<TData, TValue>({
             placeholder="Dozenten suchen..."
             value={globalFilter}
             onChange={(e) => table.setGlobalFilter(String(e.target.value))}
-          />
-          <DataTableFacetedFilter
-            title={'Typ'}
-            options={[
-              {
-                value: 'internal',
-                label: 'Intern',
-              },
-              {
-                value: 'external',
-                label: 'Extern',
-              },
-            ]}
-            column={table.getColumn('type')}
-          />
-          <DataTableFacetedFilter
-            title={'Präferenz'}
-            options={[
-              {
-                value: 'bachelor',
-                label: 'Bachelor',
-              },
-              {
-                value: 'master',
-                label: 'Master',
-              },
-            ]}
-            column={prefColumn}
-            facets={prefCounts}
           />
           {(table.getState().columnFilters.length > 0 || globalFilter) && (
             <Button
@@ -153,7 +157,7 @@ export function DataTable<TData, TValue>({
             </Button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <ButtonGroup>
           <DataTableViewOptions table={table} />
           <Button
             variant="outline"
@@ -161,24 +165,22 @@ export function DataTable<TData, TValue>({
             className="h-9 w-9"
             type="button"
             disabled={isPending}
-            onClick={() => {
-              startTransition(async () => {
-                if (refreshAction) {
-                  const newData = await refreshAction()
-                  setTableData(newData)
-                }
-              })
-            }}>
+            suppressHydrationWarning
+            onClick={handleRefresh}>
             <RefreshCwIcon
               className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`}
             />
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
-          <Button onClick={() => setDialogOpen(true)} suppressHydrationWarning>
-            Dozent erstellen
-          </Button>
-          <CreateDialog open={isDialogOpen} onOpenChange={setDialogOpen} />
-        </div>
+          <LecturerDialog
+            trigger={
+              <Button variant={'outline'} suppressHydrationWarning>
+                Dozent erstellen
+              </Button>
+            }
+            onSubmit={handleCreate}
+          />
+        </ButtonGroup>
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
         <Table>

@@ -25,6 +25,4 @@ export async function updateLecturer(
       courseLevelPreference: data.courseLevelPreference,
     },
   })
-
-  refresh()
 }

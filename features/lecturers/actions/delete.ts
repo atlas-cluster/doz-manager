@@ -10,6 +10,4 @@ export async function deleteLecturer(id: string) {
       id,
     },
   })
-
-  refresh()
 }
