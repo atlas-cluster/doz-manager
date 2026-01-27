@@ -1,11 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { createCourse } from '@/features/courses/actions/create'
-import { updateCourse } from '@/features/courses/actions/update'
 import { courseSchema } from '@/features/courses/schemas/course.schema'
 import { Course } from '@/features/courses/types'
 import { NumberInput } from '@/features/shared/components/number-input'
@@ -37,9 +35,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 
 interface CourseDialogProps {
   course?: Course
-  trigger?: React.ReactNode
+  trigger?: ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  onSubmit?: (data: z.infer<typeof courseSchema>) => Promise<unknown> | unknown
 }
 
 export function CourseDialog({
@@ -47,6 +46,7 @@ export function CourseDialog({
   trigger,
   open: controlledOpen,
   onOpenChange: setControlledOpen,
+  onSubmit,
 }: CourseDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
 
@@ -74,25 +74,15 @@ export function CourseDialog({
           semester: course.semester,
         })
       } else {
-        form.reset({
-          name: '',
-          isOpen: true,
-          courseLevel: 'bachelor',
-          semester: null,
-        })
+        form.reset()
       }
     }
   }, [course, form, open])
 
-  function onSubmit(data: z.infer<typeof courseSchema>) {
-    const promise = isEditing
-      ? updateCourse(course!.id, data)
-      : createCourse(data)
-
-    promise.then(() => {
-      setOpen(false)
-      form.reset()
-    })
+  async function handleSubmit(data: z.infer<typeof courseSchema>) {
+    await onSubmit?.(data)
+    setOpen(false)
+    form.reset()
   }
 
   return (
@@ -111,7 +101,7 @@ export function CourseDialog({
         </DialogHeader>
         <form
           id="course-form"
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(handleSubmit)}
           className={'space-y-3'}>
           <FieldGroup>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

@@ -1,9 +1,17 @@
 'use client'
 
-import { CirclePlus, RefreshCwIcon, XIcon } from 'lucide-react'
+import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
+import { z } from 'zod'
 
+import { getCourses } from '@/features/courses'
+import { createCourse } from '@/features/courses/actions/create'
+import { deleteCourse } from '@/features/courses/actions/delete'
+import { updateCourse } from '@/features/courses/actions/update'
+import { columns } from '@/features/courses/components/data-table/columns'
 import { CourseDialog } from '@/features/courses/components/dialog'
+import { courseSchema } from '@/features/courses/schemas/course.schema'
+import { Course } from '@/features/courses/types'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
 import { Button } from '@/features/shared/components/ui/button'
@@ -18,7 +26,6 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import {
-  ColumnDef,
   ColumnFiltersState,
   RowSelectionState,
   SortingState,
@@ -33,23 +40,51 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-  refreshAction?: () => Promise<TData[]>
+export interface CourseTableMeta {
+  createCourse: (data: z.infer<typeof courseSchema>) => void
+  updateCourse: (id: string, data: z.infer<typeof courseSchema>) => void
+  deleteCourse: (id: string) => void
+  refreshCourse: () => void
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  refreshAction,
-}: DataTableProps<TData, TValue>) {
+export function DataTable({ data }: { data: Course[] }) {
   const [isPending, startTransition] = useTransition()
-  const [tableData, setTableData] = useState<TData[]>(data)
+  const [tableData, setTableData] = useState<Course[]>(data)
 
   useEffect(() => {
     setTableData(data)
   }, [data])
+
+  const handleCreate = (data: z.infer<typeof courseSchema>) => {
+    startTransition(async () => {
+      await createCourse(data)
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
+    })
+  }
+
+  const handleUpdate = (id: string, data: z.infer<typeof courseSchema>) => {
+    startTransition(async () => {
+      await updateCourse(id, data)
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
+    })
+  }
+
+  const handleDelete = (id: string) => {
+    startTransition(async () => {
+      await deleteCourse(id)
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
+    })
+  }
+
+  const handleRefresh = () => {
+    startTransition(async () => {
+      const refreshed = await getCourses()
+      setTableData(refreshed as Course[])
+    })
+  }
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -61,6 +96,13 @@ export function DataTable<TData, TValue>({
   const table = useReactTable({
     data: tableData,
     columns,
+
+    meta: {
+      createCourse: handleCreate,
+      updateCourse: handleUpdate,
+      deleteCourse: handleDelete,
+      refreshCourse: handleRefresh,
+    },
 
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
@@ -119,14 +161,7 @@ export function DataTable<TData, TValue>({
             type="button"
             disabled={isPending}
             suppressHydrationWarning
-            onClick={() => {
-              startTransition(async () => {
-                if (refreshAction) {
-                  const newData = await refreshAction()
-                  setTableData(newData)
-                }
-              })
-            }}>
+            onClick={handleRefresh}>
             <RefreshCwIcon
               className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`}
             />
@@ -138,6 +173,7 @@ export function DataTable<TData, TValue>({
                 Vorlesung erstellen
               </Button>
             }
+            onSubmit={handleCreate}
           />
         </ButtonGroup>
       </div>

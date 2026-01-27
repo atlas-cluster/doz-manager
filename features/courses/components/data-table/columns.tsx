@@ -8,8 +8,8 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 
-import { deleteCourse } from '@/features/courses/actions/delete'
 import { CourseOpenBadge } from '@/features/courses/components/course-open-badge'
+import { CourseTableMeta } from '@/features/courses/components/data-table/data-table'
 import { CourseDialog } from '@/features/courses/components/dialog'
 import { Course } from '@/features/courses/types'
 import { LecturerCourseLevelPreferenceBadge } from '@/features/lecturers/components/lecturer-course-level-preference-badge'
@@ -24,12 +24,23 @@ import {
 } from '@/features/shared/components/ui/dropdown-menu'
 import { ColumnDef } from '@tanstack/table-core'
 
-function ActionsCell({ course }: { course: Course }) {
+function ActionsCell({
+  course,
+  meta,
+}: {
+  course: Course
+  meta?: CourseTableMeta
+}) {
   const [open, setOpen] = useState(false)
 
   return (
     <div className="flex justify-end">
-      <CourseDialog course={course} open={open} onOpenChange={setOpen} />
+      <CourseDialog
+        course={course}
+        open={open}
+        onOpenChange={setOpen}
+        onSubmit={(payload) => meta?.updateCourse?.(course.id, payload)}
+      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
@@ -45,7 +56,7 @@ function ActionsCell({ course }: { course: Course }) {
           </DropdownMenuItem>
           <DropdownMenuItem
             variant={'destructive'}
-            onSelect={() => deleteCourse(course.id)}>
+            onSelect={() => meta?.deleteCourse?.(course.id)}>
             <TrashIcon className="mr-2 h-4 w-4" />
             Löschen
           </DropdownMenuItem>
@@ -130,7 +141,10 @@ export const columns: ColumnDef<Course>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <ActionsCell course={row.original} />,
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as CourseTableMeta | undefined
+      return <ActionsCell course={row.original} meta={meta} />
+    },
     enableSorting: false,
     enableHiding: false,
     enableGlobalFilter: false,
