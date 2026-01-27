@@ -1,6 +1,6 @@
 import z from 'zod'
 
-import { lecturerSchema } from '@/features/lecturers/schemas/lecturer.schema'
+import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
 import type {
   CourseLevelPreference as PrismaCourseLevelPreference,
   Lecturer as PrismaLecturer,
