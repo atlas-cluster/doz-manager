@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { courseSchema } from '@/features/courses/schemas/course.schema'
+import { courseSchema } from '@/features/courses/schemas/course'
 import type {
   Course as PrismaCourse,
   CourseAssignment as PrismaCourseAssignment,

@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { courseSchema } from '@/features/courses/schemas/course.schema'
+import { courseSchema } from '@/features/courses/schemas/course'
 import { Course } from '@/features/courses/types'
 import { NumberInput } from '@/features/shared/components/number-input'
 import { Button } from '@/features/shared/components/ui/button'
@@ -54,8 +54,8 @@ export function CourseDialog({
   const setOpen = setControlledOpen ?? setInternalOpen
   const isEditing = !!course
 
-  const form = useForm<z.infer<typeof courseSchema>>({
-    resolver: zodResolver(courseSchema),
+  const form = useForm<z.infer<typeof course>>({
+    resolver: zodResolver(course),
     defaultValues: {
       name: '',
       isOpen: true,
@@ -79,7 +79,7 @@ export function CourseDialog({
     }
   }, [course, form, open])
 
-  async function handleSubmit(data: z.infer<typeof courseSchema>) {
+  async function handleSubmit(data: z.infer<typeof course>) {
     await onSubmit?.(data)
     setOpen(false)
     form.reset()

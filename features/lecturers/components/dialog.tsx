@@ -1,4 +1,4 @@
-import { lecturerSchema } from '../schemas/lecturer.schema'
+import { lecturerSchema } from '../schemas/lecturer'
 import { Lecturer } from '../types'
 import { ReactNode, useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
