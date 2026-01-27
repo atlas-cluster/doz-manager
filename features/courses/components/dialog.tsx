@@ -54,8 +54,8 @@ export function CourseDialog({
   const setOpen = setControlledOpen ?? setInternalOpen
   const isEditing = !!course
 
-  const form = useForm<z.infer<typeof course>>({
-    resolver: zodResolver(course),
+  const form = useForm<z.infer<typeof courseSchema>>({
+    resolver: zodResolver(courseSchema),
     defaultValues: {
       name: '',
       isOpen: true,
@@ -79,7 +79,7 @@ export function CourseDialog({
     }
   }, [course, form, open])
 
-  async function handleSubmit(data: z.infer<typeof course>) {
+  async function handleSubmit(data: z.infer<typeof courseSchema>) {
     await onSubmit?.(data)
     setOpen(false)
     form.reset()
