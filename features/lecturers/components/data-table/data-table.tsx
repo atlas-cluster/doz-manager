@@ -29,6 +29,7 @@ import {
 } from '@/features/shared/components/ui/table'
 import {
   ColumnFiltersState,
+  PaginationState,
   RowSelectionState,
   SortingState,
   VisibilityState,
@@ -95,6 +96,10 @@ export function DataTable({ data }: { data: Lecturer[] }) {
   const [globalFilter, setGlobalFilter] = useState<string>('')
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -115,6 +120,7 @@ export function DataTable({ data }: { data: Lecturer[] }) {
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
 
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -131,8 +137,13 @@ export function DataTable({ data }: { data: Lecturer[] }) {
       columnVisibility,
       rowSelection,
       globalFilter,
+      pagination,
     },
   })
+
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  }, [globalFilter, columnFilters])
 
   const prefColumn = table.getColumn('courseLevelPreference')
   const prefUniqueValues = prefColumn?.getFacetedUniqueValues()
