@@ -28,6 +28,7 @@ import {
 } from '@/features/shared/components/ui/table'
 import {
   ColumnFiltersState,
+  PaginationState,
   RowSelectionState,
   SortingState,
   VisibilityState,
@@ -94,8 +95,11 @@ export function DataTable({ data }: { data: Course[] }) {
   const [globalFilter, setGlobalFilter] = useState<string>('')
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
 
-  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: tableData,
     columns,
@@ -114,6 +118,7 @@ export function DataTable({ data }: { data: Course[] }) {
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setPagination,
 
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -130,8 +135,13 @@ export function DataTable({ data }: { data: Course[] }) {
       columnVisibility,
       rowSelection,
       globalFilter,
+      pagination,
     },
   })
+
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  }, [globalFilter, columnFilters])
 
   return (
     <div className="w-full space-y-3">
