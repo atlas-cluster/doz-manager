@@ -3,11 +3,10 @@
 import { LecturerDialog } from '../dialog'
 import {
   ArrowUpDown,
+  Blend,
   BookOpen,
-  Building,
   Building2,
   GraduationCap,
-  Layers,
   MapPin,
   MoreHorizontalIcon,
   PencilIcon,
@@ -192,7 +191,7 @@ export const columns: ColumnDef<Lecturer>[] = [
             </>
           ) : (
             <>
-              <Layers className={'size-5'} />
+              <Blend className={'size-5'} />
               Beides
             </>
           )}
