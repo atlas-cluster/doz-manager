@@ -3,14 +3,17 @@
 import { LecturerDialog } from '../dialog'
 import {
   ArrowUpDown,
+  BookOpen,
+  Building,
+  GraduationCap,
+  Layers,
+  MapPin,
   MoreHorizontalIcon,
   PencilIcon,
   TrashIcon,
 } from 'lucide-react'
-import { useState } from 'react'
+import React, { useState } from 'react'
 
-import { LecturerCourseLevelPreferenceBadge } from '@/features/lecturers/components/lecturer-course-level-preference-badge'
-import { LecturerTypeBadge } from '@/features/lecturers/components/lecturer-type-badge'
 import { Lecturer } from '@/features/lecturers/types'
 import { LecturerTableMeta } from '@/features/lecturers/types'
 import { Button } from '@/features/shared/components/ui/button'
@@ -150,7 +153,21 @@ export const columns: ColumnDef<Lecturer>[] = [
     accessorKey: 'type',
     header: 'Typ',
     cell: ({ row }) => {
-      return <LecturerTypeBadge type={row.original.type} />
+      return (
+        <div className={'flex gap-1 items-center'}>
+          {row.original.type === 'internal' ? (
+            <>
+              <MapPin className={'size-5'} />
+              Intern
+            </>
+          ) : (
+            <>
+              <Building className={'size-5'} />
+              Extern
+            </>
+          )}
+        </div>
+      )
     },
     enableSorting: false,
     enableHiding: true,
@@ -161,9 +178,24 @@ export const columns: ColumnDef<Lecturer>[] = [
     header: 'Vorlesungspräferenz',
     cell: ({ row }) => {
       return (
-        <LecturerCourseLevelPreferenceBadge
-          pref={row.original.courseLevelPreference}
-        />
+        <div className={'flex gap-1 items-center'}>
+          {row.original.courseLevelPreference === 'bachelor' ? (
+            <>
+              <BookOpen className={'size-5'} />
+              Bachelor
+            </>
+          ) : row.original.courseLevelPreference === 'master' ? (
+            <>
+              <GraduationCap className={'size-5'} />
+              Master
+            </>
+          ) : (
+            <>
+              <Layers className={'size-5'} />
+              Beides
+            </>
+          )}
+        </div>
       )
     },
     filterFn: (row, id, value: string[]) => {
