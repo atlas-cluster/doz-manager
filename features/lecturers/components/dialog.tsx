@@ -1,9 +1,9 @@
-import { lecturerSchema } from '../schemas/lecturer'
-import { Lecturer } from '../types'
 import { ReactNode, useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import z from 'zod'
 
+import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
+import { Lecturer } from '@/features/lecturers/types'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,

@@ -18,7 +18,6 @@ import {
 } from '@/features/shared/components/ui/sidebar'
 
 const navItems = [
-  // { url: '/dashboard', icon: HomeIcon },
   { url: '/lecturers', icon: UsersIcon },
   { url: '/courses', icon: LibraryBigIcon },
 ]

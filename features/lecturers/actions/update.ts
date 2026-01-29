@@ -1,8 +1,8 @@
 'use server'
 
-import { lecturerSchema } from '../schemas/lecturer'
 import z from 'zod'
 
+import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function updateLecturer(
