@@ -225,15 +225,11 @@ export function DataTable({ data }: { data: Lecturer[] }) {
             />
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
-          <LecturerDialog
-            trigger={
-              <Button variant={'outline'} suppressHydrationWarning>
-                Dozent erstellen
-              </Button>
-            }
-            onSubmit={handleCreate}
-          />
         </ButtonGroup>
+        <LecturerDialog
+          trigger={<Button suppressHydrationWarning>Dozent erstellen</Button>}
+          onSubmit={handleCreate}
+        />
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
         <Table>

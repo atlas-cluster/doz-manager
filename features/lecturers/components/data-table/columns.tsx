@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   BookOpen,
   Building,
+  Building2,
   GraduationCap,
   Layers,
   MapPin,
@@ -151,7 +152,7 @@ export const columns: ColumnDef<Lecturer>[] = [
   },
   {
     accessorKey: 'type',
-    header: 'Typ',
+    header: 'Beschäftigungsart',
     cell: ({ row }) => {
       return (
         <div className={'flex gap-1 items-center'}>
@@ -162,7 +163,7 @@ export const columns: ColumnDef<Lecturer>[] = [
             </>
           ) : (
             <>
-              <Building className={'size-5'} />
+              <Building2 className={'size-5'} />
               Extern
             </>
           )}
