@@ -1,6 +1,7 @@
 'use client'
 
 import {
+  Blend,
   BookOpen,
   Building2,
   GraduationCap,
@@ -220,16 +221,11 @@ export function DataTable({
     },
   })
 
-  const prefColumn = table.getColumn('courseLevelPreference')
-
   const prefCounts = new Map<string, number>()
   if (facets.courseLevelPreference) {
-    const both = facets.courseLevelPreference['both'] ?? 0
-    const bachelor = facets.courseLevelPreference['bachelor'] ?? 0
-    const master = facets.courseLevelPreference['master'] ?? 0
-
-    prefCounts.set('bachelor', bachelor + both)
-    prefCounts.set('master', master + both)
+    Object.entries(facets.courseLevelPreference).forEach(([key, value]) => {
+      prefCounts.set(key, value)
+    })
   }
 
   const typeCounts = new Map<string, number>()
@@ -279,8 +275,13 @@ export function DataTable({
                 label: 'Master',
                 icon: GraduationCap,
               },
+              {
+                value: 'both',
+                label: 'Beides',
+                icon: Blend,
+              },
             ]}
-            column={prefColumn}
+            column={table.getColumn('courseLevelPreference')}
             facets={prefCounts}
           />
           {(table.getState().columnFilters.length > 0 || globalFilter) && (

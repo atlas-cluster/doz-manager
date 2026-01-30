@@ -1,6 +1,7 @@
 'use server'
 
 import {
+  CourseLevelPreference,
   GetLecturersParams,
   GetLecturersResponse,
   LecturerType,
@@ -20,10 +21,12 @@ export async function getLecturers(
     pageSize: 10,
   }
 ): Promise<GetLecturersResponse> {
-  const conditions: Prisma.LecturerWhereInput[] = []
+  const globalConditions: Prisma.LecturerWhereInput[] = []
+  const typeConditions: Prisma.LecturerWhereInput[] = []
+  const prefConditions: Prisma.LecturerWhereInput[] = []
 
   if (globalFilter) {
-    conditions.push({
+    globalConditions.push({
       OR: [
         { firstName: { contains: globalFilter } },
         { secondName: { contains: globalFilter } },
@@ -36,30 +39,30 @@ export async function getLecturers(
 
   for (const filter of columnFilters) {
     if (filter.id === 'type' && Array.isArray(filter.value)) {
-      conditions.push({ type: { in: filter.value as LecturerType[] } })
+      typeConditions.push({ type: { in: filter.value as LecturerType[] } })
     }
 
     if (filter.id === 'courseLevelPreference' && Array.isArray(filter.value)) {
-      const values = filter.value as string[]
-      const wantsBachelor = values.includes('bachelor')
-      const wantsMaster = values.includes('master')
-
-      if (wantsBachelor && wantsMaster) {
-        conditions.push({ courseLevelPreference: 'both' })
-      } else if (wantsBachelor) {
-        conditions.push({
-          courseLevelPreference: { in: ['bachelor', 'both'] },
-        })
-      } else if (wantsMaster) {
-        conditions.push({
-          courseLevelPreference: { in: ['master', 'both'] },
-        })
-      }
+      prefConditions.push({
+        courseLevelPreference: { in: filter.value as CourseLevelPreference[] },
+      })
     }
   }
 
-  const where: Prisma.LecturerWhereInput =
-    conditions.length > 0 ? { AND: conditions } : {}
+  const whereMain: Prisma.LecturerWhereInput =
+    [...globalConditions, ...typeConditions, ...prefConditions].length > 0
+      ? { AND: [...globalConditions, ...typeConditions, ...prefConditions] }
+      : {}
+
+  const whereType: Prisma.LecturerWhereInput =
+    [...globalConditions, ...prefConditions].length > 0
+      ? { AND: [...globalConditions, ...prefConditions] }
+      : {}
+
+  const wherePref: Prisma.LecturerWhereInput =
+    [...globalConditions, ...typeConditions].length > 0
+      ? { AND: [...globalConditions, ...typeConditions] }
+      : {}
 
   const orderBy: Prisma.LecturerOrderByWithRelationInput[] =
     sorting.length > 0
@@ -72,16 +75,16 @@ export async function getLecturers(
       : [{ lastName: 'asc' }]
 
   const [count, data, typeFacets, prefFacets] = await prisma.$transaction([
-    prisma.lecturer.count({ where }),
+    prisma.lecturer.count({ where: whereMain }),
     prisma.lecturer.findMany({
-      where,
+      where: whereMain,
       skip: pageIndex * pageSize,
       take: pageSize,
       orderBy,
     }),
     prisma.lecturer.groupBy({
       by: ['type'],
-      where,
+      where: whereType,
       _count: { type: true },
       orderBy: {
         type: 'asc',
@@ -89,7 +92,7 @@ export async function getLecturers(
     }),
     prisma.lecturer.groupBy({
       by: ['courseLevelPreference'],
-      where,
+      where: wherePref,
       _count: { courseLevelPreference: true },
       orderBy: {
         courseLevelPreference: 'asc',
