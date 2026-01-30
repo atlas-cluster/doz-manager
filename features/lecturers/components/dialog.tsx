@@ -30,6 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/features/shared/components/ui/select'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/features/shared/components/ui/tabs'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 interface LecturerDialogProps {
@@ -108,223 +114,239 @@ export function LecturerDialog({
               : 'Hier können Sie einen neuen Dozenten erstellen'}
           </DialogDescription>
         </DialogHeader>
-        <form
-          id="lecturer-form"
-          onSubmit={form.handleSubmit(handleSubmit)}
-          className={'space-y-3'}>
-          <FieldGroup>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Controller
-                name={'title'}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="title">Titel</FieldLabel>
-                    <Input
-                      id="title"
-                      placeholder="Prof."
-                      {...field}
-                      value={field.value ?? ''}
-                      aria-invalid={fieldState.invalid}
-                      autoComplete={'off'}
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
+        <Tabs defaultValue="general">
+          <TabsList>
+            <TabsTrigger value="general">Allgemein</TabsTrigger>
+            <TabsTrigger value="courses">Vorlesungen</TabsTrigger>
+          </TabsList>
+          <TabsContent value="general">
+            <form
+              id="lecturer-form"
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className={'space-y-3'}>
+              <FieldGroup>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Controller
+                    name={'title'}
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="title">Titel</FieldLabel>
+                        <Input
+                          id="title"
+                          placeholder="Prof."
+                          {...field}
+                          value={field.value ?? ''}
+                          aria-invalid={fieldState.invalid}
+                          autoComplete={'off'}
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
                     )}
-                  </Field>
-                )}
-              />
+                  />
 
-              <Controller
-                name={'firstName'}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="firstName">
-                      <span>
-                        Vorname<sup className={'text-destructive'}>*</sup>
-                      </span>
-                    </FieldLabel>
-                    <Input
-                      id="firstName"
-                      placeholder="Vorname"
-                      {...field}
-                      aria-invalid={fieldState.invalid}
-                      autoComplete={'off'}
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
+                  <Controller
+                    name={'firstName'}
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="firstName">
+                          <span>
+                            Vorname<sup className={'text-destructive'}>*</sup>
+                          </span>
+                        </FieldLabel>
+                        <Input
+                          id="firstName"
+                          placeholder="Vorname"
+                          {...field}
+                          aria-invalid={fieldState.invalid}
+                          autoComplete={'off'}
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
                     )}
-                  </Field>
-                )}
-              />
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Controller
+                    name={'secondName'}
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="secondName">
+                          <span>Zweiter Vorname</span>
+                        </FieldLabel>
+                        <Input
+                          id="secondName"
+                          placeholder="Zweiter Vorname"
+                          {...field}
+                          value={field.value ?? ''}
+                          aria-invalid={fieldState.invalid}
+                          autoComplete={'off'}
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+
+                  <Controller
+                    name={'lastName'}
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="lastName">
+                          <span>
+                            Nachname<sup className={'text-destructive'}>*</sup>
+                          </span>
+                        </FieldLabel>
+                        <Input
+                          id="lastName"
+                          placeholder="Nachname"
+                          {...field}
+                          aria-invalid={fieldState.invalid}
+                          autoComplete={'off'}
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Controller
+                    name={'email'}
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="email">
+                          <span>
+                            E-Mail<sup className={'text-destructive'}>*</sup>
+                          </span>
+                        </FieldLabel>
+                        <Input
+                          id="email"
+                          placeholder="beispiel@mail.de"
+                          {...field}
+                          aria-invalid={fieldState.invalid}
+                          autoComplete={'off'}
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+
+                  <Controller
+                    name={'phone'}
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="phone">
+                          <span>
+                            Telefonnummer
+                            <sup className={'text-destructive'}>*</sup>
+                          </span>
+                        </FieldLabel>
+                        <PhoneInput
+                          id={'phone'}
+                          {...field}
+                          onChange={field.onChange}
+                          defaultCountry={'DE'}
+                          international
+                        />
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Controller
+                    name={'type'}
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="type">
+                          <span>
+                            Dozententyp
+                            <sup className={'text-destructive'}>*</sup>
+                          </span>
+                        </FieldLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Wählen Sie einen Typ" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="internal">Intern</SelectItem>
+                            <SelectItem value="external">Extern</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+
+                  <Controller
+                    name={'courseLevelPreference'}
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="courseLevelPreference">
+                          <span>
+                            Vorlesungspräferenz
+                            <sup className={'text-destructive'}>*</sup>
+                          </span>
+                        </FieldLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Wählen Sie die Vorlesungspräferenz" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bachelor">Bachelor</SelectItem>
+                            <SelectItem value="master">Master</SelectItem>
+                            <SelectItem value="both">Beides</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button type="submit">
+                    {isEditing ? 'Speichern' : 'Erstellen'}
+                  </Button>
+                </div>
+              </FieldGroup>
+            </form>
+          </TabsContent>
+          <TabsContent value="courses">
+            <div className="py-4 text-center text-sm text-muted-foreground">
+              Vorlesungen Verwaltung wird in einer zukünftigen Version verfügbar
+              sein.
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Controller
-                name={'secondName'}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="secondName">
-                      <span>Zweiter Vorname</span>
-                    </FieldLabel>
-                    <Input
-                      id="secondName"
-                      placeholder="Zweiter Vorname"
-                      {...field}
-                      value={field.value ?? ''}
-                      aria-invalid={fieldState.invalid}
-                      autoComplete={'off'}
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                name={'lastName'}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="lastName">
-                      <span>
-                        Nachname<sup className={'text-destructive'}>*</sup>
-                      </span>
-                    </FieldLabel>
-                    <Input
-                      id="lastName"
-                      placeholder="Nachname"
-                      {...field}
-                      aria-invalid={fieldState.invalid}
-                      autoComplete={'off'}
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Controller
-                name={'email'}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="email">
-                      <span>
-                        E-Mail<sup className={'text-destructive'}>*</sup>
-                      </span>
-                    </FieldLabel>
-                    <Input
-                      id="email"
-                      placeholder="beispiel@mail.de"
-                      {...field}
-                      aria-invalid={fieldState.invalid}
-                      autoComplete={'off'}
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                name={'phone'}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="phone">
-                      <span>
-                        Telefonnummer<sup className={'text-destructive'}>*</sup>
-                      </span>
-                    </FieldLabel>
-                    <PhoneInput
-                      id={'phone'}
-                      {...field}
-                      onChange={field.onChange}
-                      defaultCountry={'DE'}
-                      international
-                    />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Controller
-                name={'type'}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="type">
-                      <span>
-                        Dozententyp<sup className={'text-destructive'}>*</sup>
-                      </span>
-                    </FieldLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Wählen Sie einen Typ" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="internal">Intern</SelectItem>
-                        <SelectItem value="external">Extern</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                name={'courseLevelPreference'}
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="courseLevelPreference">
-                      <span>
-                        Vorlesungspräferenz
-                        <sup className={'text-destructive'}>*</sup>
-                      </span>
-                    </FieldLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Wählen Sie die Vorlesungspräferenz" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bachelor">Bachelor</SelectItem>
-                        <SelectItem value="master">Master</SelectItem>
-                        <SelectItem value="both">Beides</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
-                  </Field>
-                )}
-              />
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Button type="submit">
-                {isEditing ? 'Speichern' : 'Erstellen'}
-              </Button>
-            </div>
-          </FieldGroup>
-        </form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )
