@@ -221,7 +221,6 @@ export function DataTable({
   })
 
   const prefColumn = table.getColumn('courseLevelPreference')
-  // const prefUniqueValues = prefColumn?.getFacetedUniqueValues()
 
   const prefCounts = new Map<string, number>()
   if (facets.courseLevelPreference) {
@@ -229,9 +228,7 @@ export function DataTable({
     const bachelor = facets.courseLevelPreference['bachelor'] ?? 0
     const master = facets.courseLevelPreference['master'] ?? 0
 
-    // Logic: 'bachelor' option should include 'bachelor' and 'both' records
     prefCounts.set('bachelor', bachelor + both)
-    // Logic: 'master' option should include 'master' and 'both' records
     prefCounts.set('master', master + both)
   }
 
