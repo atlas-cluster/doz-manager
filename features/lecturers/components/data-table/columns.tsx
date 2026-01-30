@@ -7,10 +7,10 @@ import {
   BookOpen,
   Building2,
   GraduationCap,
-  MapPin,
   MoreHorizontalIcon,
   PencilIcon,
   TrashIcon,
+  VenetianMask,
 } from 'lucide-react'
 import React, { useState } from 'react'
 
@@ -157,12 +157,12 @@ export const columns: ColumnDef<Lecturer>[] = [
         <div className={'flex gap-1 items-center'}>
           {row.original.type === 'internal' ? (
             <>
-              <MapPin className={'size-5'} />
+              <Building2 className={'size-5'} />
               Intern
             </>
           ) : (
             <>
-              <Building2 className={'size-5'} />
+              <VenetianMask className={'size-5'} />
               Extern
             </>
           )}
