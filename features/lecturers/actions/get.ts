@@ -1,5 +1,7 @@
 'use server'
 
+import { unstable_cache } from 'next/cache'
+
 import {
   CourseLevelPreference,
   GetLecturersParams,
@@ -9,18 +11,13 @@ import {
 import { Prisma } from '@/features/shared/lib/generated/prisma/client'
 import { prisma } from '@/features/shared/lib/prisma'
 
-export async function getLecturers(
-  {
-    pageIndex = 0,
-    pageSize = 10,
-    sorting = [],
-    columnFilters = [],
-    globalFilter = '',
-  }: GetLecturersParams = {
-    pageIndex: 0,
-    pageSize: 10,
-  }
-): Promise<GetLecturersResponse> {
+async function getLecturersInternal({
+  pageIndex = 0,
+  pageSize = 10,
+  sorting = [],
+  columnFilters = [],
+  globalFilter = '',
+}: GetLecturersParams): Promise<GetLecturersResponse> {
   const globalConditions: Prisma.LecturerWhereInput[] = []
   const typeConditions: Prisma.LecturerWhereInput[] = []
   const prefConditions: Prisma.LecturerWhereInput[] = []
@@ -120,4 +117,20 @@ export async function getLecturers(
       ),
     },
   }
+}
+
+export async function getLecturers(
+  params: GetLecturersParams = {
+    pageIndex: 0,
+    pageSize: 10,
+  }
+) {
+  return unstable_cache(
+    async () => getLecturersInternal(params),
+    ['lecturers-get', JSON.stringify(params)],
+    {
+      tags: ['lecturers'],
+      revalidate: 3600,
+    }
+  )()
 }

@@ -1,12 +1,13 @@
 'use server'
 
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 
 import { courseSchema } from '@/features/courses/schemas/course'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function createCourse(data: z.infer<typeof courseSchema>) {
-  return prisma.course.create({
+  await prisma.course.create({
     data: {
       name: data.name,
       isOpen: data.isOpen,
@@ -14,4 +15,6 @@ export async function createCourse(data: z.infer<typeof courseSchema>) {
       semester: data.semester,
     },
   })
+
+  revalidateTag('courses', {})
 }

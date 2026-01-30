@@ -1,20 +1,17 @@
 'use server'
 
+import { unstable_cache } from 'next/cache'
+
 import { GetCoursesParams, GetCoursesResponse } from '@/features/courses/types'
 import { Prisma } from '@/features/shared/lib/generated/prisma/client'
 import { prisma } from '@/features/shared/lib/prisma'
 
-export async function getCourses(
-  {
-    pageIndex = 0,
-    pageSize = 10,
-    sorting = [],
-    globalFilter = '',
-  }: GetCoursesParams = {
-    pageIndex: 0,
-    pageSize: 10,
-  }
-): Promise<GetCoursesResponse> {
+async function getCoursesInternal({
+  pageIndex = 0,
+  pageSize = 10,
+  sorting = [],
+  globalFilter = '',
+}: GetCoursesParams): Promise<GetCoursesResponse> {
   const globalConditions: Prisma.CourseWhereInput[] = []
 
   if (globalFilter) {
@@ -51,4 +48,20 @@ export async function getCourses(
     pageCount: Math.ceil(count / pageSize),
     rowCount: count,
   }
+}
+
+export async function getCourses(
+  params: GetCoursesParams = {
+    pageIndex: 0,
+    pageSize: 10,
+  }
+) {
+  return unstable_cache(
+    async () => getCoursesInternal(params),
+    ['courses-get', JSON.stringify(params)],
+    {
+      tags: ['courses'],
+      revalidate: 3600,
+    }
+  )()
 }
