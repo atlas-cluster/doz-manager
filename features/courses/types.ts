@@ -20,3 +20,17 @@ export interface CourseTableMeta {
   deleteCourses: (ids: string[]) => void
   refreshCourse: () => void
 }
+
+export interface GetCoursesParams {
+  pageIndex: number
+  pageSize: number
+  sorting?: { id: string; desc: boolean }[]
+  columnFilters?: { id: string; value: unknown }[]
+  globalFilter?: string
+}
+
+export interface GetCoursesResponse {
+  data: Course[]
+  pageCount: number
+  rowCount: number
+}

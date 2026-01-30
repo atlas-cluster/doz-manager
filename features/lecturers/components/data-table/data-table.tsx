@@ -74,7 +74,7 @@ export function DataTable({
 
   // Debounce global filter
   const [inputValue, setInputValue] = useState<string>(globalFilter)
-  const debouncedInputValue = useDebounce(inputValue, 300)
+  const debouncedInputValue = useDebounce(inputValue)
 
   useEffect(() => {
     if (debouncedInputValue !== globalFilter) {
@@ -86,7 +86,7 @@ export function DataTable({
   // Debounce column filters
   const [committedColumnFilters, setCommittedColumnFilters] =
     useState<ColumnFiltersState>(columnFilters)
-  const debouncedColumnFilters = useDebounce(columnFilters, 200)
+  const debouncedColumnFilters = useDebounce(columnFilters)
 
   useEffect(() => {
     if (debouncedColumnFilters !== committedColumnFilters) {
@@ -116,8 +116,8 @@ export function DataTable({
         globalFilter: currentGlobal,
       })
       setData(result.data)
-      setRowCount(result.rowCount)
       setPageCount(result.pageCount)
+      setRowCount(result.rowCount)
       setFacets(result.facets)
     })
   }
