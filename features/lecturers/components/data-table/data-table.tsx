@@ -83,18 +83,6 @@ export function DataTable({
     }
   }, [debouncedInputValue, globalFilter])
 
-  // Debounce column filters
-  const [committedColumnFilters, setCommittedColumnFilters] =
-    useState<ColumnFiltersState>(columnFilters)
-  const debouncedColumnFilters = useDebounce(columnFilters)
-
-  useEffect(() => {
-    if (debouncedColumnFilters !== committedColumnFilters) {
-      setCommittedColumnFilters(debouncedColumnFilters)
-      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
-    }
-  }, [debouncedColumnFilters, committedColumnFilters])
-
   // Data State
   const [data, setData] = useState<Lecturer[]>(initialData.data)
   const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
@@ -104,7 +92,7 @@ export function DataTable({
   const fetchData = (
     currentPagination = pagination,
     currentSorting = sorting,
-    currentFilters = committedColumnFilters,
+    currentFilters = columnFilters,
     currentGlobal = globalFilter
   ) => {
     startTransition(async () => {
@@ -131,7 +119,7 @@ export function DataTable({
       isMounted.current = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination, sorting, committedColumnFilters, globalFilter])
+  }, [pagination, sorting, columnFilters, globalFilter])
 
   const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
     startTransition(async () => {
@@ -170,6 +158,7 @@ export function DataTable({
     updaterOrValue
   ) => {
     setColumnFilters(updaterOrValue)
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
   }
 
   const onGlobalFilterChange: OnChangeFn<string> = (updaterOrValue) => {

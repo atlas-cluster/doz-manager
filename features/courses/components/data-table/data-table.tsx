@@ -144,6 +144,7 @@ export function DataTable({
     updaterOrValue
   ) => {
     setColumnFilters(updaterOrValue)
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
   }
 
   const onGlobalFilterChange: OnChangeFn<string> = (updaterOrValue) => {
