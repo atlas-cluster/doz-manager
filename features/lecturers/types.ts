@@ -17,3 +17,21 @@ export interface LecturerTableMeta {
   deleteLecturers: (ids: string[]) => void
   refreshLecturer: () => void
 }
+
+export interface GetLecturersParams {
+  pageIndex: number
+  pageSize: number
+  sorting?: { id: string; desc: boolean }[]
+  columnFilters?: { id: string; value: unknown }[]
+  globalFilter?: string
+}
+
+export interface GetLecturersResponse {
+  data: Lecturer[]
+  pageCount: number
+  rowCount: number
+  facets: {
+    type: Record<string, number>
+    courseLevelPreference: Record<string, number>
+  }
+}

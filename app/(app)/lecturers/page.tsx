@@ -7,7 +7,7 @@ export default async function LecturersPage() {
 
   return (
     <div>
-      <LecturerDataTable data={lecturers} />
+      <LecturerDataTable initialData={lecturers} />
     </div>
   )
 }
