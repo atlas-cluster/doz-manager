@@ -46,7 +46,11 @@ export function DataTableFacetedFilter<TData>({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 border-dashed">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 border-dashed"
+          suppressHydrationWarning>
           <PlusCircle />
           {title}
 
@@ -76,6 +80,7 @@ export function DataTableFacetedFilter<TData>({
                       <Badge
                         key={o.value}
                         className="rounded-sm px-1 font-normal">
+                        {o.icon ? <o.icon /> : null}
                         {o.label}
                       </Badge>
                     ))
@@ -111,17 +116,16 @@ export function DataTableFacetedFilter<TData>({
                       const values = Array.from(next)
                       column.setFilterValue(values.length ? values : undefined)
                     }}>
-                    <div>
-                      <Checkbox checked={isSelected} />
-                    </div>
+                    <Checkbox
+                      checked={isSelected}
+                      className="pointer-events-none"
+                    />
 
-                    {Icon ? (
-                      <Icon className="text-muted-foreground mr-2 h-4 w-4" />
-                    ) : null}
+                    {Icon ? <Icon className="text-muted-foreground" /> : null}
 
                     <span>{option.label}</span>
 
-                    <span className="text-muted-foreground ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+                    <span className="text-muted-foreground ml-auto flex items-center justify-center font-mono text-xs">
                       {count}
                     </span>
                   </CommandItem>

@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 
 import { courseSchema } from '@/features/courses/schemas/course'
@@ -9,7 +10,7 @@ export async function updateCourse(
   id: string,
   data: z.infer<typeof courseSchema>
 ) {
-  return prisma.course.update({
+  await prisma.course.update({
     where: { id },
     data: {
       name: data.name,
@@ -18,4 +19,6 @@ export async function updateCourse(
       semester: data.semester,
     },
   })
+
+  revalidateTag('courses', {})
 }

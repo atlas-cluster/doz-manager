@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
@@ -18,4 +19,6 @@ export async function createLecturer(data: z.infer<typeof lecturerSchema>) {
       courseLevelPreference: data.courseLevelPreference,
     },
   })
+
+  revalidateTag('lecturers', {})
 }

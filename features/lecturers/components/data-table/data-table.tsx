@@ -1,7 +1,16 @@
 'use client'
 
-import { RefreshCwIcon, XIcon } from 'lucide-react'
-import { useEffect, useState, useTransition } from 'react'
+import {
+  Blend,
+  BookOpen,
+  Building2,
+  GraduationCap,
+  RefreshCwIcon,
+  VenetianMask,
+  XIcon,
+} from 'lucide-react'
+import { useEffect, useRef, useState, useTransition } from 'react'
+import * as React from 'react'
 import z from 'zod'
 
 import { createLecturer } from '@/features/lecturers/actions/create'
@@ -12,7 +21,7 @@ import { updateLecturer } from '@/features/lecturers/actions/update'
 import { columns } from '@/features/lecturers/components/data-table/columns'
 import { LecturerDialog } from '@/features/lecturers/components/dialog'
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
-import { Lecturer } from '@/features/lecturers/types'
+import { GetLecturersResponse, Lecturer } from '@/features/lecturers/types'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
@@ -27,8 +36,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/features/shared/components/ui/table'
+import { useDebounce } from '@/features/shared/hooks/use-debounce'
 import {
   ColumnFiltersState,
+  OnChangeFn,
   PaginationState,
   RowSelectionState,
   SortingState,
@@ -43,54 +54,14 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 
-export function DataTable({ data }: { data: Lecturer[] }) {
+export function DataTable({
+  initialData,
+}: {
+  initialData: GetLecturersResponse
+}) {
   const [isPending, startTransition] = useTransition()
-  const [tableData, setTableData] = useState<Lecturer[]>(data)
 
-  useEffect(() => {
-    setTableData(data)
-  }, [data])
-
-  const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
-    startTransition(async () => {
-      await createLecturer(data)
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
-    })
-  }
-
-  const handleUpdate = (id: string, data: z.infer<typeof lecturerSchema>) => {
-    startTransition(async () => {
-      await updateLecturer(id, data)
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
-    })
-  }
-
-  const handleDelete = (id: string) => {
-    startTransition(async () => {
-      await deleteLecturer(id)
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
-    })
-  }
-
-  const handleDeleteMany = (ids: string[]) => {
-    startTransition(async () => {
-      await deleteLecturers(ids)
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
-      setRowSelection({})
-    })
-  }
-
-  const handleRefresh = () => {
-    startTransition(async () => {
-      const refreshed = await getLecturers()
-      setTableData(refreshed as Lecturer[])
-    })
-  }
-
+  // Table State
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [globalFilter, setGlobalFilter] = useState<string>('')
@@ -101,10 +72,108 @@ export function DataTable({ data }: { data: Lecturer[] }) {
     pageSize: 10,
   })
 
-  // eslint-disable-next-line react-hooks/incompatible-library
+  // Debounce global filter
+  const [inputValue, setInputValue] = useState<string>(globalFilter)
+  const debouncedInputValue = useDebounce(inputValue)
+
+  useEffect(() => {
+    if (debouncedInputValue !== globalFilter) {
+      setGlobalFilter(debouncedInputValue)
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+    }
+  }, [debouncedInputValue, globalFilter])
+
+  // Data State
+  const [data, setData] = useState<Lecturer[]>(initialData.data)
+  const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
+  const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
+  const [facets, setFacets] = useState(initialData.facets)
+
+  const fetchData = (
+    currentPagination = pagination,
+    currentSorting = sorting,
+    currentFilters = columnFilters,
+    currentGlobal = globalFilter
+  ) => {
+    startTransition(async () => {
+      const result = await getLecturers({
+        pageIndex: currentPagination.pageIndex,
+        pageSize: currentPagination.pageSize,
+        sorting: currentSorting as { id: string; desc: boolean }[],
+        columnFilters: currentFilters as { id: string; value: unknown }[],
+        globalFilter: currentGlobal,
+      })
+      setData(result.data)
+      setPageCount(result.pageCount)
+      setRowCount(result.rowCount)
+      setFacets(result.facets)
+    })
+  }
+
+  const isMounted = useRef(false)
+
+  useEffect(() => {
+    if (isMounted.current) {
+      fetchData()
+    } else {
+      isMounted.current = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination, sorting, columnFilters, globalFilter])
+
+  const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
+    startTransition(async () => {
+      await createLecturer(data)
+      fetchData()
+    })
+  }
+
+  const handleUpdate = (id: string, data: z.infer<typeof lecturerSchema>) => {
+    startTransition(async () => {
+      await updateLecturer(id, data)
+      fetchData()
+    })
+  }
+
+  const handleDelete = (id: string) => {
+    startTransition(async () => {
+      await deleteLecturer(id)
+      fetchData()
+    })
+  }
+
+  const handleDeleteMany = (ids: string[]) => {
+    startTransition(async () => {
+      await deleteLecturers(ids)
+      fetchData()
+      setRowSelection({})
+    })
+  }
+
+  const handleRefresh = () => {
+    fetchData()
+  }
+
+  const onColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (
+    updaterOrValue
+  ) => {
+    setColumnFilters(updaterOrValue)
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  }
+
+  const onGlobalFilterChange: OnChangeFn<string> = (updaterOrValue) => {
+    setGlobalFilter(updaterOrValue)
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  }
+
   const table = useReactTable({
-    data: tableData,
+    data,
     columns,
+    pageCount,
+    rowCount,
+    manualPagination: true,
+    manualSorting: true,
+    manualFiltering: true,
 
     meta: {
       createLecturer: handleCreate,
@@ -117,9 +186,9 @@ export function DataTable({ data }: { data: Lecturer[] }) {
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
-    onGlobalFilterChange: setGlobalFilter,
+    onGlobalFilterChange: onGlobalFilterChange,
     onPaginationChange: setPagination,
 
     getCoreRowModel: getCoreRowModel(),
@@ -141,21 +210,18 @@ export function DataTable({ data }: { data: Lecturer[] }) {
     },
   })
 
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
-  }, [globalFilter, columnFilters])
-
-  const prefColumn = table.getColumn('courseLevelPreference')
-  const prefUniqueValues = prefColumn?.getFacetedUniqueValues()
-
   const prefCounts = new Map<string, number>()
-  if (prefUniqueValues) {
-    const both = prefUniqueValues.get('both') ?? 0
-    const bachelor = prefUniqueValues.get('bachelor') ?? 0
-    const master = prefUniqueValues.get('master') ?? 0
+  if (facets.courseLevelPreference) {
+    Object.entries(facets.courseLevelPreference).forEach(([key, value]) => {
+      prefCounts.set(key, value)
+    })
+  }
 
-    prefCounts.set('bachelor', bachelor + both)
-    prefCounts.set('master', master + both)
+  const typeCounts = new Map<string, number>()
+  if (facets.type) {
+    Object.entries(facets.type).forEach(([key, value]) => {
+      typeCounts.set(key, value)
+    })
   }
 
   return (
@@ -163,10 +229,10 @@ export function DataTable({ data }: { data: Lecturer[] }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full flex-wrap items-center gap-2">
           <Input
-            className="h-9 w-full sm:w-[260px]"
+            className="h-9 w-full sm:w-65"
             placeholder="Dozenten suchen..."
-            value={globalFilter}
-            onChange={(e) => table.setGlobalFilter(String(e.target.value))}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
           />
           <DataTableFacetedFilter
             title={'Typ'}
@@ -174,13 +240,16 @@ export function DataTable({ data }: { data: Lecturer[] }) {
               {
                 value: 'internal',
                 label: 'Intern',
+                icon: Building2,
               },
               {
                 value: 'external',
                 label: 'Extern',
+                icon: VenetianMask,
               },
             ]}
             column={table.getColumn('type')}
+            facets={typeCounts}
           />
           <DataTableFacetedFilter
             title={'Präferenz'}
@@ -188,13 +257,20 @@ export function DataTable({ data }: { data: Lecturer[] }) {
               {
                 value: 'bachelor',
                 label: 'Bachelor',
+                icon: BookOpen,
               },
               {
                 value: 'master',
                 label: 'Master',
+                icon: GraduationCap,
+              },
+              {
+                value: 'both',
+                label: 'Beides',
+                icon: Blend,
               },
             ]}
-            column={prefColumn}
+            column={table.getColumn('courseLevelPreference')}
             facets={prefCounts}
           />
           {(table.getState().columnFilters.length > 0 || globalFilter) && (
@@ -203,6 +279,7 @@ export function DataTable({ data }: { data: Lecturer[] }) {
               size={'icon'}
               onClick={() => {
                 table.resetColumnFilters()
+                setInputValue('')
                 table.setGlobalFilter('')
               }}>
               <XIcon />

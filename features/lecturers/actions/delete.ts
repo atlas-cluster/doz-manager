@@ -1,5 +1,7 @@
 'use server'
 
+import { revalidateTag } from 'next/cache'
+
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function deleteLecturer(id: string) {
@@ -8,4 +10,6 @@ export async function deleteLecturer(id: string) {
       id,
     },
   })
+
+  revalidateTag('lecturers', {})
 }
