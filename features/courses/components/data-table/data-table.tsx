@@ -4,10 +4,10 @@ import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
 import { z } from 'zod'
 
-import { getCourses } from '@/features/courses'
 import { createCourse } from '@/features/courses/actions/create'
 import { deleteCourse } from '@/features/courses/actions/delete'
 import { deleteCourses } from '@/features/courses/actions/delete-many'
+import { getCourses } from '@/features/courses/actions/get'
 import { updateCourse } from '@/features/courses/actions/update'
 import { columns } from '@/features/courses/components/data-table/columns'
 import { CourseDialog } from '@/features/courses/components/dialog'
@@ -181,15 +181,13 @@ export function DataTable({ data }: { data: Course[] }) {
             />
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
-          <CourseDialog
-            trigger={
-              <Button variant={'outline'} suppressHydrationWarning>
-                Vorlesung erstellen
-              </Button>
-            }
-            onSubmit={handleCreate}
-          />
         </ButtonGroup>
+        <CourseDialog
+          trigger={
+            <Button suppressHydrationWarning>Vorlesung erstellen</Button>
+          }
+          onSubmit={handleCreate}
+        />
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
         <Table>

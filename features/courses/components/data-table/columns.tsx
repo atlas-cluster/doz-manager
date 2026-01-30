@@ -2,16 +2,18 @@
 
 import {
   ArrowUpDown,
+  BookOpen,
+  Check,
+  GraduationCap,
+  Lock,
   MoreHorizontalIcon,
   PencilIcon,
   TrashIcon,
 } from 'lucide-react'
-import { useState } from 'react'
+import React, { useState } from 'react'
 
-import { CourseOpenBadge } from '@/features/courses/components/course-open-badge'
 import { CourseDialog } from '@/features/courses/components/dialog'
 import { Course, CourseTableMeta } from '@/features/courses/types'
-import { LecturerCourseLevelPreferenceBadge } from '@/features/lecturers/components/lecturer-course-level-preference-badge'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
@@ -137,7 +139,21 @@ export const columns: ColumnDef<Course>[] = [
     id: 'isOpen',
     header: 'Offen',
     cell: ({ row }) => {
-      return <CourseOpenBadge isOpen={row.original.isOpen} />
+      return (
+        <div className={'flex gap-1 items-center'}>
+          {row.original.isOpen ? (
+            <>
+              <Check className={'size-4'} />
+              Offen
+            </>
+          ) : (
+            <>
+              <Lock className={'size-4'} />
+              Geschlossen
+            </>
+          )}
+        </div>
+      )
     },
     enableSorting: false,
     enableHiding: true,
@@ -148,7 +164,19 @@ export const columns: ColumnDef<Course>[] = [
     id: 'courseLevel',
     cell: ({ row }) => {
       return (
-        <LecturerCourseLevelPreferenceBadge pref={row.original.courseLevel} />
+        <div className={'flex gap-1 items-center'}>
+          {row.original.courseLevel === 'bachelor' ? (
+            <>
+              <BookOpen className={'size-5'} />
+              Bachelor
+            </>
+          ) : (
+            <>
+              <GraduationCap className={'size-5'} />
+              Master
+            </>
+          )}
+        </div>
       )
     },
     header: 'Vorlesungsstufe',

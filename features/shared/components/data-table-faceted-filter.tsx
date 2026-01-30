@@ -1,8 +1,9 @@
-import { Check, PlusCircle } from 'lucide-react'
+import { PlusCircle } from 'lucide-react'
 import type { ComponentType } from 'react'
 
 import { Badge } from '@/features/shared/components/ui/badge'
 import { Button } from '@/features/shared/components/ui/button'
+import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
   Command,
   CommandEmpty,
@@ -18,7 +19,6 @@ import {
   PopoverTrigger,
 } from '@/features/shared/components/ui/popover'
 import { Separator } from '@/features/shared/components/ui/separator'
-import { cn } from '@/features/shared/lib/utils'
 import type { Column } from '@tanstack/react-table'
 
 export type FacetOption = {
@@ -47,7 +47,7 @@ export function DataTableFacetedFilter<TData>({
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-9 border-dashed">
-          <PlusCircle className="mr-2 h-4 w-4" />
+          <PlusCircle />
           {title}
 
           {selectedValues.size > 0 && (
@@ -75,7 +75,6 @@ export function DataTableFacetedFilter<TData>({
                     .map((o) => (
                       <Badge
                         key={o.value}
-                        variant="secondary"
                         className="rounded-sm px-1 font-normal">
                         {o.label}
                       </Badge>
@@ -112,14 +111,8 @@ export function DataTableFacetedFilter<TData>({
                       const values = Array.from(next)
                       column.setFilterValue(values.length ? values : undefined)
                     }}>
-                    <div
-                      className={cn(
-                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
-                        isSelected
-                          ? 'bg-primary text-primary-foreground'
-                          : 'opacity-50 [&_svg]:invisible'
-                      )}>
-                      <Check className="h-4 w-4" />
+                    <div>
+                      <Checkbox checked={isSelected} />
                     </div>
 
                     {Icon ? (

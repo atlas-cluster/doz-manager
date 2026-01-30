@@ -1,18 +1,18 @@
 'use client'
 
-import { createLecturer } from '../../actions/create'
-import { deleteLecturer } from '../../actions/delete'
-import { deleteLecturers } from '../../actions/delete-many'
-import { getLecturers } from '../../actions/get'
-import { updateLecturer } from '../../actions/update'
-import { lecturerSchema } from '../../schemas/lecturer'
-import { Lecturer } from '../../types'
-import { LecturerDialog } from '../dialog'
-import { columns } from './columns'
 import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useState, useTransition } from 'react'
 import z from 'zod'
 
+import { createLecturer } from '@/features/lecturers/actions/create'
+import { deleteLecturer } from '@/features/lecturers/actions/delete'
+import { deleteLecturers } from '@/features/lecturers/actions/delete-many'
+import { getLecturers } from '@/features/lecturers/actions/get'
+import { updateLecturer } from '@/features/lecturers/actions/update'
+import { columns } from '@/features/lecturers/components/data-table/columns'
+import { LecturerDialog } from '@/features/lecturers/components/dialog'
+import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
+import { Lecturer } from '@/features/lecturers/types'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
@@ -225,15 +225,11 @@ export function DataTable({ data }: { data: Lecturer[] }) {
             />
             <span className={'sr-only'}>Daten aktualisieren</span>
           </Button>
-          <LecturerDialog
-            trigger={
-              <Button variant={'outline'} suppressHydrationWarning>
-                Dozent erstellen
-              </Button>
-            }
-            onSubmit={handleCreate}
-          />
         </ButtonGroup>
+        <LecturerDialog
+          trigger={<Button suppressHydrationWarning>Dozent erstellen</Button>}
+          onSubmit={handleCreate}
+        />
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
         <Table>
