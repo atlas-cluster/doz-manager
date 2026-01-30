@@ -25,7 +25,6 @@ export interface GetCoursesParams {
   pageIndex: number
   pageSize: number
   sorting?: { id: string; desc: boolean }[]
-  columnFilters?: { id: string; value: unknown }[]
   globalFilter?: string
 }
 
