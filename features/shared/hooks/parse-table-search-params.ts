@@ -1,4 +1,4 @@
-import { parseFiltersFromUrl } from './use-table-url-state'
+import { parseFiltersFromUrlParams } from './use-table-url-state'
 
 import { ColumnFiltersState } from '@tanstack/react-table'
 
@@ -18,14 +18,22 @@ export function parseTableSearchParams(searchParams: {
       )
     : 0
 
-  // Parse pageSize (default: 10)
-  const pageSize = searchParams.pageSize
-    ? parseInt(
-        Array.isArray(searchParams.pageSize)
-          ? searchParams.pageSize[0]
-          : searchParams.pageSize
-      )
-    : 10
+  // Parse pageSize (default: 10), handle "all" as 999999999
+  let pageSize = 10
+  if (searchParams.pageSize) {
+    const pageSizeParam = Array.isArray(searchParams.pageSize)
+      ? searchParams.pageSize[0]
+      : searchParams.pageSize
+
+    if (pageSizeParam === 'all') {
+      pageSize = 999999999
+    } else {
+      const parsed = parseInt(pageSizeParam)
+      if (!isNaN(parsed)) {
+        pageSize = parsed
+      }
+    }
+  }
 
   // Parse sorting
   const sortBy = searchParams.sortBy
@@ -50,16 +58,24 @@ export function parseTableSearchParams(searchParams: {
       : searchParams.search
     : ''
 
-  // Parse column filters
-  const columnFiltersParam = searchParams.columnFilters
-  const columnFiltersArray = columnFiltersParam
-    ? Array.isArray(columnFiltersParam)
-      ? columnFiltersParam
-      : [columnFiltersParam]
-    : null
+  // Parse column filters from individual params (e.g., ?type=internal&courseLevelPreference=bachelor)
+  const filterParams: Record<string, string | string[] | null> = {}
+  const standardParams = new Set([
+    'page',
+    'pageSize',
+    'sortBy',
+    'sortOrder',
+    'search',
+  ])
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (!standardParams.has(key) && value !== undefined) {
+      filterParams[key] = value
+    }
+  }
 
   const columnFilters: ColumnFiltersState =
-    parseFiltersFromUrl(columnFiltersArray)
+    parseFiltersFromUrlParams(filterParams)
 
   return {
     pageIndex: page,

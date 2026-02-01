@@ -9,8 +9,8 @@ import {
   VenetianMask,
   XIcon,
 } from 'lucide-react'
-import { useEffect, useRef, useState, useTransition } from 'react'
-import * as React from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import z from 'zod'
 
 import { createLecturer } from '@/features/lecturers/actions/create'
@@ -38,8 +38,8 @@ import {
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
 import {
-  parseFiltersFromUrl,
-  serializeFiltersToUrl,
+  parseFiltersFromUrlParams,
+  serializeFiltersToUrlParams,
   useTableUrlState,
 } from '@/features/shared/hooks/use-table-url-state'
 import {
@@ -68,6 +68,7 @@ export function DataTable({
 
   // URL state management with nuqs
   const [urlState, setUrlState] = useTableUrlState()
+  const searchParams = useSearchParams()
 
   // Derive sorting state from URL
   const sorting: SortingState =
@@ -128,10 +129,32 @@ export function DataTable({
     })
   }
 
-  // Column filters from URL
-  const columnFilters: ColumnFiltersState = parseFiltersFromUrl(
-    urlState.columnFilters
-  )
+  // Column filters from URL - parse all non-standard params
+  const columnFilters: ColumnFiltersState = useMemo(() => {
+    const params: Record<string, string | string[] | null> = {}
+    const standardParams = new Set([
+      'page',
+      'pageSize',
+      'sortBy',
+      'sortOrder',
+      'search',
+    ])
+
+    searchParams.forEach((value, key) => {
+      if (!standardParams.has(key)) {
+        const existing = params[key]
+        if (existing === null || existing === undefined) {
+          params[key] = value
+        } else if (Array.isArray(existing)) {
+          existing.push(value)
+        } else {
+          params[key] = [existing, value]
+        }
+      }
+    })
+
+    return parseFiltersFromUrlParams(params)
+  }, [searchParams])
 
   const setColumnFilters = (
     updaterOrValue:
@@ -143,8 +166,9 @@ export function DataTable({
         ? updaterOrValue(columnFilters)
         : updaterOrValue
 
+    const filterParams = serializeFiltersToUrlParams(newFilters)
     setUrlState({
-      columnFilters: serializeFiltersToUrl(newFilters),
+      ...filterParams,
       page: 0, // Reset to first page on filter change
     })
   }
@@ -209,7 +233,7 @@ export function DataTable({
     urlState.sortBy,
     urlState.sortOrder,
     urlState.search,
-    urlState.columnFilters,
+    columnFilters,
   ])
 
   const handleCreate = (data: z.infer<typeof lecturerSchema>) => {

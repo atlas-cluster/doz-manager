@@ -1,5 +1,5 @@
 import {
-  parseAsArrayOf,
+  createParser,
   parseAsInteger,
   parseAsString,
   useQueryStates,
@@ -7,64 +7,72 @@ import {
 
 import { ColumnFiltersState } from '@tanstack/react-table'
 
+// Custom parser for pageSize that handles "all" as a special value
+const parsePageSize = createParser({
+  parse: (value) => {
+    if (value === 'all') return 999999999
+    const num = parseInt(value)
+    return isNaN(num) ? 10 : num
+  },
+  serialize: (value) => {
+    if (value === 999999999) return 'all'
+    return String(value)
+  },
+}).withDefault(10)
+
 /**
- * Convert URL filter strings to ColumnFiltersState
- * URL format: ["type.internal,external", "courseLevelPreference.bachelor"]
- * Output: [{ id: "type", value: ["internal", "external"] }, { id: "courseLevelPreference", value: ["bachelor"] }]
+ * Convert URL params to ColumnFiltersState
+ * Extracts filter params that are not standard table params
  */
-export function parseFiltersFromUrl(
-  urlFilters: string[] | null
+export function parseFiltersFromUrlParams(
+  params: Record<string, string | string[] | null>
 ): ColumnFiltersState {
-  if (!urlFilters || urlFilters.length === 0) {
-    return []
+  const standardParams = new Set([
+    'page',
+    'pageSize',
+    'sortBy',
+    'sortOrder',
+    'search',
+  ])
+  const filters: ColumnFiltersState = []
+
+  for (const [key, value] of Object.entries(params)) {
+    if (!standardParams.has(key) && value !== null) {
+      const values = Array.isArray(value) ? value : [value]
+      // Split comma-separated values
+      const parsedValues = values.flatMap((v) => v.split(',')).filter(Boolean)
+      if (parsedValues.length > 0) {
+        filters.push({ id: key, value: parsedValues })
+      }
+    }
   }
 
-  return urlFilters
-    .map((filter) => {
-      // Split only on the first dot to handle column names that might contain dots
-      const dotIndex = filter.indexOf('.')
-      if (dotIndex === -1) return null
-
-      const id = filter.substring(0, dotIndex)
-      const valuesStr = filter.substring(dotIndex + 1)
-
-      if (!id || !valuesStr) return null
-
-      const values = valuesStr.split(',').filter(Boolean)
-      if (values.length === 0) return null
-
-      return { id, value: values }
-    })
-    .filter((f): f is { id: string; value: string[] } => f !== null)
+  return filters
 }
 
 /**
- * Convert ColumnFiltersState to URL filter strings
- * Input: [{ id: "type", value: ["internal", "external"] }, { id: "courseLevelPreference", value: ["bachelor"] }]
- * Output: ["type.internal,external", "courseLevelPreference.bachelor"]
+ * Convert ColumnFiltersState to URL params object
  */
-export function serializeFiltersToUrl(
+export function serializeFiltersToUrlParams(
   columnFilters: ColumnFiltersState
-): string[] | null {
-  if (!columnFilters || columnFilters.length === 0) {
-    return null
+): Record<string, string | null> {
+  const result: Record<string, string | null> = {}
+
+  for (const filter of columnFilters) {
+    const values = Array.isArray(filter.value) ? filter.value : [filter.value]
+    const valuesStr = values
+      .map((v) => String(v))
+      .filter((v) => v && v !== 'undefined' && v !== 'null')
+      .join(',')
+
+    if (valuesStr) {
+      result[filter.id] = valuesStr
+    } else {
+      result[filter.id] = null
+    }
   }
 
-  const urlFilters = columnFilters
-    .map((filter) => {
-      const values = Array.isArray(filter.value) ? filter.value : [filter.value]
-      // Ensure all values are strings and filter out empty/null/undefined
-      const valuesStr = values
-        .map((v) => String(v))
-        .filter((v) => v && v !== 'undefined' && v !== 'null')
-        .join(',')
-      if (!valuesStr) return null
-
-      return `${filter.id}.${valuesStr}`
-    })
-    .filter((f): f is string => f !== null)
-
-  return urlFilters.length > 0 ? urlFilters : null
+  return result
 }
 
 /**
@@ -76,7 +84,7 @@ export function useTableUrlState() {
     {
       // Pagination
       page: parseAsInteger.withDefault(0),
-      pageSize: parseAsInteger.withDefault(10),
+      pageSize: parsePageSize,
 
       // Sorting
       sortBy: parseAsString,
@@ -85,9 +93,8 @@ export function useTableUrlState() {
       // Global search/filter
       search: parseAsString.withDefault(''),
 
-      // Column filters - format: "columnId.value1,value2"
-      // Example: type.internal,external or courseLevelPreference.bachelor
-      columnFilters: parseAsArrayOf(parseAsString),
+      // Column filters are now individual params (e.g., ?type=internal&courseLevelPreference=bachelor)
+      // They are handled dynamically in the component
     },
     {
       // Use shallow routing to avoid server-side re-renders
