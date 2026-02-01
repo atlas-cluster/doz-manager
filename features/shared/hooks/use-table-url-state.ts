@@ -21,7 +21,13 @@ export function parseFiltersFromUrl(
 
   return urlFilters
     .map((filter) => {
-      const [id, valuesStr] = filter.split('.')
+      // Split only on the first dot to handle column names that might contain dots
+      const dotIndex = filter.indexOf('.')
+      if (dotIndex === -1) return null
+
+      const id = filter.substring(0, dotIndex)
+      const valuesStr = filter.substring(dotIndex + 1)
+
       if (!id || !valuesStr) return null
 
       const values = valuesStr.split(',').filter(Boolean)
@@ -47,7 +53,11 @@ export function serializeFiltersToUrl(
   const urlFilters = columnFilters
     .map((filter) => {
       const values = Array.isArray(filter.value) ? filter.value : [filter.value]
-      const valuesStr = values.filter(Boolean).join(',')
+      // Ensure all values are strings and filter out empty/null/undefined
+      const valuesStr = values
+        .map((v) => String(v))
+        .filter((v) => v && v !== 'undefined' && v !== 'null')
+        .join(',')
       if (!valuesStr) return null
 
       return `${filter.id}.${valuesStr}`
