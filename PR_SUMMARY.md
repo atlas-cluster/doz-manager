@@ -2,6 +2,12 @@
 
 This PR implements [nuqs](https://nuqs.47ng.com/) for managing URL parameters in data tables, enabling better caching, shareable URLs, and improved user experience.
 
+## ⚠️ Important Bug Fix
+
+**An infinite refresh loop bug was discovered and fixed** after initial implementation. See [docs/INFINITE_LOOP_FIX.md](docs/INFINITE_LOOP_FIX.md) for details.
+
+**Fix:** Changed `useEffect` dependencies from derived objects (`pagination`, `sorting`) to primitive URL values (`urlState.page`, `urlState.pageSize`, etc.) to prevent unnecessary re-renders.
+
 ## Changes Made
 
 ### 1. Dependencies
@@ -12,12 +18,13 @@ This PR implements [nuqs](https://nuqs.47ng.com/) for managing URL parameters in
 
 - **`features/shared/hooks/use-table-url-state.ts`** - Centralized hook for table URL state management
 - **`docs/URL_PARAMS.md`** - Comprehensive documentation for URL parameters
+- **`docs/INFINITE_LOOP_FIX.md`** - Documentation of the infinite loop bug and fix
 
 ### 3. Modified Files
 
 - **`app/layout.tsx`** - Added NuqsAdapter provider
-- **`features/courses/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state
-- **`features/lecturers/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state
+- **`features/courses/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state (+ bug fix)
+- **`features/lecturers/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state (+ bug fix)
 
 ## URL Parameters
 
