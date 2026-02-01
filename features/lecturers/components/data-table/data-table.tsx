@@ -37,6 +37,7 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
+import { useTableUrlState } from '@/features/shared/hooks/use-table-url-state'
 import {
   ColumnFiltersState,
   OnChangeFn,
@@ -61,26 +62,83 @@ export function DataTable({
 }) {
   const [isPending, startTransition] = useTransition()
 
-  // Table State
-  const [sorting, setSorting] = useState<SortingState>([])
+  // URL state management with nuqs
+  const [urlState, setUrlState] = useTableUrlState()
+
+  // Derive sorting state from URL
+  const sorting: SortingState =
+    urlState.sortBy && urlState.sortOrder
+      ? [{ id: urlState.sortBy, desc: urlState.sortOrder === 'desc' }]
+      : []
+
+  const setSorting = (
+    updaterOrValue: SortingState | ((old: SortingState) => SortingState)
+  ) => {
+    const newSorting =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(sorting)
+        : updaterOrValue
+
+    if (newSorting.length > 0) {
+      setUrlState({
+        sortBy: newSorting[0].id,
+        sortOrder: newSorting[0].desc ? 'desc' : 'asc',
+      })
+    } else {
+      setUrlState({
+        sortBy: null,
+        sortOrder: null,
+      })
+    }
+  }
+
+  // Pagination state from URL
+  const pagination: PaginationState = {
+    pageIndex: urlState.page,
+    pageSize: urlState.pageSize,
+  }
+
+  const setPagination = (
+    updaterOrValue:
+      | PaginationState
+      | ((old: PaginationState) => PaginationState)
+  ) => {
+    const newPagination =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(pagination)
+        : updaterOrValue
+
+    setUrlState({
+      page: newPagination.pageIndex,
+      pageSize: newPagination.pageSize,
+    })
+  }
+
+  // Global filter from URL
+  const globalFilter = urlState.search
+
+  const setGlobalFilter = (value: string) => {
+    setUrlState({
+      search: value || null,
+      page: 0, // Reset to first page on search
+    })
+  }
+
+  // Local state for things that don't need to be in URL
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [globalFilter, setGlobalFilter] = useState<string>('')
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  })
 
-  // Debounce global filter
+  // Debounce input for better UX
   const [inputValue, setInputValue] = useState<string>(globalFilter)
   const debouncedInputValue = useDebounce(inputValue)
 
   useEffect(() => {
     if (debouncedInputValue !== globalFilter) {
       setGlobalFilter(debouncedInputValue)
-      setPagination((prev) => ({ ...prev, pageIndex: 0 }))
     }
+    // setGlobalFilter uses setUrlState which is stable from nuqs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedInputValue, globalFilter])
 
   // Data State
@@ -158,12 +216,15 @@ export function DataTable({
     updaterOrValue
   ) => {
     setColumnFilters(updaterOrValue)
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+    setUrlState({ page: 0 }) // Reset to first page on filter change
   }
 
   const onGlobalFilterChange: OnChangeFn<string> = (updaterOrValue) => {
-    setGlobalFilter(updaterOrValue)
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+    const newValue =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(globalFilter)
+        : updaterOrValue
+    setGlobalFilter(newValue)
   }
 
   const table = useReactTable({
