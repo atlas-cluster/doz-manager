@@ -20,5 +20,5 @@ export async function updateCourse(
     },
   })
 
-  revalidateTag('courses', {})
+  revalidateTag('courses', '')
 }

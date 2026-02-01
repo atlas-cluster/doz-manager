@@ -26,5 +26,5 @@ export async function updateLecturer(
     },
   })
 
-  revalidateTag('lecturers', {})
+  revalidateTag('lecturers', '')
 }

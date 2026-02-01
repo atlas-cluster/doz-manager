@@ -183,6 +183,8 @@ export function DataTable({
   useEffect(() => {
     if (isMounted.current) {
       fetchData()
+      // Clear row selection when navigating (page, filters, sorting, search changes)
+      setRowSelection({})
     } else {
       isMounted.current = true
     }

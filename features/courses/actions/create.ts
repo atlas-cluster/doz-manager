@@ -16,5 +16,5 @@ export async function createCourse(data: z.infer<typeof courseSchema>) {
     },
   })
 
-  revalidateTag('courses', {})
+  revalidateTag('courses', '')
 }

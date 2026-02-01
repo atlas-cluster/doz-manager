@@ -20,5 +20,5 @@ export async function createLecturer(data: z.infer<typeof lecturerSchema>) {
     },
   })
 
-  revalidateTag('lecturers', {})
+  revalidateTag('lecturers', '')
 }

@@ -11,5 +11,5 @@ export async function deleteLecturer(id: string) {
     },
   })
 
-  revalidateTag('lecturers', {})
+  revalidateTag('lecturers', '')
 }

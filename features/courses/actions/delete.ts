@@ -11,5 +11,5 @@ export async function deleteCourse(id: string) {
     },
   })
 
-  revalidateTag('courses', {})
+  revalidateTag('courses', '')
 }
