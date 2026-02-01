@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ThemeProvider } from 'next-themes'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import React from 'react'
 
 import '@/features/shared/styles/globals.css'
@@ -29,13 +30,15 @@ export default function RootLayout({
     <html lang="de" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange>
-          {children}
-        </ThemeProvider>
+        <NuqsAdapter>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange>
+            {children}
+          </ThemeProvider>
+        </NuqsAdapter>
       </body>
     </html>
   )
