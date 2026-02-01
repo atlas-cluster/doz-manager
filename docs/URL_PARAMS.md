@@ -19,9 +19,10 @@ The following URL parameters are supported on all data table pages (e.g., `/cour
 ### Pagination
 
 - `page` (number, default: 0): The current page index (0-based)
-- `pageSize` (number, default: 10): Number of items per page
+- `pageSize` (number or "all", default: 10): Number of items per page, or "all" to show all items
 
 **Example**: `/courses?page=2&pageSize=20` - Shows page 3 (0-indexed) with 20 items per page
+**Example**: `/lecturers?pageSize=all` - Shows all lecturers on one page
 
 ### Sorting
 
@@ -38,20 +39,21 @@ The following URL parameters are supported on all data table pages (e.g., `/cour
 
 ### Column Filters (Faceted Filters)
 
-- `columnFilters` (array of strings): Column-specific filters in format "columnId.value1,value2"
+Column filters use the column name directly as the parameter name, with values comma-separated.
+
+**Format**: `?columnName=value1,value2`
 
 **Examples**:
 
-- `/lecturers?columnFilters=type.internal` - Filter to internal lecturers only
-- `/lecturers?columnFilters=type.internal,external&columnFilters=courseLevelPreference.bachelor` - Multiple filters
-
-Each filter is encoded as `columnId.value1,value2,...` where multiple values are comma-separated.
+- `/lecturers?type=internal` - Filter to internal lecturers only
+- `/lecturers?type=internal,external` - Filter to internal AND external lecturers
+- `/lecturers?type=internal&courseLevelPreference=bachelor` - Multiple filters
 
 ## Complete Examples
 
 ```
-# Simple pagination
-/courses?page=1&pageSize=20
+# Simple pagination with "all"
+/courses?pageSize=all
 
 # Sort by last name ascending
 /lecturers?sortBy=lastName&sortOrder=asc
@@ -59,14 +61,17 @@ Each filter is encoded as `columnId.value1,value2,...` where multiple values are
 # Search with pagination
 /courses?search=mathematics&page=0
 
-# Faceted filters only
-/lecturers?columnFilters=type.internal
+# Single faceted filter
+/lecturers?type=internal
+
+# Multiple values in one filter
+/lecturers?type=internal,external
 
 # Multiple faceted filters
-/lecturers?columnFilters=type.internal,external&columnFilters=courseLevelPreference.bachelor,master
+/lecturers?type=internal&courseLevelPreference=bachelor,master
 
 # Combined: search, sort, filter, and paginate
-/lecturers?search=john&sortBy=email&sortOrder=desc&columnFilters=type.internal&page=1&pageSize=25
+/lecturers?search=john&sortBy=email&sortOrder=desc&type=internal&page=1&pageSize=25
 ```
 
 ## Implementation Details
@@ -97,11 +102,12 @@ function MyDataTable() {
 - **Type Safety**: All parameters are properly typed using nuqs parsers
 - **Debounced Search**: Search input is debounced for better UX
 - **Server-Side Support**: URL parameters are respected on page load and refresh
-- **Faceted Filters**: Column-specific filters are synced to URL
+- **Clean Filter URLs**: Each filter column gets its own query parameter
+- **PageSize "All"**: The "show all" option displays as `pageSize=all` instead of a large number
 
-### Column Filter Serialization
+### Column Filter Format
 
-Column filters are serialized to a URL-friendly format:
+Column filters use column names directly as query parameters:
 
 **Client State:**
 
@@ -115,13 +121,22 @@ Column filters are serialized to a URL-friendly format:
 **URL Format:**
 
 ```
-?columnFilters=type.internal,external&columnFilters=courseLevelPreference.bachelor
+?type=internal,external&courseLevelPreference=bachelor
 ```
 
 Helper functions handle conversion:
 
-- `parseFiltersFromUrl()` - URL string → ColumnFiltersState
-- `serializeFiltersToUrl()` - ColumnFiltersState → URL string
+- `parseFiltersFromUrlParams()` - Extracts filters from individual URL params → ColumnFiltersState
+- `serializeFiltersToUrlParams()` - ColumnFiltersState → Individual URL params
+
+### PageSize Format
+
+The special "all" value for page size:
+
+**Internal Value:** `999999999`  
+**URL Display:** `all`
+
+A custom nuqs parser automatically converts between these formats.
 
 ### Server-Side Rendering
 
@@ -165,7 +180,7 @@ The `NuqsAdapter` is configured in the root layout (`app/layout.tsx`) to enable 
 3. Click "Preference" filter and select "Bachelor"
 4. Apply sorting (e.g., by Last Name, descending)
 5. Navigate to page 2
-6. Copy the URL: `/lecturers?page=1&sortBy=lastName&sortOrder=desc&columnFilters=type.internal&columnFilters=courseLevelPreference.bachelor`
+6. Copy the URL: `/lecturers?page=1&sortBy=lastName&sortOrder=desc&type=internal&courseLevelPreference=bachelor`
 7. Share this URL with colleagues - they will see the exact same filtered and sorted view
 8. **Refreshing the page preserves all filters** ✨
 
@@ -176,6 +191,14 @@ The `NuqsAdapter` is configured in the root layout (`app/layout.tsx`) to enable 
 3. Sort by course name
 4. Bookmark the URL: `/courses?search=Data%20Science&sortBy=name&sortOrder=asc`
 5. Later, access this bookmark to quickly view the same filtered results
+
+### Use "Show All" Feature
+
+1. Navigate to the Lecturers page
+2. Select "Alle" from the page size dropdown
+3. URL updates to: `/lecturers?pageSize=all`
+4. All lecturers are displayed on a single page
+5. **The URL shows "all" instead of a large number** ✨
 
 ### Test URL Parameter Persistence
 
