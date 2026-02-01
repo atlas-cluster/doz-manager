@@ -27,7 +27,11 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
-import { useTableUrlState } from '@/features/shared/hooks/use-table-url-state'
+import {
+  parseFiltersFromUrl,
+  serializeFiltersToUrl,
+  useTableUrlState,
+} from '@/features/shared/hooks/use-table-url-state'
 import {
   ColumnFiltersState,
   OnChangeFn,
@@ -114,8 +118,28 @@ export function DataTable({
     })
   }
 
+  // Column filters from URL
+  const columnFilters: ColumnFiltersState = parseFiltersFromUrl(
+    urlState.columnFilters
+  )
+
+  const setColumnFilters = (
+    updaterOrValue:
+      | ColumnFiltersState
+      | ((old: ColumnFiltersState) => ColumnFiltersState)
+  ) => {
+    const newFilters =
+      typeof updaterOrValue === 'function'
+        ? updaterOrValue(columnFilters)
+        : updaterOrValue
+
+    setUrlState({
+      columnFilters: serializeFiltersToUrl(newFilters),
+      page: 0, // Reset to first page on filter change
+    })
+  }
+
   // Local state for things that don't need to be in URL
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
 
@@ -169,6 +193,7 @@ export function DataTable({
     urlState.sortBy,
     urlState.sortOrder,
     urlState.search,
+    urlState.columnFilters,
   ])
 
   const handleCreate = (data: z.infer<typeof courseSchema>) => {
@@ -208,7 +233,6 @@ export function DataTable({
     updaterOrValue
   ) => {
     setColumnFilters(updaterOrValue)
-    setUrlState({ page: 0 }) // Reset to first page on filter change
   }
 
   const onGlobalFilterChange: OnChangeFn<string> = (updaterOrValue) => {
