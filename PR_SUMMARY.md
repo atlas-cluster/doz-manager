@@ -2,11 +2,12 @@
 
 This PR implements [nuqs](https://nuqs.47ng.com/) for managing URL parameters in data tables, enabling better caching, shareable URLs, and improved user experience.
 
-## ⚠️ Important Bug Fix
+## ⚠️ Important Bug Fixes
 
-**An infinite refresh loop bug was discovered and fixed** after initial implementation. See [docs/INFINITE_LOOP_FIX.md](docs/INFINITE_LOOP_FIX.md) for details.
+**Two critical bugs were discovered and fixed** after initial implementation:
 
-**Fix:** Changed `useEffect` dependencies from derived objects (`pagination`, `sorting`) to primitive URL values (`urlState.page`, `urlState.pageSize`, etc.) to prevent unnecessary re-renders.
+1. **Infinite Refresh Loop** - Changed `useEffect` dependencies from derived objects to primitive URL values. See [docs/INFINITE_LOOP_FIX.md](docs/INFINITE_LOOP_FIX.md)
+2. **URL Params Not Loading on Refresh** - Added server-side URL parameter parsing to load correct initial data
 
 ## Changes Made
 
@@ -17,26 +18,30 @@ This PR implements [nuqs](https://nuqs.47ng.com/) for managing URL parameters in
 ### 2. New Files
 
 - **`features/shared/hooks/use-table-url-state.ts`** - Centralized hook for table URL state management
+- **`features/shared/hooks/parse-table-search-params.ts`** - Server-side URL parameter parser
 - **`docs/URL_PARAMS.md`** - Comprehensive documentation for URL parameters
 - **`docs/INFINITE_LOOP_FIX.md`** - Documentation of the infinite loop bug and fix
 
 ### 3. Modified Files
 
 - **`app/layout.tsx`** - Added NuqsAdapter provider
-- **`features/courses/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state (+ bug fix)
-- **`features/lecturers/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state (+ bug fix)
+- **`app/(app)/courses/page.tsx`** - Added server-side URL parsing for initial data
+- **`app/(app)/lecturers/page.tsx`** - Added server-side URL parsing for initial data
+- **`features/courses/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state (+ bug fixes)
+- **`features/lecturers/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state (+ bug fixes)
 
 ## URL Parameters
 
 Both `/courses` and `/lecturers` pages now support:
 
-| Parameter   | Type   | Default | Description                  |
-| ----------- | ------ | ------- | ---------------------------- |
-| `page`      | number | 0       | Current page index (0-based) |
-| `pageSize`  | number | 10      | Number of items per page     |
-| `sortBy`    | string | -       | Column ID to sort by         |
-| `sortOrder` | string | -       | Sort direction (asc/desc)    |
-| `search`    | string | ""      | Global search query          |
+| Parameter       | Type          | Default | Description                                      |
+| --------------- | ------------- | ------- | ------------------------------------------------ |
+| `page`          | number        | 0       | Current page index (0-based)                     |
+| `pageSize`      | number        | 10      | Number of items per page                         |
+| `sortBy`        | string        | -       | Column ID to sort by                             |
+| `sortOrder`     | string        | -       | Sort direction (asc/desc)                        |
+| `search`        | string        | ""      | Global search query                              |
+| `columnFilters` | array[string] | []      | Column-specific filters (format: "id.val1,val2") |
 
 ## Example URLs
 
@@ -50,8 +55,11 @@ Both `/courses` and `/lecturers` pages now support:
 # Search with pagination
 /courses?search=mathematics&page=0
 
-# Combined: search, sort, and paginate
-/lecturers?search=john&sortBy=email&sortOrder=desc&page=1&pageSize=25
+# Faceted filters (lecturers only)
+/lecturers?columnFilters=type.internal&columnFilters=courseLevelPreference.bachelor
+
+# Combined: search, sort, filter, and paginate
+/lecturers?search=john&sortBy=email&sortOrder=desc&columnFilters=type.internal&page=1&pageSize=25
 ```
 
 ## Benefits
@@ -62,13 +70,17 @@ Both `/courses` and `/lecturers` pages now support:
 4. **Bookmarkable** - Users can bookmark specific table views
 5. **Type Safety** - All parameters are properly typed using nuqs parsers
 6. **Clean URLs** - Default values are omitted from URLs
+7. **Page Refresh Support** - Refreshing preserves all table state ✨
+8. **Faceted Filters in URL** - Column filters are synced to URL ✨
 
 ## Technical Implementation
 
 - Uses **shallow routing** to avoid full page reloads
+- **Server-side parsing** ensures correct data on page load/refresh
 - **Debounced search** input for better UX (500ms delay)
 - Pagination **resets to page 0** when filters or search changes
 - **Type-safe** parsers ensure correct parameter types
+- **Column filter serialization** converts complex state to URL format
 - Fully compatible with **React Table** (TanStack Table)
 
 ## Testing
