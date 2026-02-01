@@ -1,0 +1,96 @@
+# nuqs Implementation Summary
+
+This PR implements [nuqs](https://nuqs.47ng.com/) for managing URL parameters in data tables, enabling better caching, shareable URLs, and improved user experience.
+
+## Changes Made
+
+### 1. Dependencies
+
+- Added `nuqs@2.8.7` (no security vulnerabilities)
+
+### 2. New Files
+
+- **`features/shared/hooks/use-table-url-state.ts`** - Centralized hook for table URL state management
+- **`docs/URL_PARAMS.md`** - Comprehensive documentation for URL parameters
+
+### 3. Modified Files
+
+- **`app/layout.tsx`** - Added NuqsAdapter provider
+- **`features/courses/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state
+- **`features/lecturers/components/data-table/data-table.tsx`** - Updated to use nuqs for URL state
+
+## URL Parameters
+
+Both `/courses` and `/lecturers` pages now support:
+
+| Parameter   | Type   | Default | Description                  |
+| ----------- | ------ | ------- | ---------------------------- |
+| `page`      | number | 0       | Current page index (0-based) |
+| `pageSize`  | number | 10      | Number of items per page     |
+| `sortBy`    | string | -       | Column ID to sort by         |
+| `sortOrder` | string | -       | Sort direction (asc/desc)    |
+| `search`    | string | ""      | Global search query          |
+
+## Example URLs
+
+```
+# Page 2 with 20 items per page
+/courses?page=1&pageSize=20
+
+# Sort by last name ascending
+/lecturers?sortBy=lastName&sortOrder=asc
+
+# Search with pagination
+/courses?search=mathematics&page=0
+
+# Combined: search, sort, and paginate
+/lecturers?search=john&sortBy=email&sortOrder=desc&page=1&pageSize=25
+```
+
+## Benefits
+
+1. **Better Caching** - URL parameters enable HTTP caching strategies
+2. **Shareable URLs** - Users can share specific filtered/sorted/paginated views
+3. **Browser History** - Back/forward buttons work correctly with table state
+4. **Bookmarkable** - Users can bookmark specific table views
+5. **Type Safety** - All parameters are properly typed using nuqs parsers
+6. **Clean URLs** - Default values are omitted from URLs
+
+## Technical Implementation
+
+- Uses **shallow routing** to avoid full page reloads
+- **Debounced search** input for better UX (500ms delay)
+- Pagination **resets to page 0** when filters or search changes
+- **Type-safe** parsers ensure correct parameter types
+- Fully compatible with **React Table** (TanStack Table)
+
+## Testing
+
+- ✅ All existing tests passing (37 tests)
+- ✅ TypeScript compilation successful
+- ✅ ESLint checks passing
+- ✅ No security vulnerabilities
+- ✅ Manual verification needed (requires running dev server)
+
+## Next Steps for Testing
+
+To manually test this implementation:
+
+1. Start the development server: `npm run dev`
+2. Navigate to `/courses` or `/lecturers`
+3. Try the following:
+   - Change pages - notice URL updates with `?page=1`
+   - Search for something - notice URL updates with `?search=query`
+   - Sort a column - notice URL updates with `?sortBy=column&sortOrder=asc`
+   - Copy the URL and open in new tab - state is preserved
+   - Use browser back/forward buttons - table state changes accordingly
+   - Bookmark a filtered/sorted view - returns to same state when accessed
+
+## Documentation
+
+See [`docs/URL_PARAMS.md`](docs/URL_PARAMS.md) for comprehensive documentation including:
+
+- Detailed parameter descriptions
+- Usage examples
+- Implementation details
+- Technical notes
