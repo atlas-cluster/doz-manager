@@ -177,7 +177,14 @@ export function DataTable({
       isMounted.current = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination, sorting, columnFilters, globalFilter])
+  }, [
+    urlState.page,
+    urlState.pageSize,
+    urlState.sortBy,
+    urlState.sortOrder,
+    urlState.search,
+    columnFilters,
+  ])
 
   const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
     startTransition(async () => {
