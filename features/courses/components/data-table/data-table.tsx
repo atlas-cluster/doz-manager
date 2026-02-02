@@ -162,18 +162,37 @@ export function DataTable({
     // Build new URL with updated filters using Next.js router
     const params = new URLSearchParams(searchParams.toString())
 
-    // Clear all old filter params (non-standard params)
-    columnFilters.forEach((filter) => {
-      params.delete(filter.id)
-    })
+    const standardParamsSet = new Set([
+      'page',
+      'pageSize',
+      'sortBy',
+      'sortOrder',
+      'search',
+    ])
 
-    // Serialize and add new filters
-    const filterParams = serializeFiltersToUrlParams(newFilters)
-    Object.entries(filterParams).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value)
-      }
-    })
+    if (newFilters.length === 0) {
+      // When clearing ALL filters (reset button), delete ALL non-standard params from URL
+      const keysToDelete: string[] = []
+      params.forEach((_, key) => {
+        if (!standardParamsSet.has(key)) {
+          keysToDelete.push(key)
+        }
+      })
+      keysToDelete.forEach((key) => params.delete(key))
+    } else {
+      // When updating filters normally, clear old ones and add new ones
+      columnFilters.forEach((filter) => {
+        params.delete(filter.id)
+      })
+
+      // Serialize and add new filters
+      const filterParams = serializeFiltersToUrlParams(newFilters)
+      Object.entries(filterParams).forEach(([key, value]) => {
+        if (value) {
+          params.set(key, value)
+        }
+      })
+    }
 
     // Reset to first page on filter change
     params.set('page', '0')
