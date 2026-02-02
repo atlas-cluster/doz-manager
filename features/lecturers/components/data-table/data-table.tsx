@@ -290,9 +290,9 @@ export function DataTable({
   // Sync with server-rendered data when initialData changes
   useEffect(() => {
     setData(initialData.data)
-    setTotalCount(initialData.totalCount)
-    setTypeFacets(initialData.typeFacets)
-    setPrefFacets(initialData.prefFacets)
+    setRowCount(initialData.rowCount)
+    setPageCount(initialData.pageCount)
+    setFacets(initialData.facets)
   }, [initialData])
 
   const isMounted = useRef(false)

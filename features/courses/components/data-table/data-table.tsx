@@ -277,7 +277,8 @@ export function DataTable({
   // Sync with server-rendered data when initialData changes
   useEffect(() => {
     setData(initialData.data)
-    setTotalCount(initialData.totalCount)
+    setRowCount(initialData.rowCount)
+    setPageCount(initialData.pageCount)
   }, [initialData])
 
   const isMounted = useRef(false)
