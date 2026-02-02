@@ -2,6 +2,7 @@
 
 import { RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { createCourse } from '@/features/courses/actions/create'
@@ -114,30 +115,42 @@ export function DataTable({
   }, [pagination, sorting, globalFilter])
 
   const handleCreate = (data: z.infer<typeof courseSchema>) => {
-    startTransition(async () => {
-      await createCourse(data)
-      fetchData()
+    const promise = createCourse(data).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Vorlesung wird erstellt...',
+      success: 'Erfolgreich Vorlesung erstellt',
+      error: 'Fehler beim Erstellen der Vorlesung',
     })
   }
 
   const handleUpdate = (id: string, data: z.infer<typeof courseSchema>) => {
-    startTransition(async () => {
-      await updateCourse(id, data)
-      fetchData()
+    const promise = updateCourse(id, data).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Vorlesung wird aktualisiert...',
+      success: 'Erfolgreich Vorlesung aktualisiert',
+      error: 'Fehler beim Aktualisieren der Vorlesung',
     })
   }
 
   const handleDelete = (id: string) => {
-    startTransition(async () => {
-      await deleteCourse(id)
-      fetchData()
+    const promise = deleteCourse(id).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Vorlesung wird gelöscht...',
+      success: 'Erfolgreich Vorlesung gelöscht',
+      error: 'Fehler beim Löschen der Vorlesung',
     })
   }
 
   const handleDeleteMany = (ids: string[]) => {
-    startTransition(async () => {
-      await deleteCourses(ids)
-      fetchData()
+    const promise = deleteCourses(ids).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Vorlesungen werden gelöscht...',
+      success: 'Erfolgreich Vorlesungen gelöscht',
+      error: 'Fehler beim Löschen der Vorlesungen',
     })
   }
 

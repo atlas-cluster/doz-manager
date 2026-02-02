@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import * as React from 'react'
+import { toast } from 'sonner'
 import z from 'zod'
 
 import { createLecturer } from '@/features/lecturers/actions/create'
@@ -128,30 +129,42 @@ export function DataTable({
   }, [pagination, sorting, columnFilters, globalFilter])
 
   const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
-    startTransition(async () => {
-      await createLecturer(data)
-      fetchData()
+    const promise = createLecturer(data).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Dozent wird erstellt...',
+      success: 'Erfolgreich Dozenten erstellt',
+      error: 'Fehler beim Erstellen des Dozenten',
     })
   }
 
   const handleUpdate = (id: string, data: z.infer<typeof lecturerSchema>) => {
-    startTransition(async () => {
-      await updateLecturer(id, data)
-      fetchData()
+    const promise = updateLecturer(id, data).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Dozent wird aktualisiert...',
+      success: 'Erfolgreich Dozenten aktualisiert',
+      error: 'Fehler beim Aktualisieren des Dozenten',
     })
   }
 
   const handleDelete = (id: string) => {
-    startTransition(async () => {
-      await deleteLecturer(id)
-      fetchData()
+    const promise = deleteLecturer(id).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Dozent wird gelöscht...',
+      success: 'Erfolgreich Dozenten gelöscht',
+      error: 'Fehler beim Löschen des Dozenten',
     })
   }
 
   const handleDeleteMany = (ids: string[]) => {
-    startTransition(async () => {
-      await deleteLecturers(ids)
-      fetchData()
+    const promise = deleteLecturers(ids).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Dozenten werden gelöscht...',
+      success: 'Erfolgreich Dozenten gelöscht',
+      error: 'Fehler beim Löschen der Dozenten',
     })
   }
 
