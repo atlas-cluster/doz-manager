@@ -166,9 +166,19 @@ export function DataTable({
         ? updaterOrValue(columnFilters)
         : updaterOrValue
 
+    // Get all current filter column names to clear them
+    const currentFilterColumns: Record<string, null> = {}
+    columnFilters.forEach((filter) => {
+      currentFilterColumns[filter.id] = null
+    })
+
+    // Serialize the new filters
     const filterParams = serializeFiltersToUrlParams(newFilters)
+
+    // Update URL: first clear old filters, then set new ones
     setUrlState({
-      ...filterParams,
+      ...currentFilterColumns, // Clear all existing filters
+      ...filterParams, // Set new filter values
       page: 0, // Reset to first page on filter change
     })
   }
