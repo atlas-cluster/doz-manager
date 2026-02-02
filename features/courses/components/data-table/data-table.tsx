@@ -178,8 +178,30 @@ export function DataTable({
     // Reset to first page on filter change
     params.set('page', '0')
 
+    // Build query string manually to avoid encoding commas in filter values
+    const standardParams = new Set([
+      'page',
+      'pageSize',
+      'sortBy',
+      'sortOrder',
+      'search',
+    ])
+    const queryParts: string[] = []
+
+    params.forEach((value, key) => {
+      if (standardParams.has(key)) {
+        // Standard params - encode normally
+        queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      } else {
+        // Filter params - don't encode commas in values for cleaner URLs
+        queryParts.push(`${encodeURIComponent(key)}=${value}`)
+      }
+    })
+
+    const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : ''
+
     // Update URL using router
-    router.push(`${pathname}?${params.toString()}`, { scroll: false })
+    router.push(`${pathname}${queryString}`, { scroll: false })
   }
 
   // Local state for things that don't need to be in URL
@@ -347,9 +369,9 @@ export function DataTable({
               variant="ghost"
               size={'icon'}
               onClick={() => {
-                table.resetColumnFilters()
+                setColumnFilters([])
                 setInputValue('')
-                table.setGlobalFilter('')
+                setGlobalFilter('')
               }}>
               <XIcon />
               <span className={'sr-only'}>Filter löschen</span>
