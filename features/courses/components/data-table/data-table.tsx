@@ -274,17 +274,21 @@ export function DataTable({
     })
   }
 
+  // Sync with server-rendered data when initialData changes
+  useEffect(() => {
+    setData(initialData.data)
+    setTotalCount(initialData.totalCount)
+  }, [initialData])
+
   const isMounted = useRef(false)
 
+  // Clear row selection when URL state changes (but don't fetch - server handles that)
   useEffect(() => {
     if (isMounted.current) {
-      fetchData()
-      // Clear row selection when navigating (page, filters, sorting, search changes)
       setRowSelection({})
     } else {
       isMounted.current = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     urlState.page,
     urlState.pageSize,
