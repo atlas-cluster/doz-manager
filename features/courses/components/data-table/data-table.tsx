@@ -1,7 +1,8 @@
 'use client'
 
-import { RefreshCwIcon, XIcon } from 'lucide-react'
+import { Plus, RefreshCwIcon, XIcon } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
+import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -223,43 +224,84 @@ export function DataTable({
 
   return (
     <div className="w-full space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div className="flex w-full flex-wrap items-center gap-2">
-          <Input
-            className="h-9 w-full sm:w-65"
-            placeholder="Vorlesungen suchen..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-          />
+          <div className="flex w-full gap-2 md:w-64">
+            {/** Desktop only: Show input only */}
+            <Input
+              className={'hidden md:flex'}
+              placeholder="Vorlesungen suchen..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+            />
+          </div>
+          {/** Mobile only: Show input, view options and refresh button */}
+          <ButtonGroup className={'w-full flex-1 md:hidden'}>
+            <Input
+              placeholder="Vorlesungen suchen..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+            />
+            <DataTableViewOptions table={table} />
+            <Button
+              variant="outline"
+              size="icon"
+              type="button"
+              disabled={isPending}
+              suppressHydrationWarning
+              onClick={handleRefresh}>
+              <RefreshCwIcon className={isPending ? 'animate-spin' : ''} />
+              <span className={'sr-only'}>Daten aktualisieren</span>
+            </Button>
+          </ButtonGroup>
+          {/** Mobile only: Show small create button next to searchbar */}
+          <div className={'flex md:hidden'}>
+            <CourseDialog
+              trigger={
+                <Button suppressHydrationWarning size={'icon'}>
+                  <Plus />
+                  <span className={'sr-only'}>Vorlesung erstellen</span>
+                </Button>
+              }
+              onSubmit={handleCreate}
+            />
+          </div>
+          {/** REPLACE THIS DIV WITH FACETED FILTERS ONCE IMPLEMENTED */}
+          {/** This div's only purpose is to push the clear filters button to the bottom on mobile, when no faceted filters are present */}
+          <div className={'w-full h-0 md:hidden'} />
           {(table.getState().columnFilters.length > 0 || globalFilter) && (
-            <Button variant="ghost" size={'icon'} onClick={handleClearFilters}>
+            <Button
+              variant="ghost"
+              size={'icon'}
+              onClick={handleClearFilters}
+              suppressHydrationWarning>
               <XIcon />
               <span className={'sr-only'}>Filter löschen</span>
             </Button>
           )}
         </div>
-        <ButtonGroup>
-          <DataTableViewOptions table={table} />
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            type="button"
-            disabled={isPending}
-            suppressHydrationWarning
-            onClick={handleRefresh}>
-            <RefreshCwIcon
-              className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`}
-            />
-            <span className={'sr-only'}>Daten aktualisieren</span>
-          </Button>
-        </ButtonGroup>
-        <CourseDialog
-          trigger={
-            <Button suppressHydrationWarning>Vorlesung erstellen</Button>
-          }
-          onSubmit={handleCreate}
-        />
+        {/** Desktop only: Show view options, refresh button and create button on the right */}
+        <div className={'hidden md:flex gap-2'}>
+          <ButtonGroup>
+            <DataTableViewOptions table={table} />
+            <Button
+              variant="outline"
+              size="icon"
+              type="button"
+              disabled={isPending}
+              suppressHydrationWarning
+              onClick={handleRefresh}>
+              <RefreshCwIcon className={isPending ? 'animate-spin' : ''} />
+              <span className={'sr-only'}>Daten aktualisieren</span>
+            </Button>
+          </ButtonGroup>
+          <CourseDialog
+            trigger={
+              <Button suppressHydrationWarning>Vorlesung erstellen</Button>
+            }
+            onSubmit={handleCreate}
+          />
+        </div>
       </div>
       <div className="overflow-hidden rounded-md border mb-3">
         <Table>

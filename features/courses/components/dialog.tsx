@@ -88,7 +88,7 @@ export function CourseDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent>
+      <DialogContent className={'max-h-[85vh] overflow-y-auto'}>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Vorlesung bearbeiten' : 'Vorlesung erstellen'}
