@@ -388,9 +388,31 @@ export function DataTable({
               variant="ghost"
               size={'icon'}
               onClick={() => {
-                setColumnFilters([])
+                // Clear all filters and search in one URL update to avoid race conditions
+                const params = new URLSearchParams(searchParams.toString())
+                
+                // Keep only standard params (pageSize, sortBy, sortOrder if they exist)
+                const standardParamsSet = new Set(['pageSize', 'sortBy', 'sortOrder'])
+                const keysToDelete: string[] = []
+                params.forEach((_, key) => {
+                  if (!standardParamsSet.has(key)) {
+                    keysToDelete.push(key)
+                  }
+                })
+                keysToDelete.forEach((key) => params.delete(key))
+                
+                // Build query string
+                const queryParts: string[] = []
+                params.forEach((value, key) => {
+                  queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+                })
+                const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : ''
+                
+                // Clear local state
                 setInputValue('')
-                setGlobalFilter('')
+                
+                // Update URL
+                router.push(`${pathname}${queryString}`, { scroll: false })
               }}>
               <XIcon />
               <span className={'sr-only'}>Filter löschen</span>
