@@ -159,68 +159,32 @@ export function DataTable({
         ? updaterOrValue(columnFilters)
         : updaterOrValue
 
-    // Build new URL with updated filters using Next.js router
-    const params = new URLSearchParams(searchParams.toString())
-
-    const standardParamsSet = new Set([
-      'page',
-      'pageSize',
-      'sortBy',
-      'sortOrder',
-      'search',
-    ])
+    // Prepare update object for nuqs
+    const updateObj: Record<string, string | null> = {}
 
     if (newFilters.length === 0) {
-      // When clearing ALL filters (reset button), delete ALL non-standard params from URL
-      const keysToDelete: string[] = []
-      params.forEach((_, key) => {
-        if (!standardParamsSet.has(key)) {
-          keysToDelete.push(key)
-        }
-      })
-      keysToDelete.forEach((key) => params.delete(key))
-    } else {
-      // When updating filters normally, clear old ones and add new ones
+      // When clearing ALL filters, set all current filter columns to null
       columnFilters.forEach((filter) => {
-        params.delete(filter.id)
+        updateObj[filter.id] = null
+      })
+    } else {
+      // Clear old filters first
+      columnFilters.forEach((filter) => {
+        updateObj[filter.id] = null
       })
 
-      // Serialize and add new filters
+      // Add new filters
       const filterParams = serializeFiltersToUrlParams(newFilters)
       Object.entries(filterParams).forEach(([key, value]) => {
-        if (value) {
-          params.set(key, value)
-        }
+        updateObj[key] = value || null
       })
     }
 
-    // Reset to first page on filter change (page will be omitted from URL if on first page)
-    params.delete('page') // Remove page param to go back to first page
+    // Reset to first page on filter change (null omits page param from URL)
+    updateObj.page = null
 
-    // Build query string manually to avoid encoding commas in filter values
-    const standardParams = new Set([
-      'page',
-      'pageSize',
-      'sortBy',
-      'sortOrder',
-      'search',
-    ])
-    const queryParts: string[] = []
-
-    params.forEach((value, key) => {
-      if (standardParams.has(key)) {
-        // Standard params - encode normally
-        queryParts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-      } else {
-        // Filter params - don't encode commas in values for cleaner URLs
-        queryParts.push(`${encodeURIComponent(key)}=${value}`)
-      }
-    })
-
-    const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : ''
-
-    // Update URL using router
-    router.push(`${pathname}${queryString}`, { scroll: false })
+    // Update URL using nuqs (doesn't trigger server re-render)
+    setUrlState(updateObj)
   }
 
   // Local state for things that don't need to be in URL
