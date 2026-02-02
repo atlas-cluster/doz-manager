@@ -2,11 +2,13 @@
 
 ## Problem
 
-Column filter buttons were not working. When clicking to add or remove filters, nothing happened except the page reloading. The filters would not be added to or removed from the URL.
+Column filter buttons were not working. When clicking to add or remove filters, the page would rerender but the URL and UI didn't update. The filters would not be added to or removed from the URL.
 
 ## Root Cause
 
-The `setColumnFilters` function in both data table components was not properly managing URL parameters when filters changed.
+The `useTableUrlState` hook uses nuqs's `useQueryStates` with a **predefined schema** that only includes standard parameters (page, pageSize, sortBy, sortOrder, search). When `setUrlState` was called with dynamic column filter params (e.g., `{ type: "internal" }`), **nuqs completely ignored them** because they weren't defined in the schema.
+
+nuqs can ONLY update URL parameters that are explicitly defined in its schema. Dynamic parameters like column filters (which can be any column name) cannot be handled by nuqs.
 
 ### Before (Broken Code)
 
@@ -80,11 +82,19 @@ const setColumnFilters = (updaterOrValue) => {
 
 ## Why This Works
 
-The nuqs library requires explicit `null` values to remove URL parameters. By spreading `currentFilterColumns` (all set to `null`) first, and then spreading `filterParams` (with the new values), we ensure:
+**nuqs is designed for type-safe, predefined parameters**, not dynamic ones. Column filters can be any column name, so we need to bypass nuqs and use the Next.js router directly.
 
-1. **All old filters are cleared** (set to null)
-2. **New filters overwrite the null values** (because of spread order)
-3. **The URL stays perfectly in sync** with the filter state
+**Strategy:**
+
+- **Standard params** (page, pageSize, sort) → nuqs (type-safe with parsers)
+- **Dynamic params** (column filters) → Next.js router (flexible)
+
+By using `URLSearchParams` and `router.push`, we have complete control over the URL and can:
+
+1. **Delete any parameter** by name
+2. **Add any parameter** dynamically
+3. **Maintain type safety** through our serialization functions
+4. **Keep the URL in perfect sync** with filter state
 
 ## Impact
 
