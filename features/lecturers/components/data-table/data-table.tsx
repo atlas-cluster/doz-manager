@@ -9,7 +9,7 @@ import {
   VenetianMask,
   XIcon,
 } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import z from 'zod'
 
@@ -69,6 +69,8 @@ export function DataTable({
   // URL state management with nuqs
   const [urlState, setUrlState] = useTableUrlState()
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
 
   // Derive sorting state from URL
   const sorting: SortingState =
@@ -166,21 +168,27 @@ export function DataTable({
         ? updaterOrValue(columnFilters)
         : updaterOrValue
 
-    // Get all current filter column names to clear them
-    const currentFilterColumns: Record<string, null> = {}
+    // Build new URL with updated filters using Next.js router
+    const params = new URLSearchParams(searchParams.toString())
+
+    // Clear all old filter params (non-standard params)
     columnFilters.forEach((filter) => {
-      currentFilterColumns[filter.id] = null
+      params.delete(filter.id)
     })
 
-    // Serialize the new filters
+    // Serialize and add new filters
     const filterParams = serializeFiltersToUrlParams(newFilters)
-
-    // Update URL: first clear old filters, then set new ones
-    setUrlState({
-      ...currentFilterColumns, // Clear all existing filters
-      ...filterParams, // Set new filter values
-      page: 0, // Reset to first page on filter change
+    Object.entries(filterParams).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value)
+      }
     })
+
+    // Reset to first page on filter change
+    params.set('page', '0')
+
+    // Update URL using router
+    router.push(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   // Local state for things that don't need to be in URL
