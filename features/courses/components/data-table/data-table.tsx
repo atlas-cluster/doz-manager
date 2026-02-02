@@ -194,8 +194,8 @@ export function DataTable({
       })
     }
 
-    // Reset to first page on filter change
-    params.set('page', '0')
+    // Reset to first page on filter change (page will be omitted from URL if on first page)
+    params.delete('page') // Remove page param to go back to first page
 
     // Build query string manually to avoid encoding commas in filter values
     const standardParams = new Set([

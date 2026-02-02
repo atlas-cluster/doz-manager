@@ -26,6 +26,21 @@ const parsePageSize = createParser({
   },
 }).withDefault(10)
 
+// Custom parser for page that uses 1-based indexing in URL (more user-friendly)
+// URL shows page=1 for first page, internally we use pageIndex=0
+const parsePage = createParser({
+  parse: (value) => {
+    const num = parseInt(value)
+    // Convert from 1-based URL to 0-based internal index
+    return isNaN(num) || num < 1 ? 0 : num - 1
+  },
+  serialize: (value) => {
+    // Convert from 0-based internal index to 1-based URL
+    // Don't serialize the default (first page) to keep URL clean
+    return value === 0 ? null : String(value + 1)
+  },
+}).withDefault(0)
+
 /**
  * Hook for managing table state in URL parameters using nuqs.
  * Provides type-safe URL state management for pagination, sorting, filtering, and search.
@@ -33,8 +48,8 @@ const parsePageSize = createParser({
 export function useTableUrlState() {
   return useQueryStates(
     {
-      // Pagination
-      page: parseAsInteger.withDefault(0),
+      // Pagination (1-based in URL, 0-based internally)
+      page: parsePage,
       pageSize: parsePageSize,
 
       // Sorting

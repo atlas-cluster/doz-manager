@@ -10,13 +10,16 @@ export function parseTableSearchParams(searchParams: {
   [key: string]: string | string[] | undefined
 }) {
   // Parse page (default: 0)
-  const page = searchParams.page
-    ? parseInt(
-        Array.isArray(searchParams.page)
-          ? searchParams.page[0]
-          : searchParams.page
-      )
-    : 0
+  // URL uses 1-based indexing (page=1 is first page), convert to 0-based internal index
+  let page = 0
+  if (searchParams.page) {
+    const pageParam = Array.isArray(searchParams.page)
+      ? searchParams.page[0]
+      : searchParams.page
+    const parsed = parseInt(pageParam)
+    // Convert from 1-based URL to 0-based internal (page=1 → index 0)
+    page = isNaN(parsed) || parsed < 1 ? 0 : parsed - 1
+  }
 
   // Parse pageSize (default: 10), handle "all" as 999999999
   let pageSize = 10
