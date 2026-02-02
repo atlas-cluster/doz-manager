@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidateTag } from 'next/cache'
+import { updateTag } from 'next/cache'
 
 import { prisma } from '@/features/shared/lib/prisma'
 
@@ -13,5 +13,5 @@ export async function deleteLecturers(ids: string[]) {
     },
   })
 
-  revalidateTag('lecturers', {})
+  updateTag('lecturers')
 }

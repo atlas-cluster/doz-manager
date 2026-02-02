@@ -36,11 +36,6 @@ import {
   VisibilityState,
   flexRender,
   getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
 
@@ -65,8 +60,13 @@ export function DataTable({
   // Debounce global filter
   const [inputValue, setInputValue] = useState<string>(globalFilter)
   const debouncedInputValue = useDebounce(inputValue)
+  const skipNextDebouncedUpdate = useRef(false)
 
   useEffect(() => {
+    if (skipNextDebouncedUpdate.current) {
+      skipNextDebouncedUpdate.current = false
+      return
+    }
     if (debouncedInputValue !== globalFilter) {
       setGlobalFilter(debouncedInputValue)
       setPagination((prev) => ({ ...prev, pageIndex: 0 }))
@@ -90,6 +90,7 @@ export function DataTable({
         sorting: currentSorting as { id: string; desc: boolean }[],
         globalFilter: currentGlobal,
       })
+      setRowSelection({})
       setData(result.data)
       setPageCount(result.pageCount)
       setRowCount(result.rowCount)
@@ -97,9 +98,14 @@ export function DataTable({
   }
 
   const isMounted = useRef(false)
+  const skipNextFetch = useRef(false)
 
   useEffect(() => {
     if (isMounted.current) {
+      if (skipNextFetch.current) {
+        skipNextFetch.current = false
+        return
+      }
       fetchData()
     } else {
       isMounted.current = true
@@ -132,12 +138,24 @@ export function DataTable({
     startTransition(async () => {
       await deleteCourses(ids)
       fetchData()
-      setRowSelection({})
     })
   }
 
   const handleRefresh = () => {
     fetchData()
+  }
+
+  const handleClearFilters = () => {
+    const nextPagination = { ...pagination, pageIndex: 0 }
+
+    skipNextFetch.current = true
+    skipNextDebouncedUpdate.current = true
+    setColumnFilters([])
+    setGlobalFilter('')
+    setInputValue('')
+    setPagination(nextPagination)
+
+    fetchData(nextPagination, sorting, '')
   }
 
   const onColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (
@@ -178,13 +196,7 @@ export function DataTable({
     onPaginationChange: setPagination,
 
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     autoResetPageIndex: false,
-
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
 
     state: {
       sorting,
@@ -207,14 +219,7 @@ export function DataTable({
             onChange={(e) => setInputValue(e.target.value)}
           />
           {(table.getState().columnFilters.length > 0 || globalFilter) && (
-            <Button
-              variant="ghost"
-              size={'icon'}
-              onClick={() => {
-                table.resetColumnFilters()
-                setInputValue('')
-                table.setGlobalFilter('')
-              }}>
+            <Button variant="ghost" size={'icon'} onClick={handleClearFilters}>
               <XIcon />
               <span className={'sr-only'}>Filter löschen</span>
             </Button>

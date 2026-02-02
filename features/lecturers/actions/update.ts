@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidateTag } from 'next/cache'
+import { updateTag } from 'next/cache'
 import z from 'zod'
 
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
@@ -26,5 +26,5 @@ export async function updateLecturer(
     },
   })
 
-  revalidateTag('lecturers', {})
+  updateTag('lecturers')
 }

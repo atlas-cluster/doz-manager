@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidateTag } from 'next/cache'
+import { updateTag } from 'next/cache'
 import { z } from 'zod'
 
 import { courseSchema } from '@/features/courses/schemas/course'
@@ -16,5 +16,5 @@ export async function createCourse(data: z.infer<typeof courseSchema>) {
     },
   })
 
-  revalidateTag('courses', {})
+  updateTag('courses')
 }
