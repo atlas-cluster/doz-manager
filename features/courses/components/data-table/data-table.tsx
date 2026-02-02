@@ -274,18 +274,31 @@ export function DataTable({
     })
   }
 
-  // Sync with server-rendered data when initialData changes
-  useEffect(() => {
-    setData(initialData.data)
-    setRowCount(initialData.rowCount)
-    setPageCount(initialData.pageCount)
-  }, [initialData])
-
+  const initialDataUsed = useRef(false)
   const isMounted = useRef(false)
 
-  // Clear row selection when URL state changes (but don't fetch - server handles that)
+  // Sync with server-rendered data on initial load only
   useEffect(() => {
+    if (!initialDataUsed.current) {
+      setData(initialData.data)
+      setRowCount(initialData.rowCount)
+      setPageCount(initialData.pageCount)
+    }
+  }, [initialData])
+
+  // Fetch on client when URL changes (after initial load)
+  useEffect(() => {
+    // Skip first mount - use initialData instead
+    if (!initialDataUsed.current) {
+      initialDataUsed.current = true
+      return
+    }
+
+    // Fetch on subsequent URL changes
     if (isMounted.current) {
+      if (!fetchInProgress.current) {
+        fetchData()
+      }
       setRowSelection({})
     } else {
       isMounted.current = true
