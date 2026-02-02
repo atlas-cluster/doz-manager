@@ -244,21 +244,33 @@ export function DataTable({
   const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
   const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
 
+  const fetchInProgress = useRef(false)
+
   const fetchData = (
     currentPagination = pagination,
     currentSorting = sorting,
     currentGlobal = globalFilter
   ) => {
+    // Prevent duplicate concurrent fetches
+    if (fetchInProgress.current) {
+      return
+    }
+
+    fetchInProgress.current = true
     startTransition(async () => {
-      const result = await getCourses({
-        pageIndex: currentPagination.pageIndex,
-        pageSize: currentPagination.pageSize,
-        sorting: currentSorting as { id: string; desc: boolean }[],
-        globalFilter: currentGlobal,
-      })
-      setData(result.data)
-      setPageCount(result.pageCount)
-      setRowCount(result.rowCount)
+      try {
+        const result = await getCourses({
+          pageIndex: currentPagination.pageIndex,
+          pageSize: currentPagination.pageSize,
+          sorting: currentSorting as { id: string; desc: boolean }[],
+          globalFilter: currentGlobal,
+        })
+        setData(result.data)
+        setPageCount(result.pageCount)
+        setRowCount(result.rowCount)
+      } finally {
+        fetchInProgress.current = false
+      }
     })
   }
 

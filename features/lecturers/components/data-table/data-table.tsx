@@ -254,24 +254,36 @@ export function DataTable({
   const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
   const [facets, setFacets] = useState(initialData.facets)
 
+  const fetchInProgress = useRef(false)
+
   const fetchData = (
     currentPagination = pagination,
     currentSorting = sorting,
     currentFilters = columnFilters,
     currentGlobal = globalFilter
   ) => {
+    // Prevent duplicate concurrent fetches
+    if (fetchInProgress.current) {
+      return
+    }
+
+    fetchInProgress.current = true
     startTransition(async () => {
-      const result = await getLecturers({
-        pageIndex: currentPagination.pageIndex,
-        pageSize: currentPagination.pageSize,
-        sorting: currentSorting as { id: string; desc: boolean }[],
-        columnFilters: currentFilters as { id: string; value: unknown }[],
-        globalFilter: currentGlobal,
-      })
-      setData(result.data)
-      setPageCount(result.pageCount)
-      setRowCount(result.rowCount)
-      setFacets(result.facets)
+      try {
+        const result = await getLecturers({
+          pageIndex: currentPagination.pageIndex,
+          pageSize: currentPagination.pageSize,
+          sorting: currentSorting as { id: string; desc: boolean }[],
+          columnFilters: currentFilters as { id: string; value: unknown }[],
+          globalFilter: currentGlobal,
+        })
+        setData(result.data)
+        setPageCount(result.pageCount)
+        setRowCount(result.rowCount)
+        setFacets(result.facets)
+      } finally {
+        fetchInProgress.current = false
+      }
     })
   }
 
