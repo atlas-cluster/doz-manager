@@ -168,32 +168,54 @@ export function DataTable({
         ? updaterOrValue(columnFilters)
         : updaterOrValue
 
-    // Prepare update object for nuqs
-    const updateObj: Record<string, string | null> = {}
+    const params = new URLSearchParams(searchParams.toString())
+    const standardParamsSet = new Set(['pageSize', 'sortBy', 'sortOrder'])
 
     if (newFilters.length === 0) {
-      // When clearing ALL filters, set all current filter columns to null
-      columnFilters.forEach((filter) => {
-        updateObj[filter.id] = null
+      // When clearing ALL filters, delete ALL non-standard params from URL
+      const keysToDelete: string[] = []
+      params.forEach((_, key) => {
+        if (!standardParamsSet.has(key)) {
+          keysToDelete.push(key)
+        }
       })
+      keysToDelete.forEach((key) => params.delete(key))
     } else {
-      // Clear old filters first
+      // Clear old filter params
       columnFilters.forEach((filter) => {
-        updateObj[filter.id] = null
+        params.delete(filter.id)
       })
 
-      // Add new filters
+      // Add new filter params
       const filterParams = serializeFiltersToUrlParams(newFilters)
       Object.entries(filterParams).forEach(([key, value]) => {
-        updateObj[key] = value || null
+        if (value) {
+          params.set(key, value)
+        }
       })
+
+      // Reset to first page (delete page param)
+      params.delete('page')
+      params.delete('search')
     }
 
-    // Reset to first page on filter change (null omits page param from URL)
-    updateObj.page = null
+    // Build query string manually to avoid encoding commas in filter values
+    const queryParts: string[] = []
+    params.forEach((value, key) => {
+      if (standardParamsSet.has(key)) {
+        // Standard params - encode normally
+        queryParts.push(
+          `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+        )
+      } else {
+        // Filter params - don't encode commas in values for cleaner URLs
+        queryParts.push(`${encodeURIComponent(key)}=${value}`)
+      }
+    })
+    const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : ''
 
-    // Update URL using nuqs (doesn't trigger server re-render)
-    setUrlState(updateObj)
+    // Update URL with shallow routing to prevent server re-render
+    router.push(`${pathname}${queryString}`, { scroll: false })
   }
 
   // Local state for things that don't need to be in URL
