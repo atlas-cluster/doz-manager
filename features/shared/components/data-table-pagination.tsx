@@ -9,7 +9,9 @@ import { Button } from '@/features/shared/components/ui/button'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/features/shared/components/ui/select'
@@ -24,17 +26,15 @@ export function DataTablePagination<TData>({
 }: DataTablePaginationProps<TData>) {
   return (
     <div
-      className="flex flex-col items-center justify-between gap-4 px-2 sm:flex-row"
+      className="flex flex-row items-center justify-between gap-2"
       suppressHydrationWarning>
-      <div className="text-muted-foreground flex-1 text-sm">
+      <div className="text-muted-foreground text-sm hidden md:flex md:flex-1">
         {table.getFilteredSelectedRowModel().rows.length} von{' '}
         {table.getFilteredRowModel().rows.length} Zeile(n) ausgewählt.
       </div>
-      <div className="flex items-center space-x-4 sm:space-x-6 lg:space-x-8">
-        <div className="flex items-center space-x-2">
-          <p className="hidden text-sm font-medium sm:block">
-            Zeilen pro Seite
-          </p>
+      <div className="flex items-center gap-4 lg:gap-8 flex-1 md:justify-end justify-center">
+        <div className="flex items-center gap-2 mr-auto md:mr-0">
+          <p className="hidden text-sm font-medium md:flex">Zeilen pro Seite</p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(v) => table.setPageSize(Number(v))}>
@@ -42,11 +42,16 @@ export function DataTablePagination<TData>({
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
-              {[10, 20, 30, 40, 50, 999999999].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize === 999999999 ? 'Alle' : pageSize}
-                </SelectItem>
-              ))}
+              <SelectGroup>
+                <SelectLabel className={'flex md:hidden'}>
+                  Zeilen pro Seite
+                </SelectLabel>
+                {[10, 20, 30, 40, 50, 999999999].map((pageSize) => (
+                  <SelectItem key={pageSize} value={`${pageSize}`}>
+                    {pageSize === 999999999 ? 'Alle' : pageSize}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
             </SelectContent>
           </Select>
         </div>
@@ -58,7 +63,6 @@ export function DataTablePagination<TData>({
           <Button
             variant="outline"
             size="icon"
-            className="hidden sm:flex"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
             suppressHydrationWarning>
@@ -84,7 +88,6 @@ export function DataTablePagination<TData>({
           <Button
             variant="outline"
             size="icon"
-            className="hidden sm:flex"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}>
             <span className="sr-only">Gehe zur letzten Seite</span>
