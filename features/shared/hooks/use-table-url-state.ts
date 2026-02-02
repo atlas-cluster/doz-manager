@@ -1,3 +1,5 @@
+'use client'
+
 import {
   createParser,
   parseAsInteger,
@@ -5,7 +7,11 @@ import {
   useQueryStates,
 } from 'nuqs'
 
-import { ColumnFiltersState } from '@tanstack/react-table'
+// Re-export shared utilities that work on both server and client
+export {
+  parseFiltersFromUrlParams,
+  serializeFiltersToUrlParams,
+} from './table-url-utils'
 
 // Custom parser for pageSize that handles "all" as a special value
 const parsePageSize = createParser({
@@ -19,61 +25,6 @@ const parsePageSize = createParser({
     return String(value)
   },
 }).withDefault(10)
-
-/**
- * Convert URL params to ColumnFiltersState
- * Extracts filter params that are not standard table params
- */
-export function parseFiltersFromUrlParams(
-  params: Record<string, string | string[] | null>
-): ColumnFiltersState {
-  const standardParams = new Set([
-    'page',
-    'pageSize',
-    'sortBy',
-    'sortOrder',
-    'search',
-  ])
-  const filters: ColumnFiltersState = []
-
-  for (const [key, value] of Object.entries(params)) {
-    if (!standardParams.has(key) && value !== null) {
-      const values = Array.isArray(value) ? value : [value]
-      // Split comma-separated values
-      const parsedValues = values.flatMap((v) => v.split(',')).filter(Boolean)
-      if (parsedValues.length > 0) {
-        filters.push({ id: key, value: parsedValues })
-      }
-    }
-  }
-
-  return filters
-}
-
-/**
- * Convert ColumnFiltersState to URL params object
- */
-export function serializeFiltersToUrlParams(
-  columnFilters: ColumnFiltersState
-): Record<string, string | null> {
-  const result: Record<string, string | null> = {}
-
-  for (const filter of columnFilters) {
-    const values = Array.isArray(filter.value) ? filter.value : [filter.value]
-    const valuesStr = values
-      .map((v) => String(v))
-      .filter((v) => v && v !== 'undefined' && v !== 'null')
-      .join(',')
-
-    if (valuesStr) {
-      result[filter.id] = valuesStr
-    } else {
-      result[filter.id] = null
-    }
-  }
-
-  return result
-}
 
 /**
  * Hook for managing table state in URL parameters using nuqs.

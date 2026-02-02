@@ -1,4 +1,4 @@
-import { parseFiltersFromUrlParams } from './use-table-url-state'
+import { parseFiltersFromUrlParams } from './table-url-utils'
 
 import { ColumnFiltersState } from '@tanstack/react-table'
 
