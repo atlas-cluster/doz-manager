@@ -6,9 +6,7 @@ import {
   Building2,
   GraduationCap,
   Plus,
-  PlusCircle,
   RefreshCwIcon,
-  UserPlus,
   VenetianMask,
   XIcon,
 } from 'lucide-react'
@@ -17,11 +15,11 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import z from 'zod'
 
-import { createLecturer } from '@/features/lecturers/actions/create'
-import { deleteLecturer } from '@/features/lecturers/actions/delete'
-import { deleteLecturers } from '@/features/lecturers/actions/delete-many'
-import { getLecturers } from '@/features/lecturers/actions/get'
-import { updateLecturer } from '@/features/lecturers/actions/update'
+import { createLecturer } from '@/features/lecturers/actions/create-lecturer'
+import { deleteLecturer } from '@/features/lecturers/actions/delete-lecturer'
+import { deleteLecturers } from '@/features/lecturers/actions/delete-lecturers'
+import { getLecturers } from '@/features/lecturers/actions/get-lecturers'
+import { updateLecturer } from '@/features/lecturers/actions/update-lecturer'
 import { columns } from '@/features/lecturers/components/data-table/columns'
 import { LecturerDialog } from '@/features/lecturers/components/dialog'
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
@@ -41,8 +39,6 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
-import { useIsMobile } from '@/features/shared/hooks/use-mobile'
-import { cn } from '@/features/shared/lib/utils'
 import {
   ColumnFiltersState,
   OnChangeFn,
