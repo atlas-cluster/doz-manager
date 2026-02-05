@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import z from 'zod'
 
+import { Course } from '@/features/courses/types'
+import { getCoursesByLecturerId } from '@/features/lecturers/actions/get'
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
 import { Lecturer } from '@/features/lecturers/types'
 import { Button } from '@/features/shared/components/ui/button'
@@ -22,6 +24,13 @@ import {
   FieldLabel,
 } from '@/features/shared/components/ui/field'
 import { Input } from '@/features/shared/components/ui/input'
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from '@/features/shared/components/ui/item'
 import { PhoneInput } from '@/features/shared/components/ui/phone-input'
 import {
   Select,
@@ -56,6 +65,8 @@ export function LecturerDialog({
   onSubmit,
 }: LecturerDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
 
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
@@ -76,21 +87,49 @@ export function LecturerDialog({
   })
 
   useEffect(() => {
-    if (open) {
-      if (lecturer) {
-        form.reset({
-          title: lecturer.title,
-          firstName: lecturer.firstName,
-          secondName: lecturer.secondName,
-          lastName: lecturer.lastName,
-          email: lecturer.email,
-          phone: lecturer.phone,
-          type: lecturer.type,
-          courseLevelPreference: lecturer.courseLevelPreference,
-        })
-      } else {
-        form.reset()
+    if (!open) {
+      return
+    }
+
+    if (lecturer) {
+      form.reset({
+        title: lecturer.title,
+        firstName: lecturer.firstName,
+        secondName: lecturer.secondName,
+        lastName: lecturer.lastName,
+        email: lecturer.email,
+        phone: lecturer.phone,
+        type: lecturer.type,
+        courseLevelPreference: lecturer.courseLevelPreference,
+      })
+    } else {
+      form.reset()
+    }
+
+    let canceled = false
+
+    const load = async () => {
+      setLoading(true)
+      try {
+        if (lecturer?.id) {
+          const courses = await getCoursesByLecturerId(lecturer.id)
+          if (!canceled) {
+            setCourses(courses)
+          }
+        } else if (!canceled) {
+          setCourses([])
+        }
+      } finally {
+        if (!canceled) {
+          setLoading(false)
+        }
       }
+    }
+
+    void load()
+
+    return () => {
+      canceled = true
     }
   }, [lecturer, form, open])
 
@@ -103,23 +142,51 @@ export function LecturerDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent>
+      <DialogContent className="flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Dozent bearbeiten' : 'Dozent erstellen'}
           </DialogTitle>
           <DialogDescription>
-            {isEditing
-              ? 'Hier können Sie den Dozent bearbeiten'
-              : 'Hier können Sie einen neuen Dozenten erstellen'}
+            {lecturer?.title ? lecturer.title + ' ' : ''}
+            {lecturer?.firstName}
+            {lecturer?.secondName ? ' ' + lecturer.secondName : ''}{' '}
+            {lecturer?.lastName}
           </DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="general">
+        <Tabs defaultValue="courses">
           <TabsList>
-            <TabsTrigger value="general">Allgemein</TabsTrigger>
+            <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="courses">Vorlesungen</TabsTrigger>
           </TabsList>
-          <TabsContent value="general">
+          <TabsContent value="courses">
+            <ItemGroup className="gap-4">
+              {loading ? (
+                <Item key="loading" variant="outline">
+                  Lade Kurse...
+                </Item>
+              ) : courses.length > 0 ? (
+                courses.map((course) => (
+                  <Item key={course.id} variant="outline">
+                    <ItemContent>
+                      <ItemTitle>{course.name}</ItemTitle>
+                      <ItemDescription>
+                        {course.courseLevel == 'bachelor'
+                          ? 'Bachelor'
+                          : 'Master'}{' '}
+                        | {course.semester}. Semester
+                      </ItemDescription>
+                    </ItemContent>
+                  </Item>
+                ))
+              ) : (
+                <Item key="empty" variant="outline">
+                  Keine Kurse
+                </Item>
+              )}
+            </ItemGroup>
+          </TabsContent>
+          <TabsContent value="details">
             <form
               id="lecturer-form"
               onSubmit={form.handleSubmit(handleSubmit)}
@@ -339,12 +406,6 @@ export function LecturerDialog({
                 </div>
               </FieldGroup>
             </form>
-          </TabsContent>
-          <TabsContent value="courses">
-            <div className="py-4 text-center text-sm text-muted-foreground">
-              Vorlesungen Verwaltung wird in einer zukünftigen Version verfügbar
-              sein.
-            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

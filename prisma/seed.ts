@@ -259,6 +259,31 @@ const courses = [
   },
 ]
 
+const lecturerAssignments = {
+  'thomas.schneider@provadis-hochschule.de': [
+    'Einführung in die Informatik',
+    'Cloud Computing Architekturen',
+  ],
+  'julia.koehler@provadis-hochschule.de': [
+    'Fortgeschrittene Datenstrukturen',
+    'Angewandte Künstliche Intelligenz',
+  ],
+  'markus.weber@dozent-mail.de': ['Software Engineering I', 'Web-Technologien'],
+  'andreas.hoffmann@uni-mail.net': ['Strategische Unternehmensfinanzierung'],
+  'sabine.neumann@provadis-hochschule.de': [
+    'Grundlagen der BWL',
+    'IT-Sicherheit & Compliance',
+  ],
+  'laura.bauer@lehrbeauftragte.de': [
+    'Marketing Management',
+    'Datenbanksysteme',
+  ],
+  'michael.krueger@provadis-hochschule.de': [
+    'Agiles Projektmanagement',
+    'Angewandte Künstliche Intelligenz',
+  ],
+}
+
 async function main() {
   console.log(`Start seeding ...`)
   for (const lecturer of lecturers) {
@@ -285,6 +310,48 @@ async function main() {
       console.log(`Created course with id: ${newCourse.id}`)
     } else {
       console.log(`Course already exists: ${course.name}`)
+    }
+  }
+
+  // 3. NEU: Dozenten Vorlesungen zuweisen (via assignments Relation)
+  console.log(`Assigning lecturers to courses...`)
+  for (const [lecturerEmail, courseNames] of Object.entries(
+    lecturerAssignments
+  )) {
+    const lecturer = await prisma.lecturer.findUnique({
+      where: { email: lecturerEmail },
+    })
+    if (!lecturer) continue
+
+    for (const courseName of courseNames) {
+      const course = await prisma.course.findFirst({
+        where: { name: courseName },
+      })
+      if (!course || !lecturer) continue
+
+      // Prüfe, ob Zuweisung schon existiert (idempotent)
+      const existingAssignment = await prisma.courseAssignment.findFirst({
+        where: {
+          courseId: course.id,
+          lecturerId: lecturer.id, // Annahme: Feld heißt lecturerId
+        },
+      })
+
+      if (!existingAssignment) {
+        // Erstelle neue Zuweisung im Relation-Model
+        await prisma.courseAssignment.create({
+          data: {
+            courseId: course.id,
+            lecturerId: lecturer.id,
+            // Füge ggf. weitere Felder hinzu: z.B. startDate, role etc.
+          },
+        })
+        console.log(`Assigned ${lecturerEmail} to ${courseName}`)
+      } else {
+        console.log(
+          `Assignment already exists: ${lecturerEmail} -> ${courseName}`
+        )
+      }
     }
   }
 
