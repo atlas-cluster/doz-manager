@@ -1,5 +1,7 @@
 'use server'
 
+import { updateTag } from 'next/cache'
+
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function deleteLecturerCourseAssignment(
@@ -14,4 +16,6 @@ export async function deleteLecturerCourseAssignment(
       },
     },
   })
+
+  updateTag(`lecturer-${lecturerId}-courses`)
 }

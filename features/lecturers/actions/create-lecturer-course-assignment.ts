@@ -1,5 +1,7 @@
 'use server'
 
+import { updateTag } from 'next/cache'
+
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function createLecturerCourseAssignment(
@@ -12,4 +14,6 @@ export async function createLecturerCourseAssignment(
       lecturerId: lecturerId,
     },
   })
+
+  updateTag(`lecturer-${lecturerId}-courses`)
 }

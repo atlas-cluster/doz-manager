@@ -1,9 +1,11 @@
 'use server'
 
+import { unstable_cache } from 'next/cache'
+
 import { Course } from '@/features/courses/types'
 import { prisma } from '@/features/shared/lib/prisma'
 
-export async function getLecturerCourseAssignments(
+async function getLecturerCourseAssignmentsInternal(
   lecturerId: string
 ): Promise<Course[]> {
   return prisma.course.findMany({
@@ -14,4 +16,17 @@ export async function getLecturerCourseAssignments(
     },
     orderBy: { name: 'asc' },
   })
+}
+
+export async function getLecturerCourseAssignments(
+  lecturerId: string
+): Promise<Course[]> {
+  return unstable_cache(
+    async () => getLecturerCourseAssignmentsInternal(lecturerId),
+    ['lecturer-courses-get', lecturerId],
+    {
+      tags: ['lecturers', 'courses', `lecturer-${lecturerId}-courses`],
+      revalidate: 3600,
+    }
+  )()
 }
