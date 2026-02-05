@@ -9,3 +9,17 @@ export async function deleteLecturer(id: string) {
     },
   })
 }
+
+export async function removeCourseFromLecturer(
+  lecturerId: string,
+  courseId: string
+) {
+  await prisma.courseAssignment.delete({
+    where: {
+      lecturerId_courseId: {
+        lecturerId,
+        courseId,
+      },
+    },
+  })
+}

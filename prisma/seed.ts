@@ -313,7 +313,6 @@ async function main() {
     }
   }
 
-  // 3. NEU: Dozenten Vorlesungen zuweisen (via assignments Relation)
   console.log(`Assigning lecturers to courses...`)
   for (const [lecturerEmail, courseNames] of Object.entries(
     lecturerAssignments
@@ -329,21 +328,18 @@ async function main() {
       })
       if (!course || !lecturer) continue
 
-      // Prüfe, ob Zuweisung schon existiert (idempotent)
       const existingAssignment = await prisma.courseAssignment.findFirst({
         where: {
           courseId: course.id,
-          lecturerId: lecturer.id, // Annahme: Feld heißt lecturerId
+          lecturerId: lecturer.id,
         },
       })
 
       if (!existingAssignment) {
-        // Erstelle neue Zuweisung im Relation-Model
         await prisma.courseAssignment.create({
           data: {
             courseId: course.id,
             lecturerId: lecturer.id,
-            // Füge ggf. weitere Felder hinzu: z.B. startDate, role etc.
           },
         })
         console.log(`Assigned ${lecturerEmail} to ${courseName}`)

@@ -1,12 +1,25 @@
-import { ReactNode, useEffect, useState } from 'react'
+import { addCoursesToLecturer } from '../actions/create'
+import { removeCourseFromLecturer } from '../actions/delete'
+import { Check, ChevronsUpDown, Scroll, X } from 'lucide-react'
+import { ReactNode, useEffect, useState, useTransition } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import z from 'zod'
 
+import { getCourses } from '@/features/courses'
 import { Course } from '@/features/courses/types'
 import { getCoursesByLecturerId } from '@/features/lecturers/actions/get'
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
 import { Lecturer } from '@/features/lecturers/types'
+import { Badge } from '@/features/shared/components/ui/badge'
 import { Button } from '@/features/shared/components/ui/button'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/features/shared/components/ui/command'
 import {
   Dialog,
   DialogHeader,
@@ -33,6 +46,12 @@ import {
 } from '@/features/shared/components/ui/item'
 import { PhoneInput } from '@/features/shared/components/ui/phone-input'
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/features/shared/components/ui/popover'
+import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -45,6 +64,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/features/shared/components/ui/tabs'
+import { cn } from '@/features/shared/lib/utils'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 interface LecturerDialogProps {
@@ -65,12 +85,16 @@ export function LecturerDialog({
   onSubmit,
 }: LecturerDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
+  const [lecturerCourses, setLecturerCourses] = useState<Course[]>([])
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
 
-  const open = controlledOpen ?? internalOpen
-  const setOpen = setControlledOpen ?? setInternalOpen
+  const openDialog = controlledOpen ?? internalOpen
+  const setDialogOpen = setControlledOpen ?? setInternalOpen
   const isEditing = !!lecturer
+
+  const [openCourseSelect, setCourseSelectOpen] = useState(false)
+  const [courseSelectedValues, setCourseSelectedValues] = useState<Course[]>([])
 
   const form = useForm<z.infer<typeof lecturerSchema>>({
     resolver: zodResolver(lecturerSchema),
@@ -86,8 +110,26 @@ export function LecturerDialog({
     },
   })
 
+  const [isPending, startTransition] = useTransition()
+
+  const handleAssignmentCreate = (lecturerId: string, courseId: string) => {
+    startTransition(async () => {
+      await addCoursesToLecturer(lecturerId, courseId)
+      const refreshed = await getCoursesByLecturerId(lecturerId)
+      setCourseSelectedValues(refreshed)
+    })
+  }
+
+  const handleAssignmentDelete = (lecturerId: string, courseId: string) => {
+    startTransition(async () => {
+      await removeCourseFromLecturer(lecturerId, courseId)
+      const refreshed = await getCoursesByLecturerId(lecturerId)
+      setCourseSelectedValues(refreshed)
+    })
+  }
+
   useEffect(() => {
-    if (!open) {
+    if (!openDialog) {
       return
     }
 
@@ -112,9 +154,12 @@ export function LecturerDialog({
       setLoading(true)
       try {
         if (lecturer?.id) {
-          const courses = await getCoursesByLecturerId(lecturer.id)
+          const lecturerCourses = await getCoursesByLecturerId(lecturer.id)
+          const courses = await getCourses()
           if (!canceled) {
+            setLecturerCourses(lecturerCourses)
             setCourses(courses)
+            setCourseSelectedValues(lecturerCourses)
           }
         } else if (!canceled) {
           setCourses([])
@@ -131,16 +176,21 @@ export function LecturerDialog({
     return () => {
       canceled = true
     }
-  }, [lecturer, form, open])
+  }, [lecturer, form, openDialog])
 
   async function handleSubmit(data: z.infer<typeof lecturerSchema>) {
     await onSubmit?.(data)
-    setOpen(false)
+    setDialogOpen(false)
     form.reset()
   }
 
+  const courseSelectOptions = courses.map((course) => ({
+    value: course.id,
+    label: course.name,
+  }))
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={openDialog} onOpenChange={setDialogOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="flex flex-col">
         <DialogHeader>
@@ -160,32 +210,93 @@ export function LecturerDialog({
             <TabsTrigger value="courses">Vorlesungen</TabsTrigger>
           </TabsList>
           <TabsContent value="courses">
-            <ItemGroup className="gap-4">
-              {loading ? (
-                <Item key="loading" variant="outline">
-                  Lade Kurse...
-                </Item>
-              ) : courses.length > 0 ? (
-                courses.map((course) => (
-                  <Item key={course.id} variant="outline">
-                    <ItemContent>
-                      <ItemTitle>{course.name}</ItemTitle>
-                      <ItemDescription>
-                        {course.courseLevel == 'bachelor'
-                          ? 'Bachelor'
-                          : 'Master'}{' '}
-                        | {course.semester}. Semester
-                      </ItemDescription>
-                    </ItemContent>
+            <Popover onOpenChange={setCourseSelectOpen} open={openCourseSelect}>
+              <PopoverTrigger asChild className="space-y-2 mb-4">
+                <Button
+                  aria-expanded={openCourseSelect}
+                  className="w-[250px] justify-between"
+                  role="combobox"
+                  variant="outline">
+                  {courseSelectedValues.length > 1
+                    ? `${courseSelectedValues.length} Kurs(e) ausgewählt`
+                    : courseSelectedValues.length === 1
+                      ? `${courseSelectedValues.length} Kurs ausgewählt`
+                      : 'Kurse auswählen...'}
+                  <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[250px] p-0">
+                <Command>
+                  <CommandInput placeholder="Suche Kurse..." />
+                  <ScrollArea className="h-64 w-full">
+                    <CommandList>
+                      <CommandEmpty>Keine Kurse gefunden.</CommandEmpty>
+                      <CommandGroup>
+                        {courseSelectOptions.map((topic) => (
+                          <CommandItem
+                            key={topic.value}
+                            onSelect={(currentValue) => {
+                              courseSelectedValues
+                                .map((course) => course.id)
+                                .includes(currentValue)
+                                ? handleAssignmentDelete(
+                                    lecturer!.id,
+                                    topic.value
+                                  )
+                                : handleAssignmentCreate(
+                                    lecturer!.id,
+                                    topic.value
+                                  )
+                            }}
+                            value={topic.value}>
+                            <Check
+                              className={cn(
+                                'mr-2 size-4',
+                                courseSelectedValues
+                                  .map((course) => course.id)
+                                  .includes(topic.value)
+                                  ? 'opacity-100'
+                                  : 'opacity-0'
+                              )}
+                            />
+                            {topic.label}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </ScrollArea>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <ScrollArea className="h-[400px]">
+              <ItemGroup className="grid grid-cols-2 gap-4 p-2">
+                {loading ? (
+                  <Item key="loading" variant="outline">
+                    Lade Kurse...
                   </Item>
-                ))
-              ) : (
-                <Item key="empty" variant="outline">
-                  Keine Kurse
-                </Item>
-              )}
-            </ItemGroup>
+                ) : courseSelectedValues.length > 0 ? (
+                  courseSelectedValues.map((course) => (
+                    <Item key={course.id} variant="outline">
+                      <ItemContent>
+                        <ItemTitle>{course.name}</ItemTitle>
+                        <ItemDescription>
+                          {course.courseLevel == 'bachelor'
+                            ? 'Bachelor'
+                            : 'Master'}{' '}
+                          | {course.semester}. Semester
+                        </ItemDescription>
+                      </ItemContent>
+                    </Item>
+                  ))
+                ) : (
+                  <Item key="empty" variant="outline">
+                    Keine Kurse
+                  </Item>
+                )}
+              </ItemGroup>
+            </ScrollArea>
           </TabsContent>
+
           <TabsContent value="details">
             <form
               id="lecturer-form"

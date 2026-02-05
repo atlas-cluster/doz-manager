@@ -19,3 +19,15 @@ export async function createLecturer(data: z.infer<typeof lecturerSchema>) {
     },
   })
 }
+
+export async function addCoursesToLecturer(
+  lecturerId: string,
+  courseId: string
+) {
+  await prisma.courseAssignment.create({
+    data: {
+      courseId: courseId,
+      lecturerId: lecturerId,
+    },
+  })
+}

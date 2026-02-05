@@ -1,10 +1,11 @@
 'use client'
 
 import { XIcon } from 'lucide-react'
+import { Dialog as DialogPrimitive } from 'radix-ui'
 import * as React from 'react'
 
+import { Button } from '@/features/shared/components/ui/button'
 import { cn } from '@/features/shared/lib/utils'
-import * as DialogPrimitive from '@radix-ui/react-dialog'
 
 function Dialog({
   ...props
@@ -88,7 +89,14 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
-function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
+function DialogFooter({
+  className,
+  showCloseButton = false,
+  children,
+  ...props
+}: React.ComponentProps<'div'> & {
+  showCloseButton?: boolean
+}) {
   return (
     <div
       data-slot="dialog-footer"
@@ -96,8 +104,14 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
         'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end',
         className
       )}
-      {...props}
-    />
+      {...props}>
+      {children}
+      {showCloseButton && (
+        <DialogPrimitive.Close asChild>
+          <Button variant="outline">Close</Button>
+        </DialogPrimitive.Close>
+      )}
+    </div>
   )
 }
 
