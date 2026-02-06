@@ -1,6 +1,5 @@
 'use client'
 
-import { LecturerDialog } from '../dialog'
 import {
   ArrowDown,
   ArrowUp,
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 
+import { LecturerDialog } from '@/features/lecturers/components/dialog'
 import { Lecturer } from '@/features/lecturers/types'
 import { LecturerTableMeta } from '@/features/lecturers/types'
 import { Button } from '@/features/shared/components/ui/button'

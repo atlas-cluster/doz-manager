@@ -2,7 +2,7 @@
 
 import { unstable_cache } from 'next/cache'
 
-import { Course } from '@/features/courses/types'
+import { Course } from '@/features/courses'
 import { prisma } from '@/features/shared/lib/prisma'
 
 async function getLecturerCourseAssignmentsInternal(
