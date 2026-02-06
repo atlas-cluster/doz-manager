@@ -13,16 +13,12 @@ import {
 import { useEffect, useRef, useState, useTransition } from 'react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import z from 'zod'
 
-import { createLecturer } from '@/features/lecturers/actions/create-lecturer'
 import { deleteLecturer } from '@/features/lecturers/actions/delete-lecturer'
 import { deleteLecturers } from '@/features/lecturers/actions/delete-lecturers'
 import { getLecturers } from '@/features/lecturers/actions/get-lecturers'
-import { updateLecturer } from '@/features/lecturers/actions/update-lecturer'
 import { columns } from '@/features/lecturers/components/data-table/columns'
-import { LecturerDialog } from '@/features/lecturers/components/dialog'
-import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
+import { LecturerDialog } from '@/features/lecturers/components/dialog/dialog'
 import { GetLecturersResponse, Lecturer } from '@/features/lecturers/types'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
@@ -129,26 +125,6 @@ export function DataTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination, sorting, columnFilters, globalFilter])
 
-  const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
-    const promise = createLecturer(data).then(() => fetchData())
-
-    toast.promise(promise, {
-      loading: 'Dozent wird erstellt...',
-      success: 'Erfolgreich Dozenten erstellt',
-      error: 'Fehler beim Erstellen des Dozenten',
-    })
-  }
-
-  const handleUpdate = (id: string, data: z.infer<typeof lecturerSchema>) => {
-    const promise = updateLecturer(id, data).then(() => fetchData())
-
-    toast.promise(promise, {
-      loading: 'Dozent wird aktualisiert...',
-      success: 'Erfolgreich Dozenten aktualisiert',
-      error: 'Fehler beim Aktualisieren des Dozenten',
-    })
-  }
-
   const handleDelete = (id: string) => {
     const promise = deleteLecturer(id).then(() => fetchData())
 
@@ -208,11 +184,9 @@ export function DataTable({
     manualFiltering: true,
 
     meta: {
-      createLecturer: handleCreate,
-      updateLecturer: handleUpdate,
       deleteLecturer: handleDelete,
       deleteLecturers: handleDeleteMany,
-      refreshLecturer: handleRefresh,
+      refreshLecturers: handleRefresh,
     },
 
     enableRowSelection: true,
@@ -290,7 +264,7 @@ export function DataTable({
                     <span className={'sr-only'}>Dozenten erstellen</span>
                   </Button>
                 }
-                onSubmit={handleCreate}
+                onSubmit={fetchData}
               />
             </div>
           </div>
@@ -366,7 +340,7 @@ export function DataTable({
                 Dozent erstellen
               </Button>
             }
-            onSubmit={handleCreate}
+            onSubmit={fetchData}
           />
         </div>
       </div>

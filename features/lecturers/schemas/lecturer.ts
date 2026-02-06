@@ -46,4 +46,5 @@ export const lecturerSchema = z.object({
   courseLevelPreference: z.enum(['bachelor', 'master', 'both'], {
     message: 'Bitte wählen Sie eine Vorlesungsstufen-Präferenz aus.',
   }),
+  courseIds: z.array(z.string()),
 })
