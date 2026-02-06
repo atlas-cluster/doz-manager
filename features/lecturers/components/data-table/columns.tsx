@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 
-import { LecturerDialog } from '@/features/lecturers/components/dialog/dialog'
+import { LecturerDialog } from '@/features/lecturers/components/dialog'
 import { Lecturer } from '@/features/lecturers/types'
 import { LecturerTableMeta } from '@/features/lecturers/types'
 import { Button } from '@/features/shared/components/ui/button'
@@ -44,10 +44,10 @@ function ActionsCell({
   return (
     <div className="flex justify-end">
       <LecturerDialog
-        lecturerId={lecturer.id}
+        lecturer={lecturer}
         open={open}
         onOpenChange={setOpen}
-        onSubmit={meta?.refreshLecturers}
+        onSubmit={(payload) => meta?.updateLecturer?.(lecturer.id, payload)}
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

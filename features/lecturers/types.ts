@@ -1,3 +1,6 @@
+import z from 'zod'
+
+import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
 import type {
   CourseLevelPreference as PrismaCourseLevelPreference,
   Lecturer as PrismaLecturer,
@@ -7,8 +10,9 @@ import type {
 export type LecturerType = PrismaLecturerType
 export type CourseLevelPreference = PrismaCourseLevelPreference
 export type Lecturer = PrismaLecturer
-
 export interface LecturerTableMeta {
+  createLecturer: (data: z.infer<typeof lecturerSchema>) => void
+  updateLecturer: (id: string, data: z.infer<typeof lecturerSchema>) => void
   deleteLecturer: (id: string) => void
   deleteLecturers: (ids: string[]) => void
   refreshLecturers: () => void
