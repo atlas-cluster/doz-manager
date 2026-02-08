@@ -255,7 +255,7 @@ export const columns: ColumnDef<Lecturer>[] = [
     id: 'assignments',
     header: 'Vorlesungen',
     accessorKey: 'assignments',
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const assignments = row.original.assignments
 
       if (!assignments || assignments.length === 0) {
@@ -266,18 +266,29 @@ export const columns: ColumnDef<Lecturer>[] = [
       const remainingCount = assignments.length - 3
 
       return (
-        <AvatarGroup className="grayscale">
-          {displayAssignments.map((assignment, index) => (
-            <Avatar key={index}>
-              <AvatarFallback>
-                {initialsFromName(assignment.course.name)}
-              </AvatarFallback>
-            </Avatar>
-          ))}
-          {remainingCount > 0 && (
-            <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
-          )}
-        </AvatarGroup>
+        <CourseAssignmentDialog
+          lecturer={row.original}
+          onSubmit={() =>
+            (
+              table.options.meta as LecturerTableMeta | undefined
+            )?.refreshLecturers()
+          }
+          readonly
+          trigger={
+            <AvatarGroup className="grayscale cursor-pointer">
+              {displayAssignments.map((assignment, index) => (
+                <Avatar key={index}>
+                  <AvatarFallback>
+                    {initialsFromName(assignment.course.name)}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              {remainingCount > 0 && (
+                <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+              )}
+            </AvatarGroup>
+          }
+        />
       )
     },
     enableSorting: false,

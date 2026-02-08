@@ -1,4 +1,9 @@
-import { ChevronsUpDown, CircleQuestionMark, Trash2 } from 'lucide-react'
+import {
+  ChevronsUpDown,
+  CircleQuestionMark,
+  PencilRuler,
+  Trash2,
+} from 'lucide-react'
 import { ReactNode, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -59,6 +64,7 @@ interface CourseAssignmentProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
   onSubmit?: () => void
+  readonly?: boolean
 }
 
 export function CourseAssignmentDialog({
@@ -67,10 +73,12 @@ export function CourseAssignmentDialog({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   onSubmit,
+  readonly = false,
 }: CourseAssignmentProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [readonlyMode, setReadonlyMode] = useState(readonly)
 
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([])
@@ -97,8 +105,9 @@ export function CourseAssignmentDialog({
     }
     if (open) {
       fetchData()
+      setReadonlyMode(readonly)
     }
-  }, [lecturer.id, open])
+  }, [lecturer.id, open, readonly])
 
   const toggleCourse = (courseId: string) => {
     if (selectedCourses.some((c) => c.id === courseId)) {
@@ -156,16 +165,20 @@ export function CourseAssignmentDialog({
       <DialogContent
         className={'min-h-[90vh] max-h-[90vh] overflow-y-auto min-w-[60vw]'}>
         <DialogHeader>
-          <DialogTitle>Vorlesungen zuordnen</DialogTitle>
+          <DialogTitle>
+            {readonlyMode ? 'Vorlesungen ansehen' : 'Vorlesungen zuordnen'}
+          </DialogTitle>
           <DialogDescription>
-            Weisen Sie diesem Dozenten Vorlesungen zu
+            {readonlyMode
+              ? 'Die folgenden Vorlesungen sind diesem Dozenten zugeordnet'
+              : 'Weisen Sie diesem Dozenten Vorlesungen zu'}
           </DialogDescription>
         </DialogHeader>
         <div className={'flex flex-col gap-3'}>
           {loading ? (
             <>
-              <Skeleton className="h-9 w-48" />
-              <ScrollArea className={'max-h-[60vh] h-[60vh] overflow-y-auto'}>
+              {!readonlyMode && <Skeleton className="h-9 w-48" />}
+              <ScrollArea className={'max-h-[65vh] h-[65vh] overflow-y-auto'}>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                   {Array.from({ length: 5 }).map((_, index) => (
                     <Item key={index} variant={'outline'} size={'sm'}>
@@ -183,45 +196,56 @@ export function CourseAssignmentDialog({
             </>
           ) : (
             <>
-              <Popover modal>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    suppressHydrationWarning
-                    className="w-fit">
-                    {selectedCourses.length > 0
-                      ? `${selectedCourses.length} Kurs(e) ausgewählt`
-                      : 'Kurse auswählen...'}
-                    <ChevronsUpDown />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Suche Kurse..." />
-                    <CommandList>
-                      <CommandEmpty>Keine Kurse gefunden.</CommandEmpty>
-                      <CommandGroup>
-                        {courses.map((course) => (
-                          <CommandItem
-                            key={course.id}
-                            onSelect={() => toggleCourse(course.id)}
-                            value={course.id}>
-                            <Checkbox
-                              checked={selectedCourses.some(
-                                (c) => c.id === course.id
-                              )}
-                              className="pointer-events-none"
-                            />
-                            {course.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              {readonlyMode && (
+                <Button
+                  onClick={() => setReadonlyMode(!readonlyMode)}
+                  variant={'outline'}
+                  className="w-fit">
+                  <PencilRuler />
+                  In Bearbeitungsmodus wechseln
+                </Button>
+              )}
+              {!readonlyMode && (
+                <Popover modal>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      suppressHydrationWarning
+                      className="w-fit">
+                      {selectedCourses.length >= 1
+                        ? `${selectedCourses.length} Vorlesung${selectedCourses.length != 1 ? 'en' : ''} ausgewählt`
+                        : 'Kurse auswählen...'}
+                      <ChevronsUpDown />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Suche Vorlesungen..." />
+                      <CommandList>
+                        <CommandEmpty>Keine Kurse gefunden.</CommandEmpty>
+                        <CommandGroup>
+                          {courses.map((course) => (
+                            <CommandItem
+                              key={course.id}
+                              onSelect={() => toggleCourse(course.id)}
+                              value={course.id}>
+                              <Checkbox
+                                checked={selectedCourses.some(
+                                  (c) => c.id === course.id
+                                )}
+                                className="pointer-events-none"
+                              />
+                              {course.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              )}
               {selectedCourses.length > 0 ? (
-                <ScrollArea className={'max-h-[60vh] h-[60vh] overflow-y-auto'}>
+                <ScrollArea className={'max-h-[65vh] h-[65vh] overflow-y-auto'}>
                   <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                     {selectedCourses.map((course) => (
                       <Item
@@ -245,43 +269,50 @@ export function CourseAssignmentDialog({
                             | {course.semester}. Semester
                           </ItemDescription>
                         </ItemContent>
-                        <ItemActions>
-                          <Button
-                            variant={'ghost'}
-                            size={'icon'}
-                            onClick={() => toggleCourse(course.id)}>
-                            <Trash2 />
-                            <span className={'sr-only'}>
-                              {course.name + ' entfernen'}
-                            </span>
-                          </Button>
-                        </ItemActions>
+                        {!readonlyMode && (
+                          <ItemActions>
+                            <Button
+                              variant={'ghost'}
+                              size={'icon'}
+                              onClick={() => toggleCourse(course.id)}>
+                              <Trash2 />
+                              <span className={'sr-only'}>
+                                {course.name + ' entfernen'}
+                              </span>
+                            </Button>
+                          </ItemActions>
+                        )}
                       </Item>
                     ))}
                   </ItemGroup>
                 </ScrollArea>
               ) : (
-                <Empty className={'min-h-[60vh]'}>
+                <Empty className={'min-h-[65vh]'}>
                   <EmptyMedia variant={'icon'}>
                     <CircleQuestionMark />
                   </EmptyMedia>
                   <EmptyTitle>Keine Zuweisungen vorhanden</EmptyTitle>
                   <EmptyDescription>
-                    Weisen Sie diesem Dozenten Vorlesungen zu, damit sie hier
-                    angezeigt werden
+                    {readonlyMode
+                      ? 'Dieser Dozent ist derzeit keiner Vorlesung zugeordnet.'
+                      : 'Bitte wählen Sie Vorlesungen aus, die diesem Dozenten zugeordnet werden sollen.'}
                   </EmptyDescription>
                 </Empty>
               )}
             </>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className={'items-end'}>
           <DialogClose asChild>
-            <Button variant="outline">Abbrechen</Button>
+            <Button variant="outline">
+              {readonly ? 'Schließen' : 'Abbrechen'}
+            </Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            Speichern
-          </Button>
+          {!readonlyMode && (
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              Speichern
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
