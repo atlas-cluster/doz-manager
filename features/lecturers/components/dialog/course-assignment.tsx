@@ -214,7 +214,7 @@ export function CourseAssignmentDialog({
                       className="w-fit">
                       {selectedCourses.length >= 1
                         ? `${selectedCourses.length} Vorlesung${selectedCourses.length != 1 ? 'en' : ''} ausgewählt`
-                        : 'Kurse auswählen...'}
+                        : 'Vorlesungen auswählen...'}
                       <ChevronsUpDown />
                     </Button>
                   </PopoverTrigger>
@@ -222,7 +222,7 @@ export function CourseAssignmentDialog({
                     <Command>
                       <CommandInput placeholder="Suche Vorlesungen..." />
                       <CommandList>
-                        <CommandEmpty>Keine Kurse gefunden.</CommandEmpty>
+                        <CommandEmpty>Keine Vorlesungen gefunden.</CommandEmpty>
                         <CommandGroup>
                           {courses.map((course) => (
                             <CommandItem
@@ -291,7 +291,11 @@ export function CourseAssignmentDialog({
                   <EmptyMedia variant={'icon'}>
                     <CircleQuestionMark />
                   </EmptyMedia>
-                  <EmptyTitle>Keine Zuweisungen vorhanden</EmptyTitle>
+                  <EmptyTitle>
+                    {readonlyMode
+                      ? 'Keine zugeordneten Vorlesungen'
+                      : 'Keine Vorlesungen ausgewählt'}
+                  </EmptyTitle>
                   <EmptyDescription>
                     {readonlyMode
                       ? 'Dieser Dozent ist derzeit keiner Vorlesung zugeordnet.'

@@ -265,6 +265,10 @@ export const columns: ColumnDef<Lecturer>[] = [
       const displayAssignments = assignments.slice(0, 3)
       const remainingCount = assignments.length - 3
 
+      if (displayAssignments.length === 0) {
+        return null
+      }
+
       return (
         <CourseAssignmentDialog
           lecturer={row.original}
