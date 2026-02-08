@@ -20,6 +20,12 @@ import { CourseAssignmentDialog } from '@/features/lecturers/components/dialog/c
 import { LecturerDialog } from '@/features/lecturers/components/dialog/lecturer'
 import { Lecturer } from '@/features/lecturers/types'
 import { LecturerTableMeta } from '@/features/lecturers/types'
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+} from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
@@ -29,6 +35,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/features/shared/components/ui/dropdown-menu'
+import { initialsFromName } from '@/features/shared/lib/utils'
 import { ColumnDef, Row, Table } from '@tanstack/table-core'
 
 function ActionsCell({
@@ -242,6 +249,38 @@ export const columns: ColumnDef<Lecturer>[] = [
     },
     enableSorting: false,
     enableHiding: true,
+    enableGlobalFilter: false,
+  },
+  {
+    id: 'assignments',
+    header: 'Vorlesungen',
+    cell: ({ row }) => {
+      const assignments = row.original.assignments
+
+      if (!assignments || assignments.length === 0) {
+        return null
+      }
+
+      const displayAssignments = assignments.slice(0, 3)
+      const remainingCount = assignments.length - 3
+
+      return (
+        <AvatarGroup className="grayscale">
+          {displayAssignments.map((assignment, index) => (
+            <Avatar key={index}>
+              <AvatarFallback>
+                {initialsFromName(assignment.course.name)}
+              </AvatarFallback>
+            </Avatar>
+          ))}
+          {remainingCount > 0 && (
+            <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+          )}
+        </AvatarGroup>
+      )
+    },
+    enableSorting: false,
+    enableHiding: false,
     enableGlobalFilter: false,
   },
   {

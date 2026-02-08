@@ -9,7 +9,13 @@ import type {
 
 export type LecturerType = PrismaLecturerType
 export type CourseLevelPreference = PrismaCourseLevelPreference
-export type Lecturer = PrismaLecturer
+export type Lecturer = PrismaLecturer & {
+  assignments?: {
+    course: {
+      name: string
+    }
+  }[]
+}
 export interface LecturerTableMeta {
   createLecturer: (data: z.infer<typeof lecturerSchema>) => void
   updateLecturer: (id: string, data: z.infer<typeof lecturerSchema>) => void

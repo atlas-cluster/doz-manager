@@ -78,6 +78,17 @@ async function getLecturersInternal({
       skip: pageIndex * pageSize,
       take: pageSize,
       orderBy,
+      include: {
+        assignments: {
+          select: {
+            course: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
     }),
     prisma.lecturer.groupBy({
       by: ['type'],

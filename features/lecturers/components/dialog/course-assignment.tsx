@@ -7,7 +7,7 @@ import { Lecturer } from '@/features/lecturers'
 import { createLecturerCourseAssignment } from '@/features/lecturers/actions/create-lecturer-course-assignment'
 import { deleteLecturerCourseAssignment } from '@/features/lecturers/actions/delete-lecturer-course-assignment'
 import { getLecturerCourseAssignments } from '@/features/lecturers/actions/get-lecturer-course-assignments'
-import { InitialsAvatar } from '@/features/shared/components/initials-avater'
+import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
@@ -50,6 +50,8 @@ import {
 } from '@/features/shared/components/ui/popover'
 import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import { Skeleton } from '@/features/shared/components/ui/skeleton'
+import { initialsFromName } from '@/features/shared/lib/utils'
+import '@radix-ui/react-avatar'
 
 interface CourseAssignmentProps {
   lecturer: Lecturer
@@ -228,7 +230,11 @@ export function CourseAssignmentDialog({
                         size={'sm'}
                         className={'flex flex-nowrap'}>
                         <ItemMedia>
-                          <InitialsAvatar name={course.name} />
+                          <Avatar className={'size-10'}>
+                            <AvatarFallback>
+                              {initialsFromName(course.name)}
+                            </AvatarFallback>
+                          </Avatar>
                         </ItemMedia>
                         <ItemContent>
                           <ItemTitle>{course.name}</ItemTitle>
