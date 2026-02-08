@@ -121,11 +121,11 @@ export const columns: ColumnDef<Course>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
           Name
           {column.getIsSorted() === 'asc' ? (
-            <ArrowUp className="ml-2 h-4 w-4" />
+            <ArrowUp />
           ) : column.getIsSorted() === 'desc' ? (
-            <ArrowDown className="ml-2 h-4 w-4" />
+            <ArrowDown />
           ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown />
           )}
         </Button>
       )

@@ -39,8 +39,6 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
-import { useIsMobile } from '@/features/shared/hooks/use-mobile'
-import { cn } from '@/features/shared/lib/utils'
 import {
   ColumnFiltersState,
   OnChangeFn,

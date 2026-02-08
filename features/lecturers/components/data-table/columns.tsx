@@ -69,8 +69,8 @@ function ActionsCell({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
-            <span className={'sr-only'}>Menü öffnen</span>
             <MoreHorizontalIcon />
+            <span className={'sr-only'}>Menü öffnen</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
