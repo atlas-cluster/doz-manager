@@ -166,7 +166,13 @@ export function CourseAssignmentDialog({
         className={'min-h-[90vh] max-h-[90vh] overflow-y-auto min-w-[60vw]'}>
         <DialogHeader>
           <DialogTitle>
-            {readonlyMode ? 'Vorlesungen ansehen' : 'Vorlesungen zuordnen'}
+            {readonlyMode
+              ? 'Vorlesungen ansehen - '
+              : 'Vorlesungen zuordnen - '}
+            {lecturer.title ? lecturer.title + ' ' : ''}
+            {lecturer.firstName}
+            {lecturer.secondName ? ' ' + lecturer.secondName : ''}
+            {' ' + lecturer.lastName}
           </DialogTitle>
           <DialogDescription>
             {readonlyMode
