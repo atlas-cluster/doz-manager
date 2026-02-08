@@ -254,6 +254,7 @@ export const columns: ColumnDef<Lecturer>[] = [
   {
     id: 'assignments',
     header: 'Vorlesungen',
+    accessorKey: 'assignments',
     cell: ({ row }) => {
       const assignments = row.original.assignments
 
@@ -280,7 +281,7 @@ export const columns: ColumnDef<Lecturer>[] = [
       )
     },
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: true,
     enableGlobalFilter: false,
   },
   {
