@@ -6,11 +6,11 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
-import { createCourse } from '@/features/courses/actions/create'
-import { deleteCourse } from '@/features/courses/actions/delete'
-import { deleteCourses } from '@/features/courses/actions/delete-many'
-import { getCourses } from '@/features/courses/actions/get'
-import { updateCourse } from '@/features/courses/actions/update'
+import { createCourse } from '@/features/courses/actions/create-course'
+import { deleteCourse } from '@/features/courses/actions/delete-course'
+import { deleteCourses } from '@/features/courses/actions/delete-courses'
+import { getCourses } from '@/features/courses/actions/get-courses'
+import { updateCourse } from '@/features/courses/actions/update-course'
 import { columns } from '@/features/courses/components/data-table/columns'
 import { CourseDialog } from '@/features/courses/components/dialog'
 import { courseSchema } from '@/features/courses/schemas/course'
@@ -198,7 +198,7 @@ export function DataTable({
       updateCourse: handleUpdate,
       deleteCourse: handleDelete,
       deleteCourses: handleDeleteMany,
-      refreshCourse: handleRefresh,
+      refreshCourses: handleRefresh,
     },
 
     enableRowSelection: true,

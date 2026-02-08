@@ -51,7 +51,7 @@ function ActionsCell({
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
             <span className={'sr-only'}>Menü öffnen</span>
-            <MoreHorizontalIcon className="h-4 w-4" />
+            <MoreHorizontalIcon />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -59,13 +59,13 @@ function ActionsCell({
           {selectedRows.length <= 1 || !row.getIsSelected() ? (
             <>
               <DropdownMenuItem onSelect={() => setOpen(true)}>
-                <PencilIcon className="mr-2 h-4 w-4" />
+                <PencilIcon />
                 Bearbeiten
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant={'destructive'}
                 onSelect={() => meta?.deleteCourse?.(course.id)}>
-                <TrashIcon className="mr-2 h-4 w-4" />
+                <TrashIcon />
                 Löschen
               </DropdownMenuItem>
             </>

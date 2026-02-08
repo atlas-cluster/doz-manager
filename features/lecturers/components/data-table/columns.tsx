@@ -70,7 +70,7 @@ function ActionsCell({
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
             <span className={'sr-only'}>Menü öffnen</span>
-            <MoreHorizontalIcon className="h-4 w-4" />
+            <MoreHorizontalIcon />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -102,7 +102,7 @@ function ActionsCell({
                     selectedRows.map((r) => r.original.id)
                   )
                 }>
-                <TrashIcon className="mr-2 h-4 w-4" />
+                <TrashIcon />
                 Löschen ({selectedRows.length})
               </DropdownMenuItem>
             </>
@@ -148,11 +148,11 @@ export const columns: ColumnDef<Lecturer>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
           Name
           {column.getIsSorted() === 'asc' ? (
-            <ArrowUp className="ml-2 h-4 w-4" />
+            <ArrowUp />
           ) : column.getIsSorted() === 'desc' ? (
-            <ArrowDown className="ml-2 h-4 w-4" />
+            <ArrowDown />
           ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown />
           )}
         </Button>
       )

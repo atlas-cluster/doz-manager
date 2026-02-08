@@ -18,7 +18,7 @@ export interface CourseTableMeta {
   updateCourse: (id: string, data: z.infer<typeof courseSchema>) => void
   deleteCourse: (id: string) => void
   deleteCourses: (ids: string[]) => void
-  refreshCourse: () => void
+  refreshCourses: () => void
 }
 
 export interface GetCoursesParams {
