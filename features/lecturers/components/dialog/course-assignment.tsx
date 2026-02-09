@@ -163,8 +163,10 @@ export function CourseAssignmentDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
-        className={'min-h-[90vh] max-h-[90vh] overflow-y-auto min-w-[60vw]'}>
-        <DialogHeader>
+        className={
+          'flex h-[90vh] max-h-[90vh] min-w-[60vw] flex-col overflow-hidden'
+        }>
+        <DialogHeader className="sticky top-0 z-10 bg-background pb-2">
           <DialogTitle>
             {readonlyMode
               ? 'Vorlesungen ansehen - '
@@ -180,11 +182,11 @@ export function CourseAssignmentDialog({
               : 'Weisen Sie diesem Dozenten Vorlesungen zu'}
           </DialogDescription>
         </DialogHeader>
-        <div className={'flex flex-col gap-3'}>
+        <div className={'flex min-h-0 flex-1 flex-col gap-3'}>
           {loading ? (
             <>
               <Skeleton className="h-9 w-48" />
-              <ScrollArea className={'max-h-[65vh] h-[50vh] overflow-y-auto'}>
+              <ScrollArea className="min-h-0 flex-1">
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                   {Array.from({ length: 5 }).map((_, index) => (
                     <Item key={index} variant={'outline'} size={'sm'}>
@@ -251,7 +253,7 @@ export function CourseAssignmentDialog({
                 </Popover>
               )}
               {selectedCourses.length > 0 ? (
-                <ScrollArea className={'max-h-[65vh] h-[50vh] overflow-y-auto'}>
+                <ScrollArea className="min-h-0 flex-1">
                   <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                     {selectedCourses.map((course) => (
                       <Item
@@ -293,7 +295,7 @@ export function CourseAssignmentDialog({
                   </ItemGroup>
                 </ScrollArea>
               ) : (
-                <Empty className={'min-h-[65vh]'}>
+                <Empty className="flex-1">
                   <EmptyMedia variant={'icon'}>
                     <CircleQuestionMark />
                   </EmptyMedia>
@@ -312,7 +314,7 @@ export function CourseAssignmentDialog({
             </>
           )}
         </div>
-        <DialogFooter className={'items-end'}>
+        <DialogFooter className="sticky bottom-0 z-10 items-end bg-background pt-2">
           <DialogClose asChild>
             <Button variant="outline">
               {readonly ? 'Schließen' : 'Abbrechen'}
