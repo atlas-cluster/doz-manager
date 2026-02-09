@@ -184,7 +184,7 @@ export function CourseAssignmentDialog({
           {loading ? (
             <>
               <Skeleton className="h-9 w-48" />
-              <ScrollArea className={'max-h-[65vh] h-[65vh] overflow-y-auto'}>
+              <ScrollArea className={'max-h-[65vh] h-[50vh] overflow-y-auto'}>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                   {Array.from({ length: 5 }).map((_, index) => (
                     <Item key={index} variant={'outline'} size={'sm'}>
@@ -251,7 +251,7 @@ export function CourseAssignmentDialog({
                 </Popover>
               )}
               {selectedCourses.length > 0 ? (
-                <ScrollArea className={'max-h-[65vh] h-[65vh] overflow-y-auto'}>
+                <ScrollArea className={'max-h-[65vh] h-[50vh] overflow-y-auto'}>
                   <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                     {selectedCourses.map((course) => (
                       <Item
