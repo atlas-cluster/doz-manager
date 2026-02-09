@@ -252,7 +252,7 @@ export function DataTable({
 
   return (
     <div className="w-full space-y-3">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between">
         <div className="flex w-full flex-wrap items-center gap-2">
           <div className="flex w-full gap-2 md:w-64">
             {/** Desktop only: Show input only */}
