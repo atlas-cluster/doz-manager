@@ -27,7 +27,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible={'icon'}>
       <SidebarHeader>
-        <div className={'flex w-full items-center overflow-hidden p-1'}>
+        <div className={'flex items-center overflow-hidden p-1'}>
           <Image
             src={'/logo.png'}
             width={165}
