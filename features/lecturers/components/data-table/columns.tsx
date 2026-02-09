@@ -1,8 +1,8 @@
 'use client'
 
-import { LecturerDialog } from '../dialog'
 import {
   ArrowDown,
+  ArrowLeftRight,
   ArrowUp,
   ArrowUpDown,
   Blend,
@@ -16,8 +16,16 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 
+import { CourseAssignmentDialog } from '@/features/lecturers/components/dialog/course-assignment'
+import { LecturerDialog } from '@/features/lecturers/components/dialog/lecturer'
 import { Lecturer } from '@/features/lecturers/types'
 import { LecturerTableMeta } from '@/features/lecturers/types'
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+} from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
@@ -27,6 +35,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/features/shared/components/ui/dropdown-menu'
+import { initialsFromName } from '@/features/shared/lib/utils'
 import { ColumnDef, Row, Table } from '@tanstack/table-core'
 
 function ActionsCell({
@@ -38,36 +47,49 @@ function ActionsCell({
 }) {
   const meta = table.options.meta as LecturerTableMeta | undefined
   const lecturer = row.original
-  const [open, setOpen] = useState(false)
+  const [lecturerDialogOpen, setLecturerDialogOpen] = useState(false)
+  const [courseAssignmentDialogOpen, setCourseAssignmentDialogOpen] =
+    useState(false)
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
     <div className="flex justify-end">
       <LecturerDialog
         lecturer={lecturer}
-        open={open}
-        onOpenChange={setOpen}
+        open={lecturerDialogOpen}
+        onOpenChange={setLecturerDialogOpen}
         onSubmit={(payload) => meta?.updateLecturer?.(lecturer.id, payload)}
+      />
+      <CourseAssignmentDialog
+        lecturer={lecturer}
+        open={courseAssignmentDialogOpen}
+        onOpenChange={setCourseAssignmentDialogOpen}
+        onSubmit={() => meta?.refreshLecturers()}
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
+            <MoreHorizontalIcon />
             <span className={'sr-only'}>Menü öffnen</span>
-            <MoreHorizontalIcon className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
           {selectedRows.length <= 1 || !row.getIsSelected() ? (
             <>
-              <DropdownMenuItem onSelect={() => setOpen(true)}>
-                <PencilIcon className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onSelect={() => setLecturerDialogOpen(true)}>
+                <PencilIcon />
                 Bearbeiten
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => setCourseAssignmentDialogOpen(true)}>
+                <ArrowLeftRight />
+                Vorlesungen zuordnen
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant={'destructive'}
                 onSelect={() => meta?.deleteLecturer?.(lecturer.id)}>
-                <TrashIcon className="mr-2 h-4 w-4" />
+                <TrashIcon />
                 Löschen
               </DropdownMenuItem>
             </>
@@ -80,7 +102,7 @@ function ActionsCell({
                     selectedRows.map((r) => r.original.id)
                   )
                 }>
-                <TrashIcon className="mr-2 h-4 w-4" />
+                <TrashIcon />
                 Löschen ({selectedRows.length})
               </DropdownMenuItem>
             </>
@@ -126,11 +148,11 @@ export const columns: ColumnDef<Lecturer>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
           Name
           {column.getIsSorted() === 'asc' ? (
-            <ArrowUp className="ml-2 h-4 w-4" />
+            <ArrowUp />
           ) : column.getIsSorted() === 'desc' ? (
-            <ArrowDown className="ml-2 h-4 w-4" />
+            <ArrowDown />
           ) : (
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown />
           )}
         </Button>
       )
@@ -224,6 +246,54 @@ export const columns: ColumnDef<Lecturer>[] = [
       }
 
       return true
+    },
+    enableSorting: false,
+    enableHiding: true,
+    enableGlobalFilter: false,
+  },
+  {
+    id: 'assignments',
+    header: 'Vorlesungen',
+    accessorKey: 'assignments',
+    cell: ({ row, table }) => {
+      const assignments = row.original.assignments
+
+      if (!assignments || assignments.length === 0) {
+        return null
+      }
+
+      const displayAssignments = assignments.slice(0, 3)
+      const remainingCount = assignments.length - 3
+
+      if (displayAssignments.length === 0) {
+        return null
+      }
+
+      return (
+        <CourseAssignmentDialog
+          lecturer={row.original}
+          onSubmit={() =>
+            (
+              table.options.meta as LecturerTableMeta | undefined
+            )?.refreshLecturers()
+          }
+          readonly
+          trigger={
+            <AvatarGroup className="grayscale cursor-pointer">
+              {displayAssignments.map((assignment, index) => (
+                <Avatar key={index}>
+                  <AvatarFallback>
+                    {initialsFromName(assignment.course.name)}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              {remainingCount > 0 && (
+                <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+              )}
+            </AvatarGroup>
+          }
+        />
+      )
     },
     enableSorting: false,
     enableHiding: true,

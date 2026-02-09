@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidateTag, updateTag } from 'next/cache'
+import { updateTag } from 'next/cache'
 
 import { prisma } from '@/features/shared/lib/prisma'
 

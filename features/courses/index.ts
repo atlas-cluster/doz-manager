@@ -1,4 +1,5 @@
-import { getCourses } from '@/features/courses/actions/get'
+import { getCourses } from '@/features/courses/actions/get-courses'
 import { DataTable } from '@/features/courses/components/data-table/data-table'
 
 export { DataTable as CourseDataTable, getCourses }
+export * from './types'

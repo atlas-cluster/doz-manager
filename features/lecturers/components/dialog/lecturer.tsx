@@ -7,6 +7,7 @@ import { Lecturer } from '@/features/lecturers/types'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,
+  DialogFooter,
   DialogHeader,
   DialogTrigger,
 } from '@/features/shared/components/ui/dialog'
@@ -97,7 +98,7 @@ export function LecturerDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className={'max-h-[85vh] overflow-y-auto'}>
+      <DialogContent className={'max-h-[90vh] overflow-y-auto'}>
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Dozent bearbeiten' : 'Dozent erstellen'}
@@ -160,7 +161,7 @@ export function LecturerDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
                 name={'secondName'}
                 control={form.control}
@@ -209,7 +210,7 @@ export function LecturerDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
                 name={'email'}
                 control={form.control}
@@ -259,7 +260,7 @@ export function LecturerDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
                 name={'type'}
                 control={form.control}
@@ -318,11 +319,11 @@ export function LecturerDialog({
                 )}
               />
             </div>
-            <div className="mt-4 flex justify-end">
+            <DialogFooter>
               <Button type="submit">
                 {isEditing ? 'Speichern' : 'Erstellen'}
               </Button>
-            </div>
+            </DialogFooter>
           </FieldGroup>
         </form>
       </DialogContent>

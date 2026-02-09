@@ -6,9 +6,7 @@ import {
   Building2,
   GraduationCap,
   Plus,
-  PlusCircle,
   RefreshCwIcon,
-  UserPlus,
   VenetianMask,
   XIcon,
 } from 'lucide-react'
@@ -17,13 +15,13 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import z from 'zod'
 
-import { createLecturer } from '@/features/lecturers/actions/create'
-import { deleteLecturer } from '@/features/lecturers/actions/delete'
-import { deleteLecturers } from '@/features/lecturers/actions/delete-many'
-import { getLecturers } from '@/features/lecturers/actions/get'
-import { updateLecturer } from '@/features/lecturers/actions/update'
+import { createLecturer } from '@/features/lecturers/actions/create-lecturer'
+import { deleteLecturer } from '@/features/lecturers/actions/delete-lecturer'
+import { deleteLecturers } from '@/features/lecturers/actions/delete-lecturers'
+import { getLecturers } from '@/features/lecturers/actions/get-lecturers'
+import { updateLecturer } from '@/features/lecturers/actions/update-lecturer'
 import { columns } from '@/features/lecturers/components/data-table/columns'
-import { LecturerDialog } from '@/features/lecturers/components/dialog'
+import { LecturerDialog } from '@/features/lecturers/components/dialog/lecturer'
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
 import { GetLecturersResponse, Lecturer } from '@/features/lecturers/types'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
@@ -41,8 +39,6 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
-import { useIsMobile } from '@/features/shared/hooks/use-mobile'
-import { cn } from '@/features/shared/lib/utils'
 import {
   ColumnFiltersState,
   OnChangeFn,
@@ -216,7 +212,7 @@ export function DataTable({
       updateLecturer: handleUpdate,
       deleteLecturer: handleDelete,
       deleteLecturers: handleDeleteMany,
-      refreshLecturer: handleRefresh,
+      refreshLecturers: handleRefresh,
     },
 
     enableRowSelection: true,
@@ -256,7 +252,7 @@ export function DataTable({
 
   return (
     <div className="w-full space-y-3">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between">
         <div className="flex w-full flex-wrap items-center gap-2">
           <div className="flex w-full gap-2 md:w-64">
             {/** Desktop only: Show input only */}
