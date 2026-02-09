@@ -183,7 +183,7 @@ export function CourseAssignmentDialog({
         <div className={'flex flex-col gap-3'}>
           {loading ? (
             <>
-              {!readonlyMode && <Skeleton className="h-9 w-48" />}
+              <Skeleton className="h-9 w-48" />
               <ScrollArea className={'max-h-[65vh] h-[65vh] overflow-y-auto'}>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                   {Array.from({ length: 5 }).map((_, index) => (
