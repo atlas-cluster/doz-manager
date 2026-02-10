@@ -75,23 +75,23 @@ model CourseQualification {
   lecturerId String
   course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   courseId   String
-  // leadTime   LeadTimeOption
-  // experience ExperienceOption
+  leadTime   LeadTimeOption
+  experience ExperienceOption
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@id([lecturerId, courseId])
 }
 
-//
-// enum LeadTimeOption {
-//   short          // S - immediately
-//   four_weeks     // 4 - four weeks
-//   more_weeks     // M - more than four weeks
-// }
-//
-// enum ExperienceOption {
-//   provadis       // P - at Provadis
-//   other_uni      // A - at another university
-//   none           // N - not yet
-// }
+
+enum LeadTimeOption {
+  short          // S - immediately
+  four_weeks     // 4 - four weeks
+  more_weeks     // M - more than four weeks
+}
+
+enum ExperienceOption {
+  provadis       // P - at Provadis
+  other_uni      // A - at another university
+  none           // N - not yet
+}

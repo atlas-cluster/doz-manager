@@ -1,17 +1,25 @@
 import {
   ChevronsUpDown,
   CircleQuestionMark,
+  Pencil,
   PencilRuler,
   Trash2,
 } from 'lucide-react'
 import { ReactNode, useEffect, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import z from 'zod'
 
-import { Course, getCourses } from '@/features/courses'
+import { Course, CourseQualification, getCourses } from '@/features/courses'
 import { Lecturer } from '@/features/lecturers'
 import { createLecturerCourseAssignment } from '@/features/lecturers/actions/create-lecturer-course-assignment'
 import { deleteLecturerCourseAssignment } from '@/features/lecturers/actions/delete-lecturer-course-assignment'
+import { deleteLecturerCourseQualification } from '@/features/lecturers/actions/delete-lecturer-course-qualification'
 import { getLecturerCourseAssignments } from '@/features/lecturers/actions/get-lecturer-course-assignments'
+import { getLecturerCourseQualifications } from '@/features/lecturers/actions/get-lecturer-course-qualification'
+import { upsertLecturerQualification } from '@/features/lecturers/actions/upsert-lecturer-course-qualification'
+import { EditQualificationDialog } from '@/features/lecturers/components/dialog/course-qualification'
+import { qualificationSchema } from '@/features/lecturers/schemas/lecturer'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
@@ -56,6 +64,7 @@ import {
 import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import { Skeleton } from '@/features/shared/components/ui/skeleton'
 import { initialsFromName } from '@/features/shared/lib/utils'
+import { zodResolver } from '@hookform/resolvers/zod'
 import '@radix-ui/react-avatar'
 
 interface CourseAssignmentProps {
@@ -82,27 +91,35 @@ export function CourseAssignmentDialog({
 
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([])
+  const [courseQualifications, setCourseQualifications] = useState<
+    CourseQualification[]
+  >([])
 
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const [coursesResponse, assignmentsResponse] = await Promise.all([
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const [coursesResponse, assignmentsResponse, qualificationsResponse] =
+        await Promise.all([
           getCourses({ pageIndex: 0, pageSize: 999999999 }),
           getLecturerCourseAssignments(lecturer.id),
+          getLecturerCourseQualifications(lecturer.id),
         ])
-        setCourses(coursesResponse.data)
-        setSelectedCourses(assignmentsResponse)
-      } catch (error) {
-        console.error('Failed to fetch data', error)
-        toast.error('Daten konnten nicht geladen werden')
-      } finally {
-        setLoading(false)
-      }
+      setCourses(coursesResponse.data)
+      setSelectedCourses(assignmentsResponse)
+      setCourseQualifications(qualificationsResponse)
+      console.log(courseQualifications)
+    } catch (error) {
+      console.error('Failed to fetch data', error)
+      toast.error('Daten konnten nicht geladen werden')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     if (open) {
       fetchData()
       setReadonlyMode(readonly)
@@ -138,9 +155,10 @@ export function CourseAssignmentDialog({
       ...coursesToAdd.map((courseId) =>
         createLecturerCourseAssignment(lecturer.id, courseId)
       ),
-      ...coursesToRemove.map((courseId) =>
+      ...coursesToRemove.map((courseId) => {
         deleteLecturerCourseAssignment(lecturer.id, courseId)
-      ),
+        deleteLecturerCourseQualification(lecturer.id, courseId)
+      }),
     ])
 
     setIsSubmitting(false)
@@ -157,6 +175,23 @@ export function CourseAssignmentDialog({
       toast.error('Zuweisungen konnten nicht gespeichert werden')
     } finally {
     }
+  }
+
+  function handleEditQualification(
+    data: z.infer<typeof qualificationSchema>,
+    courseId: string
+  ): void {
+    const promise = upsertLecturerQualification(
+      lecturer.id,
+      courseId,
+      data
+    ).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Erfahrung und Vorlaufzeit wird aktualisiert...',
+      success: 'Erfahrung und Vorlaufzeit erfolgreich aktualisiert',
+      error: 'Fehler beim Aktualisieren der Erfahrung und Vorlaufzeit',
+    })
   }
 
   return (
@@ -261,8 +296,8 @@ export function CourseAssignmentDialog({
                         variant="outline"
                         size={'sm'}
                         className={'flex flex-nowrap'}>
-                        <ItemMedia>
-                          <Avatar className={'size-10'}>
+                        <ItemMedia className="flex justify-center items-center">
+                          <Avatar className={'size-15'}>
                             <AvatarFallback>
                               {initialsFromName(course.name)}
                             </AvatarFallback>
@@ -276,9 +311,64 @@ export function CourseAssignmentDialog({
                               : 'Master'}{' '}
                             | {course.semester}. Semester
                           </ItemDescription>
+                          {(() => {
+                            const experience = courseQualifications.find(
+                              (cQ) => cQ.courseId === course.id
+                            )?.experience
+                            const leadTime = courseQualifications.find(
+                              (cQ) => cQ.courseId === course.id
+                            )?.leadTime
+                            if (!experience && !leadTime) return null
+                            return (
+                              <ItemDescription>
+                                {(() => {
+                                  switch (experience) {
+                                    case 'none':
+                                      return 'Keine'
+                                    case 'other_uni':
+                                      return 'Extern'
+                                    case 'provadis':
+                                      return 'Provadis'
+                                    default:
+                                      return 'N/A'
+                                  }
+                                })()}{' '}
+                                |{' '}
+                                {(() => {
+                                  switch (leadTime) {
+                                    case 'four_weeks':
+                                      return '4 Wochen'
+                                    case 'short':
+                                      return 'Sofort'
+                                    case 'more_weeks':
+                                      return 'Mehrere Wochen'
+                                    default:
+                                      return 'N/A'
+                                  }
+                                })()}
+                              </ItemDescription>
+                            )
+                          })()}
                         </ItemContent>
                         {!readonlyMode && (
                           <ItemActions>
+                            <EditQualificationDialog
+                              trigger={
+                                <Button variant={'ghost'} size={'icon'}>
+                                  <Pencil />
+                                  <span className={'sr-only'}>
+                                    {'Erfahrung/Vorlaufzeit von ' +
+                                      course.name +
+                                      '  bearbeiten'}
+                                  </span>
+                                </Button>
+                              }
+                              onSubmit={handleEditQualification}
+                              courseQualification={courseQualifications.find(
+                                (cQ) => cQ.courseId === course.id
+                              )}
+                              courseId={course.id}
+                            />
                             <Button
                               variant={'ghost'}
                               size={'icon'}

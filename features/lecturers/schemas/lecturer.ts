@@ -47,3 +47,8 @@ export const lecturerSchema = z.object({
     message: 'Bitte wählen Sie eine Vorlesungsstufen-Präferenz aus.',
   }),
 })
+
+export const qualificationSchema = z.object({
+  experience: z.enum(['none', 'other_uni', 'provadis']),
+  leadTime: z.enum(['short', 'four_weeks', 'more_weeks']),
+})
