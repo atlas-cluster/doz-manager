@@ -98,28 +98,41 @@ export function CourseAssignmentDialog({
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
 
-  const fetchData = async () => {
+  const fetchQualifications = async () => {
     try {
       setLoading(true)
-      const [coursesResponse, assignmentsResponse, qualificationsResponse] =
-        await Promise.all([
-          getCourses({ pageIndex: 0, pageSize: 999999999 }),
-          getLecturerCourseAssignments(lecturer.id),
-          getLecturerCourseQualifications(lecturer.id),
-        ])
-      setCourses(coursesResponse.data)
-      setSelectedCourses(assignmentsResponse)
+      const qualificationsResponse = await getLecturerCourseQualifications(
+        lecturer.id
+      )
       setCourseQualifications(qualificationsResponse)
-      console.log(courseQualifications)
     } catch (error) {
-      console.error('Failed to fetch data', error)
-      toast.error('Daten konnten nicht geladen werden')
+      console.error('Failed to fetch qualifications', error)
+      toast.error('Erfahrung/Vorlaufzeit konnten nicht geladen werden')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [coursesResponse, assignmentsResponse, qualificationsResponse] =
+          await Promise.all([
+            getCourses({ pageIndex: 0, pageSize: 999999999 }),
+            getLecturerCourseAssignments(lecturer.id),
+            getLecturerCourseQualifications(lecturer.id),
+          ])
+        setCourses(coursesResponse.data)
+        setSelectedCourses(assignmentsResponse)
+        setCourseQualifications(qualificationsResponse)
+      } catch (error) {
+        console.error('Failed to fetch data', error)
+        toast.error('Daten konnten nicht geladen werden')
+      } finally {
+        setLoading(false)
+      }
+    }
     if (open) {
       fetchData()
       setReadonlyMode(readonly)
@@ -185,7 +198,7 @@ export function CourseAssignmentDialog({
       lecturer.id,
       courseId,
       data
-    ).then(() => fetchData())
+    ).then(() => fetchQualifications())
 
     toast.promise(promise, {
       loading: 'Erfahrung und Vorlaufzeit wird aktualisiert...',
