@@ -77,7 +77,7 @@ export function EditQualificationDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="flex flex-col gap-4">
         <DialogHeader>
-          <DialogTitle>Erfahrung und Vorlaufzeit bearbeiten</DialogTitle>
+          <DialogTitle>Zuordnung bearbeiten</DialogTitle>
           <DialogDescription>
             Wählen Sie die Erfahrung und die Vorlaufzeit für diese Vorlesung
             aus.

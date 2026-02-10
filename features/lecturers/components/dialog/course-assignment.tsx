@@ -309,8 +309,8 @@ export function CourseAssignmentDialog({
                         variant="outline"
                         size={'sm'}
                         className={'flex flex-nowrap'}>
-                        <ItemMedia className="flex justify-center items-center">
-                          <Avatar className={'size-15'}>
+                        <ItemMedia className="flex justify-center items-center h-full">
+                          <Avatar className={'size-10'}>
                             <AvatarFallback>
                               {initialsFromName(course.name)}
                             </AvatarFallback>
@@ -322,7 +322,9 @@ export function CourseAssignmentDialog({
                             {course.courseLevel === 'bachelor'
                               ? 'Bachelor'
                               : 'Master'}{' '}
-                            | {course.semester}. Semester
+                            {course.semester
+                              ? `|  ${course.semester}. Semester`
+                              : ''}
                           </ItemDescription>
                           {(() => {
                             const experience = courseQualifications.find(
