@@ -539,7 +539,9 @@ export function CourseAssignmentDialog({
             </Button>
           </DialogClose>
           {!readonlyMode && (
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || viewMode == 'all'}>
               Speichern
             </Button>
           )}
