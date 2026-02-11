@@ -77,7 +77,7 @@ export function EditQualificationDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="flex flex-col gap-4">
         <DialogHeader>
-          <DialogTitle>Zuordnung bearbeiten</DialogTitle>
+          <DialogTitle>Details bearbeiten</DialogTitle>
           <DialogDescription>
             Wählen Sie die Erfahrung und die Vorlaufzeit für diese Vorlesung
             aus.
