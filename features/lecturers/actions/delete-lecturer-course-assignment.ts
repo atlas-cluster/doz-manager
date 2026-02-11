@@ -18,5 +18,7 @@ export async function deleteLecturerCourseAssignment(
   })
 
   updateTag('lecturers')
+  updateTag('courses')
   updateTag(`lecturer-${lecturerId}-courses`)
+  updateTag(`course-${courseId}-lecturers`)
 }

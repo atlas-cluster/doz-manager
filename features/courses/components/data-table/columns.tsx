@@ -2,6 +2,7 @@
 
 import {
   ArrowDown,
+  ArrowLeftRight,
   ArrowUp,
   ArrowUpDown,
   BookOpen,
@@ -14,8 +15,15 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 
-import { CourseDialog } from '@/features/courses/components/dialog'
+import { CourseDialog } from '@/features/courses/components/dialog/dialog'
+import { LecturerAssignmentDialog } from '@/features/courses/components/dialog/lecturer-assignment'
 import { Course, CourseTableMeta } from '@/features/courses/types'
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+} from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
@@ -25,6 +33,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/features/shared/components/ui/dropdown-menu'
+import { initialsFromName } from '@/features/shared/lib/utils'
 import { ColumnDef, Row, Table } from '@tanstack/table-core'
 
 function ActionsCell({
@@ -37,6 +46,8 @@ function ActionsCell({
   const meta = table.options.meta as CourseTableMeta | undefined
   const course = row.original
   const [open, setOpen] = useState(false)
+  const [lecturerAssignmentDialogOpen, setLecturerAssignmentDialogOpen] =
+    useState(false)
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
@@ -46,6 +57,12 @@ function ActionsCell({
         open={open}
         onOpenChange={setOpen}
         onSubmit={(payload) => meta?.updateCourse?.(course.id, payload)}
+      />
+      <LecturerAssignmentDialog
+        course={course}
+        open={lecturerAssignmentDialogOpen}
+        onOpenChange={setLecturerAssignmentDialogOpen}
+        onSubmit={() => meta?.refreshCourses()}
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -61,6 +78,11 @@ function ActionsCell({
               <DropdownMenuItem onSelect={() => setOpen(true)}>
                 <PencilIcon />
                 Bearbeiten
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => setLecturerAssignmentDialogOpen(true)}>
+                <ArrowLeftRight />
+                Dozenten zuordnen
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant={'destructive'}
@@ -188,6 +210,58 @@ export const columns: ColumnDef<Course>[] = [
       )
     },
     header: 'Vorlesungsstufe',
+    enableSorting: false,
+    enableHiding: true,
+    enableGlobalFilter: false,
+  },
+  {
+    id: 'assignments',
+    header: 'Dozenten',
+    accessorKey: 'assignments',
+    cell: ({ row, table }) => {
+      const assignments = row.original.assignments
+
+      if (!assignments || assignments.length === 0) {
+        return null
+      }
+
+      const displayAssignments = assignments.slice(0, 3)
+      const remainingCount = assignments.length - 3
+
+      if (displayAssignments.length === 0) {
+        return null
+      }
+
+      return (
+        <LecturerAssignmentDialog
+          course={row.original}
+          onSubmit={() =>
+            (
+              table.options.meta as CourseTableMeta | undefined
+            )?.refreshCourses()
+          }
+          readonly
+          trigger={
+            <AvatarGroup className="grayscale cursor-pointer">
+              {displayAssignments.map((assignment, index) => (
+                <Avatar key={index}>
+                  <AvatarFallback>
+                    {initialsFromName(
+                      assignment.lecturer.firstName +
+                        ' ' +
+                        assignment.lecturer.lastName
+                    )}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              {remainingCount > 0 && (
+                <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+              )}
+            </AvatarGroup>
+          }
+        />
+      )
+    },
     enableSorting: false,
     enableHiding: true,
     enableGlobalFilter: false,
