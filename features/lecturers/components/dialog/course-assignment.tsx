@@ -1,25 +1,17 @@
 import {
   ChevronsUpDown,
   CircleQuestionMark,
-  Pencil,
   PencilRuler,
   Trash2,
 } from 'lucide-react'
 import { ReactNode, useEffect, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import z from 'zod'
 
-import { Course, CourseQualification, getCourses } from '@/features/courses'
+import { Course, getCourses } from '@/features/courses'
 import { Lecturer } from '@/features/lecturers'
 import { createLecturerCourseAssignment } from '@/features/lecturers/actions/create-lecturer-course-assignment'
 import { deleteLecturerCourseAssignment } from '@/features/lecturers/actions/delete-lecturer-course-assignment'
-import { deleteLecturerCourseQualification } from '@/features/lecturers/actions/delete-lecturer-course-qualification'
 import { getLecturerCourseAssignments } from '@/features/lecturers/actions/get-lecturer-course-assignments'
-import { getLecturerCourseQualifications } from '@/features/lecturers/actions/get-lecturer-course-qualification'
-import { upsertLecturerQualification } from '@/features/lecturers/actions/upsert-lecturer-course-qualification'
-import { EditQualificationDialog } from '@/features/lecturers/components/dialog/course-qualification'
-import { qualificationSchema } from '@/features/lecturers/schemas/lecturer'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
@@ -64,7 +56,6 @@ import {
 import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import { Skeleton } from '@/features/shared/components/ui/skeleton'
 import { initialsFromName } from '@/features/shared/lib/utils'
-import { zodResolver } from '@hookform/resolvers/zod'
 import '@radix-ui/react-avatar'
 
 interface CourseAssignmentProps {
@@ -88,45 +79,23 @@ export function CourseAssignmentDialog({
   const [loading, setLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [readonlyMode, setReadonlyMode] = useState(readonly)
-  const [viewMode, setViewMode] = useState<'selection' | 'all'>('selection')
 
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([])
-  const [courseQualifications, setCourseQualifications] = useState<
-    CourseQualification[]
-  >([])
 
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
-
-  const fetchQualifications = async () => {
-    try {
-      setLoading(true)
-      const qualificationsResponse = await getLecturerCourseQualifications(
-        lecturer.id
-      )
-      setCourseQualifications(qualificationsResponse)
-    } catch (error) {
-      console.error('Failed to fetch qualifications', error)
-      toast.error('Erfahrung/Vorlaufzeit konnten nicht geladen werden')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [coursesResponse, assignmentsResponse, qualificationsResponse] =
-          await Promise.all([
-            getCourses({ pageIndex: 0, pageSize: 999999999 }),
-            getLecturerCourseAssignments(lecturer.id),
-            getLecturerCourseQualifications(lecturer.id),
-          ])
+        const [coursesResponse, assignmentsResponse] = await Promise.all([
+          getCourses({ pageIndex: 0, pageSize: 999999999 }),
+          getLecturerCourseAssignments(lecturer.id),
+        ])
         setCourses(coursesResponse.data)
         setSelectedCourses(assignmentsResponse)
-        setCourseQualifications(qualificationsResponse)
       } catch (error) {
         console.error('Failed to fetch data', error)
         toast.error('Daten konnten nicht geladen werden')
@@ -137,7 +106,6 @@ export function CourseAssignmentDialog({
     if (open) {
       fetchData()
       setReadonlyMode(readonly)
-      setViewMode('selection')
     }
   }, [lecturer.id, open, readonly])
 
@@ -170,10 +138,9 @@ export function CourseAssignmentDialog({
       ...coursesToAdd.map((courseId) =>
         createLecturerCourseAssignment(lecturer.id, courseId)
       ),
-      ...coursesToRemove.map((courseId) => {
+      ...coursesToRemove.map((courseId) =>
         deleteLecturerCourseAssignment(lecturer.id, courseId)
-        deleteLecturerCourseQualification(lecturer.id, courseId)
-      }),
+      ),
     ])
 
     setIsSubmitting(false)
@@ -190,27 +157,6 @@ export function CourseAssignmentDialog({
       toast.error('Zuweisungen konnten nicht gespeichert werden')
     } finally {
     }
-  }
-
-  function handleEditQualification(
-    data: z.infer<typeof qualificationSchema>,
-    courseId: string
-  ): void {
-    if (!selectedCourses.some((c) => c.id === courseId)) {
-      toggleCourse(courseId)
-    }
-
-    const promise = upsertLecturerQualification(
-      lecturer.id,
-      courseId,
-      data
-    ).then(() => fetchQualifications())
-
-    toast.promise(promise, {
-      loading: 'Erfahrung und Vorlaufzeit wird aktualisiert...',
-      success: 'Erfahrung und Vorlaufzeit erfolgreich aktualisiert',
-      error: 'Fehler beim Aktualisieren der Erfahrung und Vorlaufzeit',
-    })
   }
 
   return (
@@ -268,148 +214,45 @@ export function CourseAssignmentDialog({
                 </Button>
               )}
               {!readonlyMode && (
-                <div className="flex gap-2">
-                  <Popover modal>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={viewMode === 'all' ? 'outline' : 'outline'}
-                        className={`w-fit ${viewMode === 'all' ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
-                        suppressHydrationWarning
-                        disabled={viewMode === 'all'}>
-                        {selectedCourses.length >= 1
-                          ? `${selectedCourses.length} Vorlesung${selectedCourses.length != 1 ? 'en' : ''} ausgewählt`
-                          : 'Vorlesungen auswählen...'}
-                        <ChevronsUpDown />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Suche Vorlesungen..." />
-                        <CommandList>
-                          <CommandEmpty>
-                            Keine Vorlesungen gefunden.
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {courses.map((course) => (
-                              <CommandItem
-                                key={course.id}
-                                onSelect={() => toggleCourse(course.id)}
-                                value={course.id}>
-                                <Checkbox
-                                  checked={selectedCourses.some(
-                                    (c) => c.id === course.id
-                                  )}
-                                  className="pointer-events-none"
-                                />
-                                {course.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-
-                  <Button
-                    variant={viewMode === 'all' ? 'default' : 'outline'}
-                    onClick={() =>
-                      setViewMode(viewMode === 'all' ? 'selection' : 'all')
-                    }
-                    className="w-fit">
-                    {viewMode === 'all' ? '← Zur Auswahl' : 'Alle Vorlesungen'}
-                  </Button>
-                </div>
+                <Popover modal>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      suppressHydrationWarning
+                      className="w-fit">
+                      {selectedCourses.length >= 1
+                        ? `${selectedCourses.length} Vorlesung${selectedCourses.length != 1 ? 'en' : ''} ausgewählt`
+                        : 'Vorlesungen auswählen...'}
+                      <ChevronsUpDown />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Suche Vorlesungen..." />
+                      <CommandList>
+                        <CommandEmpty>Keine Vorlesungen gefunden.</CommandEmpty>
+                        <CommandGroup>
+                          {courses.map((course) => (
+                            <CommandItem
+                              key={course.id}
+                              onSelect={() => toggleCourse(course.id)}
+                              value={course.id}>
+                              <Checkbox
+                                checked={selectedCourses.some(
+                                  (c) => c.id === course.id
+                                )}
+                                className="pointer-events-none"
+                              />
+                              {course.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               )}
-
-              {!readonlyMode && viewMode === 'all' ? (
-                <ScrollArea className="min-h-0 flex-1">
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3 p-2">
-                    {courses.map((course) => {
-                      const qual = courseQualifications.find(
-                        (cq) => cq.courseId === course.id
-                      )
-                      const isAssigned = selectedCourses.some(
-                        (sc) => sc.id === course.id
-                      )
-                      return (
-                        <Item
-                          key={course.id}
-                          variant={'outline'}
-                          size="sm"
-                          className="flex flex-nowrap">
-                          <ItemMedia className="flex justify-center items-center h-full">
-                            <Avatar className="size-10">
-                              <AvatarFallback>
-                                {initialsFromName(course.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                          </ItemMedia>
-                          <ItemContent className="flex-1">
-                            <ItemTitle>{course.name}</ItemTitle>
-                            <ItemDescription>
-                              {course.courseLevel === 'bachelor'
-                                ? 'Bachelor'
-                                : 'Master'}{' '}
-                              {course.semester
-                                ? `| ${course.semester}. Semester`
-                                : ''}
-                            </ItemDescription>
-                            {qual ? (
-                              <ItemDescription className="text-sm text-muted-foreground">
-                                {(() => {
-                                  switch (qual.experience) {
-                                    case 'none':
-                                      return 'Keine'
-                                    case 'other_uni':
-                                      return 'Extern'
-                                    case 'provadis':
-                                      return 'Provadis'
-                                    default:
-                                      return 'N/A'
-                                  }
-                                })()}{' '}
-                                |{' '}
-                                {(() => {
-                                  switch (qual.leadTime) {
-                                    case 'four_weeks':
-                                      return '4 Wochen'
-                                    case 'short':
-                                      return 'Sofort'
-                                    case 'more_weeks':
-                                      return 'Mehrere Wochen'
-                                    default:
-                                      return 'N/A'
-                                  }
-                                })()}
-                              </ItemDescription>
-                            ) : (
-                              <ItemDescription className="text-sm text-muted-foreground italic">
-                                Keine Qualifikation festgelegt
-                              </ItemDescription>
-                            )}
-                          </ItemContent>
-                          <ItemActions>
-                            <EditQualificationDialog
-                              trigger={
-                                <Button variant="ghost" size="icon">
-                                  <Pencil />
-                                  <span className="sr-only">
-                                    Erfahrung/Vorlaufzeit von {course.name}{' '}
-                                    bearbeiten
-                                  </span>
-                                </Button>
-                              }
-                              onSubmit={handleEditQualification}
-                              courseQualification={qual}
-                              courseId={course.id}
-                            />
-                          </ItemActions>
-                        </Item>
-                      )
-                    })}
-                  </div>
-                </ScrollArea>
-              ) : selectedCourses.length > 0 ? (
+              {selectedCourses.length > 0 ? (
                 <ScrollArea className="min-h-0 flex-1">
                   <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                     {selectedCourses.map((course) => (
@@ -418,7 +261,7 @@ export function CourseAssignmentDialog({
                         variant="outline"
                         size={'sm'}
                         className={'flex flex-nowrap'}>
-                        <ItemMedia className="flex justify-center items-center h-full">
+                        <ItemMedia>
                           <Avatar className={'size-10'}>
                             <AvatarFallback>
                               {initialsFromName(course.name)}
@@ -431,68 +274,11 @@ export function CourseAssignmentDialog({
                             {course.courseLevel === 'bachelor'
                               ? 'Bachelor'
                               : 'Master'}{' '}
-                            {course.semester
-                              ? `|  ${course.semester}. Semester`
-                              : ''}
+                            | {course.semester}. Semester
                           </ItemDescription>
-                          {(() => {
-                            const experience = courseQualifications.find(
-                              (cQ) => cQ.courseId === course.id
-                            )?.experience
-                            const leadTime = courseQualifications.find(
-                              (cQ) => cQ.courseId === course.id
-                            )?.leadTime
-                            if (!experience && !leadTime) return null
-                            return (
-                              <ItemDescription>
-                                {(() => {
-                                  switch (experience) {
-                                    case 'none':
-                                      return 'Keine'
-                                    case 'other_uni':
-                                      return 'Extern'
-                                    case 'provadis':
-                                      return 'Provadis'
-                                    default:
-                                      return 'N/A'
-                                  }
-                                })()}{' '}
-                                |{' '}
-                                {(() => {
-                                  switch (leadTime) {
-                                    case 'four_weeks':
-                                      return '4 Wochen'
-                                    case 'short':
-                                      return 'Sofort'
-                                    case 'more_weeks':
-                                      return 'Mehrere Wochen'
-                                    default:
-                                      return 'N/A'
-                                  }
-                                })()}
-                              </ItemDescription>
-                            )
-                          })()}
                         </ItemContent>
                         {!readonlyMode && (
                           <ItemActions>
-                            <EditQualificationDialog
-                              trigger={
-                                <Button variant={'ghost'} size={'icon'}>
-                                  <Pencil />
-                                  <span className={'sr-only'}>
-                                    {'Erfahrung/Vorlaufzeit von ' +
-                                      course.name +
-                                      '  bearbeiten'}
-                                  </span>
-                                </Button>
-                              }
-                              onSubmit={handleEditQualification}
-                              courseQualification={courseQualifications.find(
-                                (cQ) => cQ.courseId === course.id
-                              )}
-                              courseId={course.id}
-                            />
                             <Button
                               variant={'ghost'}
                               size={'icon'}
@@ -516,16 +302,12 @@ export function CourseAssignmentDialog({
                   <EmptyTitle>
                     {readonlyMode
                       ? 'Keine zugeordneten Vorlesungen'
-                      : viewMode === 'all'
-                        ? 'Keine Vorlesungen gefunden.'
-                        : 'Keine Vorlesungen ausgewählt'}
+                      : 'Keine Vorlesungen ausgewählt'}
                   </EmptyTitle>
                   <EmptyDescription>
                     {readonlyMode
                       ? 'Dieser Dozent ist derzeit keiner Vorlesung zugeordnet.'
-                      : viewMode === 'all'
-                        ? 'Keine Vorlesungen gefunden.'
-                        : 'Bitte wählen Sie Vorlesungen aus, die diesem Dozenten zugeordnet werden sollen.'}
+                      : 'Bitte wählen Sie Vorlesungen aus, die diesem Dozenten zugeordnet werden sollen.'}
                   </EmptyDescription>
                 </Empty>
               )}
@@ -539,9 +321,7 @@ export function CourseAssignmentDialog({
             </Button>
           </DialogClose>
           {!readonlyMode && (
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting || viewMode == 'all'}>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
               Speichern
             </Button>
           )}
