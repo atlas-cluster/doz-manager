@@ -6,25 +6,19 @@ import z from 'zod'
 import { qualificationSchema } from '@/features/lecturers/schemas/lecturer'
 import { prisma } from '@/features/shared/lib/prisma'
 
-export async function upsertLecturerQualification(
+export async function updateLecturerQualification(
   lecturerId: string,
   courseId: string,
   data: z.infer<typeof qualificationSchema>
 ) {
-  await prisma.courseQualification.upsert({
+  await prisma.courseQualification.update({
     where: {
       lecturerId_courseId: {
         lecturerId: lecturerId,
         courseId: courseId,
       },
     },
-    update: {
-      leadTime: data.leadTime,
-      experience: data.experience,
-    },
-    create: {
-      lecturerId: lecturerId,
-      courseId: courseId,
+    data: {
       leadTime: data.leadTime,
       experience: data.experience,
     },
