@@ -72,15 +72,13 @@ export function CourseQualificationDialog({
   const debouncedSearchQuery = useDebounce(searchQuery)
 
   type StatusFilterValue = 'qualified' | 'not_qualified'
-  type ExperienceFilterValue = 'provadis' | 'other_uni' | 'none'
-  type LeadTimeFilterValue = 'short' | 'four_weeks' | 'more_weeks'
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue[]>([])
   const [experienceFilter, setExperienceFilter] = useState<
-    ExperienceFilterValue[]
+    z.infer<typeof qualificationSchema>['experience'][]
   >([])
-  const [leadTimeFilter, setLeadTimeFilter] = useState<LeadTimeFilterValue[]>(
-    []
-  )
+  const [leadTimeFilter, setLeadTimeFilter] = useState<
+    z.infer<typeof qualificationSchema>['leadTime'][]
+  >([])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -344,7 +342,9 @@ export function CourseQualificationDialog({
                     },
                   ]}
                   value={statusFilter}
-                  onChange={setStatusFilter}
+                  onChange={(value) =>
+                    setStatusFilter(value as StatusFilterValue[])
+                  }
                   facets={statusCounts}
                 />
                 <DataTableFacetedFilter
@@ -367,7 +367,13 @@ export function CourseQualificationDialog({
                     },
                   ]}
                   value={experienceFilter}
-                  onChange={setExperienceFilter}
+                  onChange={(value) =>
+                    setExperienceFilter(
+                      value as z.infer<
+                        typeof qualificationSchema
+                      >['experience'][]
+                    )
+                  }
                   facets={experienceCounts}
                 />
                 <DataTableFacetedFilter
@@ -390,7 +396,11 @@ export function CourseQualificationDialog({
                     },
                   ]}
                   value={leadTimeFilter}
-                  onChange={setLeadTimeFilter}
+                  onChange={(value) =>
+                    setLeadTimeFilter(
+                      value as z.infer<typeof qualificationSchema>['leadTime'][]
+                    )
+                  }
                   facets={leadTimeCounts}
                 />
                 {hasActiveFilters && (
