@@ -32,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/features/shared/components/ui/dialog'
+import { Input } from '@/features/shared/components/ui/input'
 import {
   Item,
   ItemActions,
@@ -43,6 +44,7 @@ import {
 } from '@/features/shared/components/ui/item'
 import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import { Skeleton } from '@/features/shared/components/ui/skeleton'
+import { useDebounce } from '@/features/shared/hooks/use-debounce'
 import { initialsFromName } from '@/features/shared/lib/utils'
 
 interface CourseQualificationDialogProps {
@@ -65,6 +67,9 @@ export function CourseQualificationDialog({
   >([])
   const [loading, setLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const debouncedSearchQuery = useDebounce(searchQuery)
 
   type StatusFilterValue = 'qualified' | 'not_qualified'
   type ExperienceFilterValue = 'provadis' | 'other_uni' | 'none'
@@ -97,6 +102,7 @@ export function CourseQualificationDialog({
     }
     if (open) {
       fetchData()
+      setSearchQuery('')
     }
   }, [lecturer.id, open])
 
@@ -140,6 +146,11 @@ export function CourseQualificationDialog({
 
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {
+      if (debouncedSearchQuery) {
+        const searchLower = debouncedSearchQuery.toLowerCase()
+        const matchesSearch = course.name.toLowerCase().includes(searchLower)
+        if (!matchesSearch) return false
+      }
       const cq = editedCourseQualifications.find(
         (q) => q.courseId === course.id
       )
@@ -165,6 +176,7 @@ export function CourseQualificationDialog({
   }, [
     courses,
     editedCourseQualifications,
+    debouncedSearchQuery,
     statusFilter,
     experienceFilter,
     leadTimeFilter,
@@ -261,11 +273,14 @@ export function CourseQualificationDialog({
   const hasActiveFilters =
     statusFilter.length > 0 ||
     experienceFilter.length > 0 ||
-    leadTimeFilter.length > 0
+    leadTimeFilter.length > 0 ||
+    debouncedSearchQuery !== ''
+
   const clearAllFilters = () => {
     setStatusFilter([])
     setExperienceFilter([])
     setLeadTimeFilter([])
+    setSearchQuery('')
   }
 
   return (
@@ -309,6 +324,11 @@ export function CourseQualificationDialog({
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  placeholder="Kurse suchen..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
                 <DataTableFacetedFilter
                   title="Status"
                   options={[
@@ -382,69 +402,69 @@ export function CourseQualificationDialog({
               </div>
               <ScrollArea className="min-h-0 flex-1">
                 <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
-                  {filteredCourses.map((course) => (
-                    <Item
-                      key={course.id}
-                      variant="outline"
-                      size={'sm'}
-                      className={'flex flex-nowrap'}>
-                      <ItemMedia className="flex justify-center items-center h-full">
-                        <Avatar className={'size-10'}>
-                          <AvatarFallback>
-                            {initialsFromName(course.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </ItemMedia>
-                      <ItemContent>
-                        <ItemTitle>{course.name}</ItemTitle>
-                        <ItemDescription>
-                          {(() => {
-                            const cq = editedCourseQualifications.find(
-                              (cq) => cq.courseId === course.id
-                            )
-                            if (!cq) return 'Keine Qualifikationen vorhanden'
+                  {filteredCourses.length > 0 ? (
+                    filteredCourses.map((course) => (
+                      <Item
+                        key={course.id}
+                        variant="outline"
+                        size={'sm'}
+                        className={'flex flex-nowrap'}>
+                        <ItemMedia className="flex justify-center items-center h-full">
+                          <Avatar className={'size-10'}>
+                            <AvatarFallback>
+                              {initialsFromName(course.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </ItemMedia>
+                        <ItemContent>
+                          <ItemTitle>{course.name}</ItemTitle>
+                          <ItemDescription>
+                            {(() => {
+                              const cq = editedCourseQualifications.find(
+                                (cq) => cq.courseId === course.id
+                              )
+                              if (!cq) return 'Keine Qualifikationen vorhanden'
 
-                            let experienceText: string
-                            switch (cq.experience) {
-                              case 'provadis':
-                                experienceText = 'Provadis'
-                                break
-                              case 'other_uni':
-                                experienceText = 'Extern'
-                                break
-                              case 'none':
-                                experienceText = 'Keine'
-                                break
-                              default:
-                                experienceText = cq.experience
-                            }
+                              let experienceText: string
+                              switch (cq.experience) {
+                                case 'provadis':
+                                  experienceText = 'Provadis'
+                                  break
+                                case 'other_uni':
+                                  experienceText = 'Extern'
+                                  break
+                                case 'none':
+                                  experienceText = 'Keine'
+                                  break
+                                default:
+                                  experienceText = cq.experience
+                              }
 
-                            let leadTimeText: string
-                            switch (cq.leadTime) {
-                              case 'short':
-                                leadTimeText = 'Sofort'
-                                break
-                              case 'four_weeks':
-                                leadTimeText = '4 Wochen'
-                                break
-                              case 'more_weeks':
-                                leadTimeText = 'Mehr als 4 Wochen'
-                                break
-                              default:
-                                leadTimeText = cq.leadTime
-                            }
+                              let leadTimeText: string
+                              switch (cq.leadTime) {
+                                case 'short':
+                                  leadTimeText = 'Sofort'
+                                  break
+                                case 'four_weeks':
+                                  leadTimeText = '4 Wochen'
+                                  break
+                                case 'more_weeks':
+                                  leadTimeText = 'Mehr als 4 Wochen'
+                                  break
+                                default:
+                                  leadTimeText = cq.leadTime
+                              }
 
-                            return (
-                              <>
-                                Erfahrung: {experienceText}
-                                <br />
-                                Vorlaufzeit: {leadTimeText}
-                              </>
-                            )
-                          })()}
-                        </ItemDescription>
-                      </ItemContent>
-                      {
+                              return (
+                                <>
+                                  Erfahrung: {experienceText}
+                                  <br />
+                                  Vorlaufzeit: {leadTimeText}
+                                </>
+                              )
+                            })()}
+                          </ItemDescription>
+                        </ItemContent>
                         <ItemActions>
                           <EditQualificationDialog
                             trigger={
@@ -462,9 +482,13 @@ export function CourseQualificationDialog({
                             courseId={course.id}
                           />
                         </ItemActions>
-                      }
-                    </Item>
-                  ))}
+                      </Item>
+                    ))
+                  ) : (
+                    <div className="col-span-full text-center py-8 text-muted-foreground">
+                      Keine Kurse gefunden.
+                    </div>
+                  )}
                 </ItemGroup>
               </ScrollArea>
             </>
