@@ -1,5 +1,15 @@
-import { Pencil } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import {
+  Building2,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  GraduationCap,
+  Pencil,
+  Timer,
+  XCircle,
+  XIcon,
+} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import z from 'zod'
 
@@ -10,6 +20,7 @@ import { getLecturerCourseQualifications } from '@/features/lecturers/actions/ge
 import { updateLecturerQualification } from '@/features/lecturers/actions/update-lecturer-course-qualification'
 import { EditQualificationDialog } from '@/features/lecturers/components/dialog/edit-course-qualification'
 import { qualificationSchema } from '@/features/lecturers/schemas/lecturer'
+import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import {
@@ -55,6 +66,17 @@ export function CourseQualificationDialog({
   const [loading, setLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  type StatusFilterValue = 'qualified' | 'not_qualified'
+  type ExperienceFilterValue = 'provadis' | 'other_uni' | 'none'
+  type LeadTimeFilterValue = 'short' | 'four_weeks' | 'more_weeks'
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue[]>([])
+  const [experienceFilter, setExperienceFilter] = useState<
+    ExperienceFilterValue[]
+  >([])
+  const [leadTimeFilter, setLeadTimeFilter] = useState<LeadTimeFilterValue[]>(
+    []
+  )
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -77,6 +99,76 @@ export function CourseQualificationDialog({
       fetchData()
     }
   }, [lecturer.id, open])
+
+  const statusCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    courses.forEach((course) => {
+      const hasQualification = editedCourseQualifications.some(
+        (cq) => cq.courseId === course.id
+      )
+      const key = hasQualification ? 'qualified' : 'not_qualified'
+      map.set(key, (map.get(key) ?? 0) + 1)
+    })
+    return map
+  }, [courses, editedCourseQualifications])
+
+  const experienceCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    courses.forEach((course) => {
+      const cq = editedCourseQualifications.find(
+        (q) => q.courseId === course.id
+      )
+      if (cq?.experience) {
+        map.set(cq.experience, (map.get(cq.experience) ?? 0) + 1)
+      }
+    })
+    return map
+  }, [courses, editedCourseQualifications])
+
+  const leadTimeCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    courses.forEach((course) => {
+      const cq = editedCourseQualifications.find(
+        (q) => q.courseId === course.id
+      )
+      if (cq?.leadTime) {
+        map.set(cq.leadTime, (map.get(cq.leadTime) ?? 0) + 1)
+      }
+    })
+    return map
+  }, [courses, editedCourseQualifications])
+
+  const filteredCourses = useMemo(() => {
+    return courses.filter((course) => {
+      const cq = editedCourseQualifications.find(
+        (q) => q.courseId === course.id
+      )
+      if (statusFilter.length > 0) {
+        const hasQualification = !!cq
+        const statusMatch =
+          (statusFilter.includes('qualified') && hasQualification) ||
+          (statusFilter.includes('not_qualified') && !hasQualification)
+        if (!statusMatch) return false
+      }
+      if (experienceFilter.length > 0) {
+        if (!cq || !experienceFilter.includes(cq.experience)) {
+          return false
+        }
+      }
+      if (leadTimeFilter.length > 0) {
+        if (!cq || !leadTimeFilter.includes(cq.leadTime)) {
+          return false
+        }
+      }
+      return true
+    })
+  }, [
+    courses,
+    editedCourseQualifications,
+    statusFilter,
+    experienceFilter,
+    leadTimeFilter,
+  ])
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
@@ -166,6 +258,15 @@ export function CourseQualificationDialog({
       }
     })
   }
+  const hasActiveFilters =
+    statusFilter.length > 0 ||
+    experienceFilter.length > 0 ||
+    leadTimeFilter.length > 0
+  const clearAllFilters = () => {
+    setStatusFilter([])
+    setExperienceFilter([])
+    setLeadTimeFilter([])
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -207,9 +308,81 @@ export function CourseQualificationDialog({
             </>
           ) : (
             <>
+              <div className="flex flex-wrap items-center gap-2">
+                <DataTableFacetedFilter
+                  title="Status"
+                  options={[
+                    {
+                      value: 'qualified',
+                      label: 'Mit Qualifikation',
+                      icon: CheckCircle2,
+                    },
+                    {
+                      value: 'not_qualified',
+                      label: 'Ohne Qualifikation',
+                      icon: XCircle,
+                    },
+                  ]}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  facets={statusCounts}
+                />
+                <DataTableFacetedFilter
+                  title="Erfahrung"
+                  options={[
+                    {
+                      value: 'provadis',
+                      label: 'Provadis',
+                      icon: Building2,
+                    },
+                    {
+                      value: 'other_uni',
+                      label: 'Extern',
+                      icon: GraduationCap,
+                    },
+                    {
+                      value: 'none',
+                      label: 'Keine',
+                      icon: XCircle,
+                    },
+                  ]}
+                  value={experienceFilter}
+                  onChange={setExperienceFilter}
+                  facets={experienceCounts}
+                />
+                <DataTableFacetedFilter
+                  title="Vorlaufzeit"
+                  options={[
+                    {
+                      value: 'short',
+                      label: 'Sofort',
+                      icon: Timer,
+                    },
+                    {
+                      value: 'four_weeks',
+                      label: '4 Wochen',
+                      icon: Clock,
+                    },
+                    {
+                      value: 'more_weeks',
+                      label: 'Mehr als 4 Wochen',
+                      icon: Calendar,
+                    },
+                  ]}
+                  value={leadTimeFilter}
+                  onChange={setLeadTimeFilter}
+                  facets={leadTimeCounts}
+                />
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="icon" onClick={clearAllFilters}>
+                    <XIcon />
+                    <span className="sr-only">Filter löschen</span>
+                  </Button>
+                )}
+              </div>
               <ScrollArea className="min-h-0 flex-1">
                 <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
-                  {courses.map((course) => (
+                  {filteredCourses.map((course) => (
                     <Item
                       key={course.id}
                       variant="outline"
@@ -278,7 +451,7 @@ export function CourseQualificationDialog({
                               <Button variant={'ghost'} size={'icon'}>
                                 <Pencil />
                                 <span className={'sr-only'}>
-                                  {course.name + ' entfernen'}
+                                  {course.name + ' bearbeiten'}
                                 </span>
                               </Button>
                             }
