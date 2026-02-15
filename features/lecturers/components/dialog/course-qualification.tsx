@@ -45,6 +45,8 @@ import {
 import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import { Skeleton } from '@/features/shared/components/ui/skeleton'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
+import { LeadTimeOption } from '@/features/shared/lib/generated/prisma/enums'
+import { ExperienceOption } from '@/features/shared/lib/generated/prisma/enums'
 import { initialsFromName } from '@/features/shared/lib/utils'
 
 interface CourseQualificationDialogProps {
@@ -73,12 +75,10 @@ export function CourseQualificationDialog({
 
   type StatusFilterValue = 'qualified' | 'not_qualified'
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue[]>([])
-  const [experienceFilter, setExperienceFilter] = useState<
-    z.infer<typeof qualificationSchema>['experience'][]
-  >([])
-  const [leadTimeFilter, setLeadTimeFilter] = useState<
-    z.infer<typeof qualificationSchema>['leadTime'][]
-  >([])
+  const [experienceFilter, setExperienceFilter] = useState<ExperienceOption[]>(
+    []
+  )
+  const [leadTimeFilter, setLeadTimeFilter] = useState<LeadTimeOption[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
