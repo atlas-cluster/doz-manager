@@ -375,11 +375,7 @@ export function CourseQualificationDialog({
                   ]}
                   value={experienceFilter}
                   onChange={(value) =>
-                    setExperienceFilter(
-                      value as z.infer<
-                        typeof qualificationSchema
-                      >['experience'][]
-                    )
+                    setExperienceFilter(value as ExperienceOption[])
                   }
                   facets={experienceCounts}
                 />
@@ -404,9 +400,7 @@ export function CourseQualificationDialog({
                   ]}
                   value={leadTimeFilter}
                   onChange={(value) =>
-                    setLeadTimeFilter(
-                      value as z.infer<typeof qualificationSchema>['leadTime'][]
-                    )
+                    setLeadTimeFilter(value as LeadTimeOption[])
                   }
                   facets={leadTimeCounts}
                 />
