@@ -27,21 +27,38 @@ export type FacetOption = {
   icon?: ComponentType<{ className?: string }>
 }
 
+type BaseProps<TData> = {
+  title: string
+  options: FacetOption[]
+  facets?: Map<string, number>
+  column?: Column<TData, unknown> // Original Usage with columns
+  value?: string[] // Usage without columns(reused the methode for lecturer qualifications)
+  onChange?: (value: string[]) => void
+}
+
 export function DataTableFacetedFilter<TData>({
   column,
   title,
   options,
   facets: customFacets,
-}: {
-  column?: Column<TData, unknown>
-  title: string
-  options: FacetOption[]
-  facets?: Map<string, number>
-}) {
+  value,
+  onChange,
+}: BaseProps<TData>) {
   const facets = customFacets ?? column?.getFacetedUniqueValues()
   const selectedValues = new Set<string>(
-    (column?.getFilterValue() as string[]) ?? []
+    (column?.getFilterValue() as string[]) ?? value ?? []
   )
+
+  const updateValues = (next: Set<string>) => {
+    const values = Array.from(next)
+
+    if (column) {
+      column.setFilterValue(values.length ? values : undefined)
+    }
+    if (onChange) {
+      onChange(values)
+    }
+  }
 
   return (
     <Popover>
@@ -58,14 +75,14 @@ export function DataTableFacetedFilter<TData>({
             <>
               <Separator orientation="vertical" className="mx-2 h-4" />
 
-              {/* small count on mobile */}
+              {/* mobile: count */}
               <Badge
                 variant="secondary"
                 className="rounded-sm px-1 font-normal lg:hidden">
                 {selectedValues.size}
               </Badge>
 
-              {/* labels on desktop */}
+              {/* desktop: labels */}
               <div className="hidden space-x-1 lg:flex">
                 {selectedValues.size > 2 ? (
                   <Badge
@@ -107,24 +124,17 @@ export function DataTableFacetedFilter<TData>({
                   <CommandItem
                     key={option.value}
                     onSelect={() => {
-                      if (!column) return
-
                       const next = new Set(selectedValues)
                       if (isSelected) next.delete(option.value)
                       else next.add(option.value)
-
-                      const values = Array.from(next)
-                      column.setFilterValue(values.length ? values : undefined)
+                      updateValues(next)
                     }}>
                     <Checkbox
                       checked={isSelected}
                       className="pointer-events-none"
                     />
-
                     {Icon ? <Icon className="text-muted-foreground" /> : null}
-
                     <span>{option.label}</span>
-
                     <span className="text-muted-foreground ml-auto flex items-center justify-center font-mono text-xs">
                       {count}
                     </span>
@@ -138,7 +148,10 @@ export function DataTableFacetedFilter<TData>({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => column?.setFilterValue(undefined)}
+                    onSelect={() => {
+                      if (column) column.setFilterValue(undefined)
+                      if (onChange) onChange([])
+                    }}
                     className="justify-center text-center">
                     Filter löschen
                   </CommandItem>
