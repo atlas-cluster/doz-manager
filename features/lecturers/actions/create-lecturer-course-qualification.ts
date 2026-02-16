@@ -3,7 +3,7 @@
 import { updateTag } from 'next/cache'
 import z from 'zod'
 
-import { qualificationSchema } from '@/features/lecturers/schemas/lecturer'
+import { qualificationSchema } from '@/features/lecturers/schemas/qualification'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function createLecturerQualification(
