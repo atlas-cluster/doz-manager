@@ -5,6 +5,7 @@ import {
   Clock,
   GraduationCap,
   Pencil,
+  Plus,
   Timer,
   XCircle,
   XIcon,
@@ -477,21 +478,30 @@ export function CourseQualificationDialog({
                           </ItemDescription>
                         </ItemContent>
                         <ItemActions>
-                          <EditQualificationDialog
-                            trigger={
-                              <Button variant={'ghost'} size={'icon'}>
-                                <Pencil />
-                                <span className={'sr-only'}>
-                                  {course.name + ' bearbeiten'}
-                                </span>
-                              </Button>
-                            }
-                            onSubmit={handleEditQualificationDialogSubmit}
-                            courseQualification={editedCourseQualifications.find(
+                          {(() => {
+                            const cq = editedCourseQualifications.find(
                               (cq) => cq.courseId === course.id
-                            )}
-                            courseId={course.id}
-                          />
+                            )
+                            const hasQualification = !!cq
+                            return (
+                              <EditQualificationDialog
+                                trigger={
+                                  <Button variant={'ghost'} size={'icon'}>
+                                    {hasQualification ? <Pencil /> : <Plus />}
+                                    <span className={'sr-only'}>
+                                      {course.name +
+                                        (hasQualification
+                                          ? ' bearbeiten'
+                                          : ' hinzufügen')}
+                                    </span>
+                                  </Button>
+                                }
+                                onSubmit={handleEditQualificationDialogSubmit}
+                                courseQualification={cq}
+                                courseId={course.id}
+                              />
+                            )
+                          })()}
                         </ItemActions>
                       </Item>
                     ))
