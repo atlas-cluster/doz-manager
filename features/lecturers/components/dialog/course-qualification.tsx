@@ -19,7 +19,7 @@ import { createLecturerQualification } from '@/features/lecturers/actions/create
 import { getLecturerCourseQualifications } from '@/features/lecturers/actions/get-lecturer-course-qualification'
 import { updateLecturerQualification } from '@/features/lecturers/actions/update-lecturer-course-qualification'
 import { EditQualificationDialog } from '@/features/lecturers/components/dialog/edit-course-qualification'
-import { qualificationSchema } from '@/features/lecturers/schemas/lecturer'
+import { qualificationSchema } from '@/features/lecturers/schemas/qualification'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
@@ -302,7 +302,12 @@ export function CourseQualificationDialog({
         <div className={'flex min-h-0 flex-1 flex-col gap-3'}>
           {loading ? (
             <>
-              <Skeleton className="h-9 w-48" />
+              <div className="flex flex-wrap items-center gap-2">
+                <Skeleton className="h-9 w-[200px]" />
+                <Skeleton className="h-9 w-[120px]" />
+                <Skeleton className="h-9 w-[120px]" />
+                <Skeleton className="h-9 w-[120px]" />
+              </div>
               <ScrollArea className="min-h-0 flex-1">
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                   {Array.from({ length: 5 }).map((_, index) => (
@@ -321,12 +326,14 @@ export function CourseQualificationDialog({
             </>
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  placeholder="Kurse suchen..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              <div className="flex w-full flex-wrap items-center gap-2">
+                <div className="flex w-full gap-2 md:w-64">
+                  <Input
+                    placeholder="Kurse suchen..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
                 <DataTableFacetedFilter
                   title="Status"
                   options={[

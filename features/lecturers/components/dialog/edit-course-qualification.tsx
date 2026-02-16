@@ -3,7 +3,7 @@ import { Controller, useForm } from 'react-hook-form'
 import z from 'zod'
 
 import { CourseQualification } from '@/features/courses'
-import { qualificationSchema } from '@/features/lecturers/schemas/lecturer'
+import { qualificationSchema } from '@/features/lecturers/schemas/qualification'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,
