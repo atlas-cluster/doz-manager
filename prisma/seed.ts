@@ -1,3 +1,4 @@
+import lecturerQualifications from './qualification-data'
 import 'dotenv/config'
 
 import {
@@ -346,6 +347,47 @@ async function main() {
       } else {
         console.log(
           `Assignment already exists: ${lecturerEmail} -> ${courseName}`
+        )
+      }
+    }
+  }
+  console.log(`Assigning lecturer qualifications...`)
+  for (const [lecturerEmail, courseQuals] of Object.entries(
+    lecturerQualifications
+  )) {
+    const lecturer = await prisma.lecturer.findUnique({
+      where: { email: lecturerEmail },
+    })
+    if (!lecturer) continue
+
+    for (const [courseName, qualification] of Object.entries(courseQuals)) {
+      const course = await prisma.course.findFirst({
+        where: { name: courseName },
+      })
+      if (!course || !lecturer) continue
+
+      const existingQualification = await prisma.courseQualification.findFirst({
+        where: {
+          courseId: course.id,
+          lecturerId: lecturer.id,
+        },
+      })
+
+      if (!existingQualification) {
+        await prisma.courseQualification.create({
+          data: {
+            courseId: course.id,
+            lecturerId: lecturer.id,
+            leadTime: qualification.leadTime,
+            experience: qualification.experience,
+          },
+        })
+        console.log(
+          `Added qualification for ${lecturerEmail} -> ${courseName}: ${qualification.leadTime}/${qualification.experience}`
+        )
+      } else {
+        console.log(
+          `Qualification already exists: ${lecturerEmail} -> ${courseName}`
         )
       }
     }
