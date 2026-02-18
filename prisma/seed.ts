@@ -1,4 +1,3 @@
-import lecturerQualifications from './qualification-data'
 import 'dotenv/config'
 
 import {
@@ -9,6 +8,7 @@ import {
   CourseLevelPreference,
   LecturerType,
 } from '@/features/shared/lib/generated/prisma/enums'
+import lecturerQualifications from '@/prisma/qualification-data'
 import { PrismaMariaDb } from '@prisma/adapter-mariadb'
 
 const adapter = new PrismaMariaDb({
