@@ -304,10 +304,10 @@ export function CourseQualificationDialog({
           {loading ? (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <Skeleton className="h-9 w-[200px]" />
-                <Skeleton className="h-9 w-[120px]" />
-                <Skeleton className="h-9 w-[120px]" />
-                <Skeleton className="h-9 w-[120px]" />
+                <Skeleton className="h-9 w-50" />
+                <Skeleton className="h-9 w-30" />
+                <Skeleton className="h-9 w-30" />
+                <Skeleton className="h-9 w-30" />
               </div>
               <ScrollArea className="min-h-0 flex-1">
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
