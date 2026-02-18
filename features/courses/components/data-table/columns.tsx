@@ -2,7 +2,6 @@
 
 import {
   ArrowDown,
-  ArrowLeftRight,
   ArrowUp,
   ArrowUpDown,
   BadgeCheck,
@@ -16,8 +15,7 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 
-import { CourseDialog } from '@/features/courses/components/dialog/course'
-import { LecturerAssignmentDialog } from '@/features/courses/components/dialog/lecturer-assignment'
+import { CourseDialog } from '@/features/courses/components/dialog'
 import { LecturerQualificationDialog } from '@/features/courses/components/dialog/lecturer-qualification'
 import { Course, CourseTableMeta } from '@/features/courses/types'
 import { Button } from '@/features/shared/components/ui/button'
@@ -41,8 +39,6 @@ function ActionsCell({
   const meta = table.options.meta as CourseTableMeta | undefined
   const course = row.original
   const [open, setOpen] = useState(false)
-  const [lecturerAssignmentDialogOpen, setLecturerAssignmentDialogOpen] =
-    useState(false)
   const [lecturerQualificationDialogOpen, setLecturerQualificationDialogOpen] =
     useState(false)
 
@@ -54,12 +50,6 @@ function ActionsCell({
         open={open}
         onOpenChange={setOpen}
         onSubmit={(payload) => meta?.updateCourse?.(course.id, payload)}
-      />
-      <LecturerAssignmentDialog
-        course={course}
-        open={lecturerAssignmentDialogOpen}
-        onOpenChange={setLecturerAssignmentDialogOpen}
-        onSubmit={() => meta?.refreshCourses()}
       />
       <LecturerQualificationDialog
         course={course}
@@ -80,11 +70,6 @@ function ActionsCell({
               <DropdownMenuItem onSelect={() => setOpen(true)}>
                 <PencilIcon />
                 Bearbeiten
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => setLecturerAssignmentDialogOpen(true)}>
-                <ArrowLeftRight />
-                Dozenten zuordnen
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => setLecturerQualificationDialogOpen(true)}>
