@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 
-import { CourseDialog } from '@/features/courses/components/dialog'
+import { CourseDialog } from '@/features/courses/components//dialog/course'
 import { LecturerQualificationDialog } from '@/features/courses/components/dialog/lecturer-qualification'
 import { Course, CourseTableMeta } from '@/features/courses/types'
 import { Button } from '@/features/shared/components/ui/button'

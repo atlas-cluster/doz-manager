@@ -5,6 +5,7 @@ import {
   Clock,
   GraduationCap,
   Pencil,
+  Plus,
   Timer,
   XCircle,
   XIcon,
@@ -306,10 +307,10 @@ export function LecturerQualificationDialog({
           {loading ? (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <Skeleton className="h-9 w-[200px]" />
-                <Skeleton className="h-9 w-[120px]" />
-                <Skeleton className="h-9 w-[120px]" />
-                <Skeleton className="h-9 w-[120px]" />
+                <Skeleton className="h-9 w-50" />
+                <Skeleton className="h-9 w-30" />
+                <Skeleton className="h-9 w-30" />
+                <Skeleton className="h-9 w-30" />
               </div>
               <ScrollArea className="min-h-0 flex-1">
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
@@ -482,22 +483,30 @@ export function LecturerQualificationDialog({
                           </ItemDescription>
                         </ItemContent>
                         <ItemActions>
-                          <EditQualificationDialog
-                            trigger={
-                              <Button variant={'ghost'} size={'icon'}>
-                                <Pencil />
-                                <span className={'sr-only'}>
-                                  {lecturerDisplayName(lecturer) +
-                                    ' bearbeiten'}
-                                </span>
-                              </Button>
-                            }
-                            onSubmit={handleEditQualificationDialogSubmit}
-                            courseQualification={editedLecturerQualifications.find(
+                          {(() => {
+                            const lq = editedLecturerQualifications.find(
                               (lq) => lq.lecturerId === lecturer.id
-                            )}
-                            lecturerId={lecturer.id}
-                          />
+                            )
+                            const hasQualification = !!lq
+                            return (
+                              <EditQualificationDialog
+                                trigger={
+                                  <Button variant={'ghost'} size={'icon'}>
+                                    {hasQualification ? <Pencil /> : <Plus />}
+                                    <span className={'sr-only'}>
+                                      {lecturerDisplayName(lecturer) +
+                                        (hasQualification
+                                          ? ' bearbeiten'
+                                          : ' hinzufügen')}
+                                    </span>
+                                  </Button>
+                                }
+                                onSubmit={handleEditQualificationDialogSubmit}
+                                courseQualification={lq}
+                                lecturerId={lecturer.id}
+                              />
+                            )
+                          })()}
                         </ItemActions>
                       </Item>
                     ))
