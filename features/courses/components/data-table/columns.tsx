@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  BadgeCheck,
   BookOpen,
   Check,
   GraduationCap,
@@ -14,7 +15,8 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 
-import { CourseDialog } from '@/features/courses/components/dialog'
+import { CourseDialog } from '@/features/courses/components//dialog/course'
+import { LecturerQualificationDialog } from '@/features/courses/components/dialog/lecturer-qualification'
 import { Course, CourseTableMeta } from '@/features/courses/types'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
@@ -37,6 +39,8 @@ function ActionsCell({
   const meta = table.options.meta as CourseTableMeta | undefined
   const course = row.original
   const [open, setOpen] = useState(false)
+  const [lecturerQualificationDialogOpen, setLecturerQualificationDialogOpen] =
+    useState(false)
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
@@ -46,6 +50,11 @@ function ActionsCell({
         open={open}
         onOpenChange={setOpen}
         onSubmit={(payload) => meta?.updateCourse?.(course.id, payload)}
+      />
+      <LecturerQualificationDialog
+        course={course}
+        open={lecturerQualificationDialogOpen}
+        onOpenChange={setLecturerQualificationDialogOpen}
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -61,6 +70,11 @@ function ActionsCell({
               <DropdownMenuItem onSelect={() => setOpen(true)}>
                 <PencilIcon />
                 Bearbeiten
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => setLecturerQualificationDialogOpen(true)}>
+                <BadgeCheck />
+                Qualifikationen bearbeiten
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant={'destructive'}

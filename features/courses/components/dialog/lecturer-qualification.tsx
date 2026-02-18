@@ -14,13 +14,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import z from 'zod'
 
-import { Course, CourseQualification, getCourses } from '@/features/courses'
-import { Lecturer } from '@/features/lecturers'
-import { createLecturerQualification } from '@/features/lecturers/actions/create-lecturer-course-qualification'
-import { getLecturerCourseQualifications } from '@/features/lecturers/actions/get-lecturer-course-qualification'
-import { updateLecturerQualification } from '@/features/lecturers/actions/update-lecturer-course-qualification'
-import { EditQualificationDialog } from '@/features/lecturers/components/dialog/edit-course-qualification'
-import { qualificationSchema } from '@/features/lecturers/schemas/qualification'
+import { createCourseLecturerQualification } from '@/features/courses/actions/create-course-lecturer-qualification'
+import { getCourseLecturerQualifications } from '@/features/courses/actions/get-course-lecturer-qualifications'
+import { updateCourseLecturerQualification } from '@/features/courses/actions/update-course-lecturer-qualification'
+import { EditQualificationDialog } from '@/features/courses/components/dialog/edit-lecturer-qualification'
+import { Course, CourseQualification } from '@/features/courses/types'
+import { Lecturer, getLecturers } from '@/features/lecturers'
+import { qualificationSchema } from '@/features/lecturers'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
@@ -50,24 +50,34 @@ import { LeadTimeOption } from '@/features/shared/lib/generated/prisma/enums'
 import { ExperienceOption } from '@/features/shared/lib/generated/prisma/enums'
 import { initialsFromName } from '@/features/shared/lib/utils'
 
-interface CourseQualificationDialogProps {
-  lecturer: Lecturer
+interface LecturerQualificationDialogProps {
+  course: Course
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function CourseQualificationDialog({
-  lecturer,
+function lecturerDisplayName(lecturer: Lecturer): string {
+  return [
+    lecturer.title,
+    lecturer.firstName,
+    lecturer.secondName,
+    lecturer.lastName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+export function LecturerQualificationDialog({
+  course,
   open,
   onOpenChange,
-}: CourseQualificationDialogProps) {
-  const [courses, setCourses] = useState<Course[]>([])
-  const [courseQualifications, setCourseQualifications] = useState<
+}: LecturerQualificationDialogProps) {
+  const [lecturers, setLecturers] = useState<Lecturer[]>([])
+  const [lecturerQualifications, setLecturerQualifications] = useState<
     CourseQualification[]
   >([])
-  const [editedCourseQualifications, setEditedCourseQualifications] = useState<
-    CourseQualification[]
-  >([])
+  const [editedLecturerQualifications, setEditedLecturerQualifications] =
+    useState<CourseQualification[]>([])
   const [loading, setLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -85,13 +95,13 @@ export function CourseQualificationDialog({
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [coursesResponse, qualificationResponse] = await Promise.all([
-          getCourses({ pageIndex: 0, pageSize: 999999999 }),
-          getLecturerCourseQualifications(lecturer.id),
+        const [lecturersResponse, qualificationResponse] = await Promise.all([
+          getLecturers({ pageIndex: 0, pageSize: 999999999 }),
+          getCourseLecturerQualifications(course.id),
         ])
-        setCourses(coursesResponse.data)
-        setCourseQualifications(qualificationResponse)
-        setEditedCourseQualifications(qualificationResponse)
+        setLecturers(lecturersResponse.data)
+        setLecturerQualifications(qualificationResponse)
+        setEditedLecturerQualifications(qualificationResponse)
       } catch (error) {
         console.error('Failed to fetch data', error)
         toast.error('Daten konnten nicht geladen werden')
@@ -103,78 +113,79 @@ export function CourseQualificationDialog({
       fetchData()
       setSearchQuery('')
     }
-  }, [lecturer.id, open])
+  }, [course.id, open])
 
   const statusCounts = useMemo(() => {
     const map = new Map<string, number>()
-    courses.forEach((course) => {
-      const hasQualification = editedCourseQualifications.some(
-        (cq) => cq.courseId === course.id
+    lecturers.forEach((lecturer) => {
+      const hasQualification = editedLecturerQualifications.some(
+        (lq) => lq.lecturerId === lecturer.id
       )
       const key = hasQualification ? 'qualified' : 'not_qualified'
       map.set(key, (map.get(key) ?? 0) + 1)
     })
     return map
-  }, [courses, editedCourseQualifications])
+  }, [lecturers, editedLecturerQualifications])
 
   const experienceCounts = useMemo(() => {
     const map = new Map<string, number>()
-    courses.forEach((course) => {
-      const cq = editedCourseQualifications.find(
-        (q) => q.courseId === course.id
+    lecturers.forEach((lecturer) => {
+      const lq = editedLecturerQualifications.find(
+        (q) => q.lecturerId === lecturer.id
       )
-      if (cq?.experience) {
-        map.set(cq.experience, (map.get(cq.experience) ?? 0) + 1)
+      if (lq?.experience) {
+        map.set(lq.experience, (map.get(lq.experience) ?? 0) + 1)
       }
     })
     return map
-  }, [courses, editedCourseQualifications])
+  }, [lecturers, editedLecturerQualifications])
 
   const leadTimeCounts = useMemo(() => {
     const map = new Map<string, number>()
-    courses.forEach((course) => {
-      const cq = editedCourseQualifications.find(
-        (q) => q.courseId === course.id
+    lecturers.forEach((lecturer) => {
+      const lq = editedLecturerQualifications.find(
+        (q) => q.lecturerId === lecturer.id
       )
-      if (cq?.leadTime) {
-        map.set(cq.leadTime, (map.get(cq.leadTime) ?? 0) + 1)
+      if (lq?.leadTime) {
+        map.set(lq.leadTime, (map.get(lq.leadTime) ?? 0) + 1)
       }
     })
     return map
-  }, [courses, editedCourseQualifications])
+  }, [lecturers, editedLecturerQualifications])
 
-  const filteredCourses = useMemo(() => {
-    return courses.filter((course) => {
+  const filteredLecturers = useMemo(() => {
+    return lecturers.filter((lecturer) => {
       if (debouncedSearchQuery) {
         const searchLower = debouncedSearchQuery.toLowerCase()
-        const matchesSearch = course.name.toLowerCase().includes(searchLower)
+        const fullName = lecturerDisplayName(lecturer).toLowerCase()
+        const matchesSearch = fullName.includes(searchLower)
         if (!matchesSearch) return false
       }
-      const cq = editedCourseQualifications.find(
-        (q) => q.courseId === course.id
+      const lq = editedLecturerQualifications.find(
+        (q) => q.lecturerId === lecturer.id
       )
       if (statusFilter.length > 0) {
-        const hasQualification = !!cq
+        const hasQualification = !!lq
         const statusMatch =
           (statusFilter.includes('qualified') && hasQualification) ||
           (statusFilter.includes('not_qualified') && !hasQualification)
         if (!statusMatch) return false
       }
       if (experienceFilter.length > 0) {
-        if (!cq || !experienceFilter.includes(cq.experience)) {
+        if (!lq || !experienceFilter.includes(lq.experience)) {
           return false
         }
       }
       if (leadTimeFilter.length > 0) {
-        if (!cq || !leadTimeFilter.includes(cq.leadTime)) {
+        if (!lq || !leadTimeFilter.includes(lq.leadTime)) {
           return false
         }
       }
       return true
     })
   }, [
-    courses,
-    editedCourseQualifications,
+    lecturers,
+    editedLecturerQualifications,
     debouncedSearchQuery,
     statusFilter,
     experienceFilter,
@@ -184,39 +195,37 @@ export function CourseQualificationDialog({
   const handleSubmit = async () => {
     setIsSubmitting(true)
 
-    const courseQualificationsToCreate = editedCourseQualifications.filter(
-      (editedCourseQualification) => {
-        return !courseQualifications.find(
-          (originalCourseQualification) =>
-            originalCourseQualification.courseId ===
-            editedCourseQualification.courseId
+    const qualificationsToCreate = editedLecturerQualifications.filter(
+      (editedQualification) => {
+        return !lecturerQualifications.find(
+          (originalQualification) =>
+            originalQualification.lecturerId === editedQualification.lecturerId
         )
       }
-    ) //courseId in edited but not in original
-    const courseQualificationsToUpdate = editedCourseQualifications.filter(
-      (editedCourseQualification) => {
-        return courseQualifications.find(
-          (originalCourseQualification) =>
-            originalCourseQualification.courseId ===
-              editedCourseQualification.courseId &&
-            (originalCourseQualification.experience !==
-              editedCourseQualification.experience ||
-              originalCourseQualification.leadTime !==
-                editedCourseQualification.leadTime)
+    )
+    const qualificationsToUpdate = editedLecturerQualifications.filter(
+      (editedQualification) => {
+        return lecturerQualifications.find(
+          (originalQualification) =>
+            originalQualification.lecturerId ===
+              editedQualification.lecturerId &&
+            (originalQualification.experience !==
+              editedQualification.experience ||
+              originalQualification.leadTime !== editedQualification.leadTime)
         )
       }
-    ) //courseId in both
+    )
 
     const savePromise = (async () => {
       await Promise.all([
-        ...courseQualificationsToCreate.map((quali) =>
-          createLecturerQualification(lecturer.id, quali.courseId, {
+        ...qualificationsToCreate.map((quali) =>
+          createCourseLecturerQualification(course.id, quali.lecturerId, {
             experience: quali.experience,
             leadTime: quali.leadTime,
           })
         ),
-        ...courseQualificationsToUpdate.map((quali) =>
-          updateLecturerQualification(lecturer.id, quali.courseId, {
+        ...qualificationsToUpdate.map((quali) =>
+          updateCourseLecturerQualification(course.id, quali.lecturerId, {
             experience: quali.experience,
             leadTime: quali.leadTime,
           })
@@ -241,25 +250,23 @@ export function CourseQualificationDialog({
 
   const handleEditQualificationDialogSubmit = (
     data: z.infer<typeof qualificationSchema>,
-    courseId: string
+    lecturerId: string
   ) => {
-    setEditedCourseQualifications((prev) => {
-      const existing = prev.find((cq) => cq.courseId === courseId)
+    setEditedLecturerQualifications((prev) => {
+      const existing = prev.find((lq) => lq.lecturerId === lecturerId)
 
       if (existing) {
-        // Update existing qualification
-        return prev.map((cq) =>
-          cq.courseId === courseId
-            ? { ...cq, experience: data.experience, leadTime: data.leadTime }
-            : cq
+        return prev.map((lq) =>
+          lq.lecturerId === lecturerId
+            ? { ...lq, experience: data.experience, leadTime: data.leadTime }
+            : lq
         )
       } else {
-        // Add new qualification
         return [
           ...prev,
           {
-            lecturerId: lecturer.id,
-            courseId: courseId,
+            lecturerId: lecturerId,
+            courseId: course.id,
             experience: data.experience,
             leadTime: data.leadTime,
             createdAt: new Date(),
@@ -269,6 +276,7 @@ export function CourseQualificationDialog({
       }
     })
   }
+
   const hasActiveFilters =
     statusFilter.length > 0 ||
     experienceFilter.length > 0 ||
@@ -289,15 +297,10 @@ export function CourseQualificationDialog({
           'flex h-[90vh] max-h-[90vh] min-w-[60vw] flex-col overflow-hidden'
         }>
         <DialogHeader className="sticky top-0 z-10 bg-background pb-2">
-          <DialogTitle>
-            Qualifikationen Bearbeiten -{' '}
-            {lecturer.title ? lecturer.title + ' ' : ''}
-            {lecturer.firstName}
-            {lecturer.secondName ? ' ' + lecturer.secondName : ''}
-            {' ' + lecturer.lastName}
-          </DialogTitle>
+          <DialogTitle>Qualifikationen Bearbeiten - {course.name}</DialogTitle>
           <DialogDescription>
-            Hier können Sie die Qualifikationen für den Dozenten bearbeiten.
+            Hier können Sie die Qualifikationen der Dozenten für diese Vorlesung
+            bearbeiten.
           </DialogDescription>
         </DialogHeader>
         <div className={'flex min-h-0 flex-1 flex-col gap-3'}>
@@ -330,7 +333,7 @@ export function CourseQualificationDialog({
               <div className="flex w-full flex-wrap items-center gap-2">
                 <div className="flex w-full gap-2 md:w-64">
                   <Input
-                    placeholder="Kurse suchen..."
+                    placeholder="Dozenten suchen..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -414,31 +417,33 @@ export function CourseQualificationDialog({
               </div>
               <ScrollArea className="min-h-0 flex-1">
                 <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
-                  {filteredCourses.length > 0 ? (
-                    filteredCourses.map((course) => (
+                  {filteredLecturers.length > 0 ? (
+                    filteredLecturers.map((lecturer) => (
                       <Item
-                        key={course.id}
+                        key={lecturer.id}
                         variant="outline"
                         size={'sm'}
                         className={'flex flex-nowrap'}>
-                        <ItemMedia className="flex justify-center items-center h-full">
+                        <ItemMedia className="flex h-full items-center justify-center">
                           <Avatar className={'size-10'}>
                             <AvatarFallback>
-                              {initialsFromName(course.name)}
+                              {initialsFromName(
+                                lecturer.firstName + ' ' + lecturer.lastName
+                              )}
                             </AvatarFallback>
                           </Avatar>
                         </ItemMedia>
                         <ItemContent>
-                          <ItemTitle>{course.name}</ItemTitle>
+                          <ItemTitle>{lecturerDisplayName(lecturer)}</ItemTitle>
                           <ItemDescription>
                             {(() => {
-                              const cq = editedCourseQualifications.find(
-                                (cq) => cq.courseId === course.id
+                              const lq = editedLecturerQualifications.find(
+                                (lq) => lq.lecturerId === lecturer.id
                               )
-                              if (!cq) return 'Keine Qualifikationen vorhanden'
+                              if (!lq) return 'Keine Qualifikationen vorhanden'
 
                               let experienceText: string
-                              switch (cq.experience) {
+                              switch (lq.experience) {
                                 case 'provadis':
                                   experienceText = 'Provadis'
                                   break
@@ -449,11 +454,11 @@ export function CourseQualificationDialog({
                                   experienceText = 'Keine'
                                   break
                                 default:
-                                  experienceText = cq.experience
+                                  experienceText = lq.experience
                               }
 
                               let leadTimeText: string
-                              switch (cq.leadTime) {
+                              switch (lq.leadTime) {
                                 case 'short':
                                   leadTimeText = 'Sofort'
                                   break
@@ -464,7 +469,7 @@ export function CourseQualificationDialog({
                                   leadTimeText = 'Mehr als 4 Wochen'
                                   break
                                 default:
-                                  leadTimeText = cq.leadTime
+                                  leadTimeText = lq.leadTime
                               }
 
                               return (
@@ -479,17 +484,17 @@ export function CourseQualificationDialog({
                         </ItemContent>
                         <ItemActions>
                           {(() => {
-                            const cq = editedCourseQualifications.find(
-                              (cq) => cq.courseId === course.id
+                            const lq = editedLecturerQualifications.find(
+                              (lq) => lq.lecturerId === lecturer.id
                             )
-                            const hasQualification = !!cq
+                            const hasQualification = !!lq
                             return (
                               <EditQualificationDialog
                                 trigger={
                                   <Button variant={'ghost'} size={'icon'}>
                                     {hasQualification ? <Pencil /> : <Plus />}
                                     <span className={'sr-only'}>
-                                      {course.name +
+                                      {lecturerDisplayName(lecturer) +
                                         (hasQualification
                                           ? ' bearbeiten'
                                           : ' hinzufügen')}
@@ -497,8 +502,8 @@ export function CourseQualificationDialog({
                                   </Button>
                                 }
                                 onSubmit={handleEditQualificationDialogSubmit}
-                                courseQualification={cq}
-                                courseId={course.id}
+                                courseQualification={lq}
+                                lecturerId={lecturer.id}
                               />
                             )
                           })()}
@@ -506,8 +511,8 @@ export function CourseQualificationDialog({
                       </Item>
                     ))
                   ) : (
-                    <div className="col-span-full text-center py-8 text-muted-foreground">
-                      Keine Kurse gefunden.
+                    <div className="col-span-full py-8 text-center text-muted-foreground">
+                      Keine Dozenten gefunden.
                     </div>
                   )}
                 </ItemGroup>
