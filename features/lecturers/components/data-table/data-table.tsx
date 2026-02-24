@@ -360,12 +360,7 @@ export function DataTable({
             </Button>
           </ButtonGroup>
           <LecturerDialog
-            trigger={
-              <Button suppressHydrationWarning>
-                <Plus />
-                Dozent erstellen
-              </Button>
-            }
+            trigger={<Button suppressHydrationWarning>Dozent erstellen</Button>}
             onSubmit={handleCreate}
           />
         </div>

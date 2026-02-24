@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   ArrowUp,
   ArrowUpDown,
+  BadgeCheck,
   BookOpen,
   Check,
   GraduationCap,
@@ -15,8 +16,9 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 
-import { CourseDialog } from '@/features/courses/components/dialog/dialog'
+import { CourseDialog } from '@/features/courses/components/dialog/course'
 import { LecturerAssignmentDialog } from '@/features/courses/components/dialog/lecturer-assignment'
+import { LecturerQualificationDialog } from '@/features/courses/components/dialog/lecturer-qualification'
 import { Course, CourseTableMeta } from '@/features/courses/types'
 import {
   Avatar,
@@ -48,6 +50,8 @@ function ActionsCell({
   const [open, setOpen] = useState(false)
   const [lecturerAssignmentDialogOpen, setLecturerAssignmentDialogOpen] =
     useState(false)
+  const [lecturerQualificationDialogOpen, setLecturerQualificationDialogOpen] =
+    useState(false)
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
@@ -64,6 +68,11 @@ function ActionsCell({
         onOpenChange={setLecturerAssignmentDialogOpen}
         onSubmit={() => meta?.refreshCourses()}
       />
+      <LecturerQualificationDialog
+        course={course}
+        open={lecturerQualificationDialogOpen}
+        onOpenChange={setLecturerQualificationDialogOpen}
+      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
@@ -79,11 +88,19 @@ function ActionsCell({
                 <PencilIcon />
                 Bearbeiten
               </DropdownMenuItem>
+
               <DropdownMenuItem
                 onSelect={() => setLecturerAssignmentDialogOpen(true)}>
                 <ArrowLeftRight />
                 Dozenten zuordnen
               </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onSelect={() => setLecturerQualificationDialogOpen(true)}>
+                <BadgeCheck />
+                Qualifikationen bearbeiten
+              </DropdownMenuItem>
+
               <DropdownMenuItem
                 variant={'destructive'}
                 onSelect={() => meta?.deleteCourse?.(course.id)}>

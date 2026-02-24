@@ -25,7 +25,7 @@ export async function getCourseLecturerAssignments(
     async () => getCourseLecturerAssignmentsInternal(courseId),
     ['course-lecturers-get', courseId],
     {
-      tags: ['lecturers', 'courses', `course-${courseId}-lecturers`],
+      tags: ['courses', 'lecturers', `course-${courseId}-lecturers`],
       revalidate: 3600,
     }
   )()
