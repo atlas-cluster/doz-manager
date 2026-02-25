@@ -126,6 +126,57 @@ function ActionsCell({
   )
 }
 
+function LecturerAssignmentsCell({
+  row,
+  table,
+}: {
+  row: Row<Course>
+  table: Table<Course>
+}) {
+  const assignments = row.original.assignments
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  if (!assignments || assignments.length === 0) {
+    return null
+  }
+
+  const displayAssignments = assignments.slice(0, 3)
+  const remainingCount = assignments.length - 3
+
+  if (displayAssignments.length === 0) {
+    return null
+  }
+
+  return (
+    <LecturerAssignmentDialog
+      course={row.original}
+      open={dialogOpen}
+      onOpenChange={setDialogOpen}
+      onSubmit={() =>
+        (table.options.meta as CourseTableMeta | undefined)?.refreshCourses()
+      }
+      trigger={
+        <AvatarGroup className="grayscale cursor-pointer">
+          {displayAssignments.map((assignment, index) => (
+            <Avatar key={index}>
+              <AvatarFallback>
+                {initialsFromName(
+                  assignment.lecturer.firstName +
+                    ' ' +
+                    assignment.lecturer.lastName
+                )}
+              </AvatarFallback>
+            </Avatar>
+          ))}
+          {remainingCount > 0 && (
+            <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+          )}
+        </AvatarGroup>
+      }
+    />
+  )
+}
+
 export const columns: ColumnDef<Course>[] = [
   {
     id: 'select',
@@ -235,50 +286,9 @@ export const columns: ColumnDef<Course>[] = [
     id: 'assignments',
     header: 'Dozenten',
     accessorKey: 'assignments',
-    cell: ({ row, table }) => {
-      const assignments = row.original.assignments
-
-      if (!assignments || assignments.length === 0) {
-        return null
-      }
-
-      const displayAssignments = assignments.slice(0, 3)
-      const remainingCount = assignments.length - 3
-
-      if (displayAssignments.length === 0) {
-        return null
-      }
-
-      return (
-        <LecturerAssignmentDialog
-          course={row.original}
-          onSubmit={() =>
-            (
-              table.options.meta as CourseTableMeta | undefined
-            )?.refreshCourses()
-          }
-          readonly
-          trigger={
-            <AvatarGroup className="grayscale cursor-pointer">
-              {displayAssignments.map((assignment, index) => (
-                <Avatar key={index}>
-                  <AvatarFallback>
-                    {initialsFromName(
-                      assignment.lecturer.firstName +
-                        ' ' +
-                        assignment.lecturer.lastName
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {remainingCount > 0 && (
-                <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
-              )}
-            </AvatarGroup>
-          }
-        />
-      )
-    },
+    cell: ({ row, table }) => (
+      <LecturerAssignmentsCell row={row} table={table} />
+    ),
     enableSorting: false,
     enableHiding: true,
     enableGlobalFilter: false,
