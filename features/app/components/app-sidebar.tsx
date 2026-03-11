@@ -5,10 +5,15 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import {
+  type SidebarUser,
+  SidebarUserMenu,
+} from '@/features/app/components/sidebar-user-menu'
 import { formatRoute } from '@/features/app/utils/format-route'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarHeader,
   SidebarMenu,
@@ -22,7 +27,11 @@ const navItems = [
   { url: '/courses', icon: LibraryBigIcon },
 ]
 
-export function AppSidebar() {
+type AppSidebarProps = {
+  user: SidebarUser
+}
+
+export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname()
   return (
     <Sidebar collapsible={'icon'}>
@@ -58,6 +67,10 @@ export function AppSidebar() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarSeparator className={'m-0'} />
+      <SidebarFooter>
+        <SidebarUserMenu user={user} />
+      </SidebarFooter>
     </Sidebar>
   )
 }

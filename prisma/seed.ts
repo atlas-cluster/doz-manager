@@ -1,3 +1,5 @@
+import { betterAuth } from 'better-auth'
+import { prismaAdapter } from 'better-auth/adapters/prisma'
 import 'dotenv/config'
 
 import {
@@ -21,6 +23,57 @@ const adapter = new PrismaMariaDb({
 })
 
 const prisma = new PrismaClient({ adapter })
+
+const seedAuth = betterAuth({
+  database: prismaAdapter(prisma, {
+    provider: 'mysql',
+  }),
+  emailAndPassword: {
+    enabled: true,
+  },
+})
+
+function getRequiredAdminCredentials() {
+  const email = process.env.SEED_ADMIN_EMAIL
+  const password = process.env.SEED_ADMIN_PASSWORD
+  const name = process.env.SEED_ADMIN_NAME || 'Admin'
+
+  if (!email || !password) {
+    console.warn(
+      'Skipping admin seed: define SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in your environment.'
+    )
+    return null
+  }
+
+  return { email, password, name }
+}
+
+async function seedAdminUser() {
+  const credentials = getRequiredAdminCredentials()
+
+  if (!credentials) {
+    return
+  }
+
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: credentials.email },
+  })
+
+  if (existingAdmin) {
+    console.log(`Admin user already exists: ${credentials.email}`)
+    return
+  }
+
+  await seedAuth.api.signUpEmail({
+    body: {
+      email: credentials.email,
+      password: credentials.password,
+      name: credentials.name,
+    },
+  })
+
+  console.log(`Created admin user: ${credentials.email}`)
+}
 
 const lecturers = [
   {
@@ -392,6 +445,8 @@ async function main() {
       }
     }
   }
+
+  await seedAdminUser()
 
   console.log(`Seeding finished.`)
 }
