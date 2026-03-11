@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { twoFactor } from 'better-auth/plugins'
 
+import { generateBackupCodes } from '@/features/auth/lib/backup-code-generate'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export const auth = betterAuth({
@@ -12,5 +13,11 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  plugins: [twoFactor()],
+  plugins: [
+    twoFactor({
+      backupCodeOptions: {
+        customBackupCodesGenerate: generateBackupCodes,
+      },
+    }),
+  ],
 })

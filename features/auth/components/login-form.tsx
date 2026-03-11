@@ -1,12 +1,14 @@
 'use client'
 
+import { Check, EyeIcon, EyeOffIcon, LogIn } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { FormEvent } from 'react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { ThemeToggle } from '@/features/app'
+import { toCanonicalBackupCode } from '@/features/auth/lib/backup-code-format'
 import { authClient } from '@/features/auth/lib/client'
 import { Button } from '@/features/shared/components/ui/button'
 import {
@@ -29,6 +31,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/features/shared/components/ui/input-otp'
+import { Spinner } from '@/features/shared/components/ui/spinner'
 
 type Step = 'credentials' | 'totp' | 'backup'
 
@@ -44,7 +47,15 @@ const LoginForm = () => {
   const [step, setStep] = useState<Step>('credentials')
   const [totpCode, setTotpCode] = useState('')
   const [backupCode, setBackupCode] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const backupInputRef = useRef<HTMLInputElement>(null)
+  const otpInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (step === 'totp') {
+      setTimeout(() => otpInputRef.current?.focus(), 350)
+    }
+  }, [step])
 
   const goToStep = (next: Step) => {
     if (document.activeElement instanceof HTMLElement) {
@@ -102,6 +113,7 @@ const LoginForm = () => {
     if (error) {
       toast.error('2FA-Verifizierung fehlgeschlagen. Bitte erneut versuchen.')
       setTotpCode('')
+      setTimeout(() => otpInputRef.current?.focus(), 0)
       return
     }
 
@@ -114,20 +126,37 @@ const LoginForm = () => {
     event: FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault()
-    const code = backupCode.trim()
+    const rawCode = backupCode.trim()
 
-    if (!code) {
+    if (!rawCode) {
       toast.error('Bitte geben Sie einen Backup-Code ein.')
       return
     }
 
-    setIsSubmitting(true)
-    const { error } = await authClient.twoFactor.verifyBackupCode({ code })
-    setIsSubmitting(false)
+    const canonicalCode = toCanonicalBackupCode(rawCode)
 
-    if (error) {
-      toast.error('Ungültiger Backup-Code. Bitte erneut versuchen.')
-      return
+    setIsSubmitting(true)
+    const primaryAttempt = await authClient.twoFactor.verifyBackupCode({
+      code: canonicalCode ?? rawCode,
+    })
+
+    if (primaryAttempt.error && canonicalCode && canonicalCode !== rawCode) {
+      const fallbackAttempt = await authClient.twoFactor.verifyBackupCode({
+        code: rawCode,
+      })
+      setIsSubmitting(false)
+
+      if (fallbackAttempt.error) {
+        toast.error('Ungültiger Backup-Code. Bitte erneut versuchen.')
+        return
+      }
+    } else {
+      setIsSubmitting(false)
+
+      if (primaryAttempt.error) {
+        toast.error('Ungültiger Backup-Code. Bitte erneut versuchen.')
+        return
+      }
     }
 
     toast.success('Erfolgreich angemeldet.')
@@ -186,18 +215,17 @@ const LoginForm = () => {
           </CardHeader>
 
           <CardContent className="p-0">
-            <div className="-mx-1 overflow-hidden px-1 -mt-1 pt-1">
+            <div className="overflow-hidden">
               <div
                 className="flex w-[300%] transition-transform duration-300 ease-in-out"
                 style={{ transform: SLIDE[step] }}>
                 {/* Step 1 – Credentials */}
-                <div className="w-1/3 shrink-0 pr-1">
+                <div className="w-1/3 shrink-0 px-1">
                   <form onSubmit={handleSignIn}>
                     <FieldGroup className="gap-6">
                       <Button
                         variant="outline"
                         type="button"
-                        className="text-sm text-medium text-card-foreground gap-2 dark:bg-background rounded-lg h-9 shadow-xs cursor-pointer"
                         onClick={() =>
                           toast.error(
                             'Microsoft Login ist derzeit nicht verfügbar'
@@ -206,9 +234,9 @@ const LoginForm = () => {
                         <Image
                           src={'/microsoft.svg'}
                           alt={'Microsoft Logo'}
-                          width={64}
-                          height={64}
-                          className="h-4 w-4"
+                          width={20}
+                          height={20}
+                          className="size-5"
                         />
                         Anmelden mit Microsoft
                       </Button>
@@ -216,54 +244,57 @@ const LoginForm = () => {
                         <span className="px-4">oder anmelden mit</span>
                       </FieldSeparator>
                       <div className="flex flex-col gap-4">
-                        <Field className="gap-1.5">
-                          <FieldLabel
-                            htmlFor="email"
-                            className="text-sm text-muted-foreground font-normal">
+                        <Field>
+                          <FieldLabel htmlFor="email">
                             <div>
-                              E-Mail{' '}
-                              <sup className="text-destructive text-sm font-normal">
-                                *
-                              </sup>
+                              E-Mail
+                              <sup className="text-destructive">*</sup>
                             </div>
                           </FieldLabel>
                           <Input
                             id="email"
                             name="email"
+                            disabled={isSubmitting}
                             type="email"
                             placeholder="mail@provadis-hochschule.de"
-                            required
-                            className="dark:bg-background h-9 shadow-xs"
                           />
                         </Field>
-                        <Field className="gap-1.5">
-                          <FieldLabel
-                            htmlFor="password"
-                            className="text-sm text-muted-foreground font-normal">
+                        <Field>
+                          <FieldLabel htmlFor="password">
                             <div>
-                              Passwort{' '}
-                              <sup className="text-destructive text-sm font-normal">
-                                *
-                              </sup>
+                              Passwort
+                              <sup className="text-destructive">*</sup>
                             </div>
                           </FieldLabel>
-                          <Input
-                            id="password"
-                            name="password"
-                            type="password"
-                            placeholder="Geben Sie Ihr Passwort ein"
-                            required
-                            className="dark:bg-background h-9 shadow-xs"
-                          />
+                          <div className="relative">
+                            <Input
+                              id="password"
+                              name="password"
+                              type={showPassword ? 'text' : 'password'}
+                              disabled={isSubmitting}
+                              placeholder="Geben Sie Ihr Passwort ein"
+                              className="pr-9"
+                            />
+                            <Button
+                              className="absolute top-0 right-0 h-full px-3 hover:bg-transparent!"
+                              onClick={() => setShowPassword(!showPassword)}
+                              size="icon"
+                              type="button"
+                              disabled={isSubmitting}
+                              variant="ghost">
+                              {showPassword ? (
+                                <EyeOffIcon className="text-muted-foreground" />
+                              ) : (
+                                <EyeIcon className="text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
                         </Field>
                       </div>
                       <Field className="gap-4">
-                        <Button
-                          type="submit"
-                          size="lg"
-                          disabled={isSubmitting}
-                          className="rounded-lg h-10 hover:bg-primary/80 cursor-pointer">
-                          {isSubmitting ? 'Anmeldung...' : 'Anmelden'}
+                        <Button type="submit" size="lg" disabled={isSubmitting}>
+                          {isSubmitting ? <Spinner /> : <LogIn />}
+                          Anmelden
                         </Button>
                         <FieldDescription className="text-center text-sm font-normal text-muted-foreground">
                           Sie haben noch kein Konto?{' '}
@@ -280,9 +311,10 @@ const LoginForm = () => {
 
                 {/* Step 2 – TOTP */}
                 <div className="w-1/3 shrink-0 px-1">
-                  <FieldGroup className="gap-6">
+                  <FieldGroup className="gap-6 pt-2">
                     <div className="flex justify-center">
                       <InputOTP
+                        ref={otpInputRef}
                         maxLength={6}
                         value={totpCode}
                         onChange={(val) => setTotpCode(val.replace(/\D/g, ''))}
@@ -329,7 +361,7 @@ const LoginForm = () => {
                 </div>
 
                 {/* Step 3 – Backup Code */}
-                <div className="w-1/3 shrink-0 pl-1">
+                <div className="w-1/3 shrink-0 px-1">
                   <form onSubmit={handleBackupCodeVerification}>
                     <FieldGroup>
                       <Field>
@@ -353,6 +385,7 @@ const LoginForm = () => {
                       </Field>
                       <Field>
                         <Button type="submit" size="lg" disabled={isSubmitting}>
+                          {isSubmitting ? <Spinner /> : <Check />}
                           Backup-Code bestätigen
                         </Button>
                         <div className="flex justify-center">
