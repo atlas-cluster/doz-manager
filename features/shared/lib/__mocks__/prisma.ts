@@ -29,5 +29,25 @@ export const prisma = {
     delete: vi.fn(),
     findMany: vi.fn(),
   },
+  user: {
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    deleteMany: vi.fn(),
+    count: vi.fn(),
+    groupBy: vi.fn(),
+  },
+  account: {
+    findFirst: vi.fn(),
+    updateMany: vi.fn(),
+  },
+  twoFactor: {
+    deleteMany: vi.fn(),
+  },
+  session: {
+    deleteMany: vi.fn(),
+  },
   $transaction: vi.fn(),
 }

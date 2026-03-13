@@ -71,27 +71,105 @@ model CourseAssignment {
 }
 
 model CourseQualification {
-  lecturer   Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  lecturer   Lecturer         @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
   lecturerId String
-  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   courseId   String
   leadTime   LeadTimeOption
   experience ExperienceOption
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   @@id([lecturerId, courseId])
 }
 
-
 enum LeadTimeOption {
-  short          // S - immediately
-  four_weeks     // 4 - four weeks
-  more_weeks     // M - more than four weeks
+  short // S - immediately
+  four_weeks // 4 - four weeks
+  more_weeks // M - more than four weeks
 }
 
 enum ExperienceOption {
-  provadis       // P - at Provadis
-  other_uni      // A - at another university
-  none           // N - not yet
+  provadis // P - at Provadis
+  other_uni // A - at another university
+  none // N - not yet
+}
+
+model User {
+  id            String    @id
+  name          String    @db.Text
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  isAdmin          Boolean     @default(false)
+  twoFactorEnabled Boolean?    @default(false)
+  twofactors       TwoFactor[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?  @db.Text
+  userAgent String?  @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId(length: 191)])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @db.Text
+  providerId            String    @db.Text
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId(length: 191)])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String   @db.Text
+  value      String   @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier(length: 191)])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id          String @id
+  secret      String @db.Text
+  backupCodes String @db.Text
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secret(length: 191)])
+  @@index([userId(length: 191)])
+  @@map("twoFactor")
 }

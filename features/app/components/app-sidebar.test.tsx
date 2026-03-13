@@ -7,20 +7,38 @@ import { cleanup, render, screen } from '@testing-library/react'
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/lecturers',
+  useRouter: () => ({
+    push: vi.fn(),
+    refresh: vi.fn(),
+  }),
 }))
 
 vi.mock('next/image', () => ({
   __esModule: true,
   default: (props: Record<string, unknown>) => {
-    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    return <img {...props} />
+    const alt = typeof props.alt === 'string' ? props.alt : ''
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img {...props} alt={alt} />
   },
 }))
 
-function renderWithSidebar() {
+vi.mock('@/features/auth', () => ({
+  authClient: {
+    signOut: vi.fn(),
+  },
+}))
+
+function renderWithSidebar(isAdmin = true) {
   return render(
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar
+        user={{
+          name: 'Max Mustermann',
+          email: 'max.mustermann@example.com',
+          image: null,
+        }}
+        isAdmin={isAdmin}
+      />
     </SidebarProvider>
   )
 }
@@ -65,5 +83,24 @@ describe('AppSidebar', () => {
 
     expect(lecturersLink).toHaveAttribute('href', '/lecturers')
     expect(coursesLink).toHaveAttribute('href', '/courses')
+  })
+
+  it('should show access-control link for admins', () => {
+    renderWithSidebar(true)
+
+    expect(screen.getByText('Zugriffsverwaltung')).toBeInTheDocument()
+  })
+
+  it('should hide access-control link for non-admins', () => {
+    renderWithSidebar(false)
+
+    expect(screen.queryByText('Zugriffsverwaltung')).not.toBeInTheDocument()
+  })
+
+  it('should render user information in the sidebar footer', () => {
+    renderWithSidebar()
+
+    expect(screen.getByText('Max Mustermann')).toBeInTheDocument()
+    expect(screen.getByText('max.mustermann@example.com')).toBeInTheDocument()
   })
 })
