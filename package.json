@@ -16,7 +16,6 @@
     "prisma:seed": "prisma db seed",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:reset": "prisma migrate reset",
-    "prisma:create-user": "tsx prisma/create-user.ts",
     "prepare": "husky"
   },
   "dependencies": {

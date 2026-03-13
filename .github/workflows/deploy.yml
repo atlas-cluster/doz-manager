@@ -53,6 +53,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_ADMIN_EMAIL=${{ secrets.NEXT_PUBLIC_ADMIN_EMAIL }}
 
   migrate:
     name: Run Migrations
@@ -174,7 +176,7 @@ jobs:
             echo "$REGISTRY_TOKEN" | docker login $REGISTRY -u $USERNAME --password-stdin
             docker pull $FULL_IMAGE_NAME:$IMAGE_TAG
             docker stop $CONTAINER_NAME || true
-            docker rm $CONTAINER_NAME || true
+            docker rm -v $CONTAINER_NAME || true
             docker run -d \
               --name $CONTAINER_NAME \
               --restart unless-stopped \

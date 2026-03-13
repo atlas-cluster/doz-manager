@@ -56,6 +56,10 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_ROOT_USER: ${{ secrets.DB_ROOT_USER }}
           DB_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          SEED_ADMIN_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
+          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+          SEED_ADMIN_NAME: ${{ secrets.SEED_ADMIN_NAME }}
         run: |
           SSH_OPTS="-i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o ConnectionAttempts=3"
 
