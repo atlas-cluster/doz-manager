@@ -1,6 +1,10 @@
 'use client'
 
-import { LibraryBigIcon, ShieldUserIcon, UsersIcon } from 'lucide-react'
+import {
+  ChartNoAxesCombinedIcon,
+  LibraryBigIcon,
+  ShieldUserIcon, UsersIcon,
+} from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -25,6 +29,7 @@ import {
 const navItems = [
   { url: '/lecturers', icon: UsersIcon, adminOnly: false },
   { url: '/courses', icon: LibraryBigIcon, adminOnly: false },
+  { url: '/reports', icon: ChartNoAxesCombinedIcon, adminOnly: false },
   { url: '/access-control', icon: ShieldUserIcon, adminOnly: true },
 ]
 
