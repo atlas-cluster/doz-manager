@@ -78,7 +78,7 @@ export function PasswordDialog({
             className="pr-9"
           />
           <Button
-            className="absolute top-0 right-0 h-full px-3 hover:bg-transparent!"
+            className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
             onClick={() => setShowPassword(!showPassword)}
             size="icon"
             type="button"
