@@ -1,4 +1,14 @@
+import React from 'react'
+import { vi } from 'vitest'
+
 import '@testing-library/jest-dom/vitest'
+
+// Mock input-otp to avoid internal timers that fire after jsdom teardown
+// (causes "window is not defined" in react-dom)
+vi.mock('input-otp', () => ({
+  OTPInput: (props: Record<string, unknown>) => React.createElement('noscript'),
+  OTPInputContext: React.createContext({ slots: [] }),
+}))
 
 // Polyfill ResizeObserver for Radix UI components in jsdom
 global.ResizeObserver = class ResizeObserver {
