@@ -299,7 +299,7 @@ const LoginForm = () => {
                         <FieldDescription className="text-center text-sm font-normal text-muted-foreground">
                           Sie haben noch kein Konto?{' '}
                           <a
-                            href="mailto:admin@provaids-hochschule.de"
+                            href={`mailto:${process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? ''}`}
                             className="font-medium text-card-foreground no-underline!">
                             Kontaktieren Sie einen Administrator
                           </a>
