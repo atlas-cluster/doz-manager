@@ -45,7 +45,7 @@ const eslintConfig = defineConfig([
             },
             {
               target: 'feature',
-              allow: 'index.ts',
+              allow: ['index.ts', 'lib/auth.ts'],
             },
           ],
         },

@@ -158,6 +158,12 @@ async function seedAdminUser() {
     console.log(`Admin user already exists: ${credentials.email}`)
   }
 
+  await prisma.user.update({
+    where: { id: adminUser.id },
+    data: { isAdmin: true },
+  })
+  console.log(`Promoted admin user: ${credentials.email}`)
+
   await ensureAdminTwoFactor(adminUser.id)
   console.log(`Ensured predefined 2FA for admin user: ${credentials.email}`)
 }

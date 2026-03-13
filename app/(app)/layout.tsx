@@ -9,6 +9,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from '@/features/shared/components/ui/sidebar'
+import { prisma } from '@/features/shared/lib/prisma'
 
 export default async function AppLayout({
   children,
@@ -23,6 +24,11 @@ export default async function AppLayout({
     redirect('/login')
   }
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isAdmin: true },
+  })
+
   const sidebarUser = {
     name: session.user.name || 'Benutzer',
     email: session.user.email,
@@ -31,7 +37,7 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar user={sidebarUser} />
+      <AppSidebar user={sidebarUser} isAdmin={dbUser?.isAdmin ?? false} />
       <SidebarInset>
         <AppHeader />
         <div className={'p-3'}>{children}</div>

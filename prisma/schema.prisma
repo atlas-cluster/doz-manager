@@ -106,6 +106,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
+  isAdmin          Boolean     @default(false)
   twoFactorEnabled Boolean?    @default(false)
   twofactors       TwoFactor[]
 

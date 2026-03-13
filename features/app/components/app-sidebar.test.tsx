@@ -28,7 +28,7 @@ vi.mock('@/features/auth', () => ({
   },
 }))
 
-function renderWithSidebar() {
+function renderWithSidebar(isAdmin = true) {
   return render(
     <SidebarProvider>
       <AppSidebar
@@ -37,6 +37,7 @@ function renderWithSidebar() {
           email: 'max.mustermann@example.com',
           image: null,
         }}
+        isAdmin={isAdmin}
       />
     </SidebarProvider>
   )
@@ -82,6 +83,18 @@ describe('AppSidebar', () => {
 
     expect(lecturersLink).toHaveAttribute('href', '/lecturers')
     expect(coursesLink).toHaveAttribute('href', '/courses')
+  })
+
+  it('should show access-control link for admins', () => {
+    renderWithSidebar(true)
+
+    expect(screen.getByText('Zugriffsverwaltung')).toBeInTheDocument()
+  })
+
+  it('should hide access-control link for non-admins', () => {
+    renderWithSidebar(false)
+
+    expect(screen.queryByText('Zugriffsverwaltung')).not.toBeInTheDocument()
   })
 
   it('should render user information in the sidebar footer', () => {

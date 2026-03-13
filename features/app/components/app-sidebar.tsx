@@ -1,6 +1,6 @@
 'use client'
 
-import { LibraryBigIcon, UsersIcon } from 'lucide-react'
+import { LibraryBigIcon, ShieldUserIcon, UsersIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -23,16 +23,21 @@ import {
 } from '@/features/shared/components/ui/sidebar'
 
 const navItems = [
-  { url: '/lecturers', icon: UsersIcon },
-  { url: '/courses', icon: LibraryBigIcon },
+  { url: '/lecturers', icon: UsersIcon, adminOnly: false },
+  { url: '/courses', icon: LibraryBigIcon, adminOnly: false },
+  { url: '/access-control', icon: ShieldUserIcon, adminOnly: true },
 ]
 
 type AppSidebarProps = {
   user: SidebarUser
+  isAdmin: boolean
 }
 
-export function AppSidebar({ user }: AppSidebarProps) {
+export function AppSidebar({ user, isAdmin }: AppSidebarProps) {
   const pathname = usePathname()
+
+  const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin)
+
   return (
     <Sidebar collapsible={'icon'}>
       <SidebarHeader>
@@ -51,7 +56,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {navItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <SidebarMenuItem key={formatRoute(item.url)}>
                 <SidebarMenuButton
                   asChild

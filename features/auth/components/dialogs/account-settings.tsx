@@ -6,11 +6,14 @@ import {
   PencilIcon,
   ShieldCheckIcon,
   ShieldOffIcon,
+  TrashIcon,
   UserIcon,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { deleteAccount } from '@/features/auth/actions/delete-account'
 import { getBackupCodeCount } from '@/features/auth/actions/get-backup-code-count'
 import { updateProfile } from '@/features/auth/actions/update-profile'
 import { ChangePasswordDialog } from '@/features/auth/components/dialogs/change-password-dialog'
@@ -76,6 +79,9 @@ export function AccountSettings({
   const [showChangePasswordDialog, setShowChangePasswordDialog] =
     useState(false)
   const [backupCodeCount, setBackupCodeCount] = useState<number | null>(null)
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     if (twoFactorEnabled) {
@@ -85,6 +91,32 @@ export function AccountSettings({
 
   const refreshBackupCodeCount = () => {
     getBackupCodeCount().then(setBackupCodeCount)
+  }
+
+  const handleDeleteAccount = async (password: string) => {
+    setIsDeleting(true)
+    try {
+      const promise = deleteAccount(password).then(() => {
+        router.push('/login')
+        router.refresh()
+      })
+
+      toast.promise(promise, {
+        loading: 'Konto wird gelöscht...',
+        success: 'Konto wurde gelöscht.',
+        error: (error: unknown) =>
+          error instanceof Error
+            ? error.message
+            : 'Konto konnte nicht gelöscht werden.',
+      })
+
+      await promise
+    } catch {
+      // Error already handled by toast
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteAccountDialog(false)
+    }
   }
 
   const patchProfile = async (
@@ -455,6 +487,26 @@ export function AccountSettings({
               </div>
             </>
           )}
+
+          <Separator />
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Konto löschen</p>
+              <p className="text-xs text-muted-foreground">
+                Ihr Konto und alle zugehörigen Daten werden unwiderruflich
+                gelöscht.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-destructive hover:text-destructive gap-1.5 shrink-0"
+              onClick={() => setShowDeleteAccountDialog(true)}>
+              <TrashIcon />
+              Löschen
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -562,6 +614,17 @@ export function AccountSettings({
         onDone={() => {
           refreshBackupCodeCount()
         }}
+      />
+
+      <PasswordDialog
+        open={showDeleteAccountDialog}
+        onOpenChange={setShowDeleteAccountDialog}
+        title="Konto löschen"
+        description="Bestätigen Sie Ihr Passwort, um Ihr Konto unwiderruflich zu löschen."
+        confirmLabel="Konto löschen"
+        confirmVariant="destructive"
+        isLoading={isDeleting}
+        onConfirm={handleDeleteAccount}
       />
     </>
   )

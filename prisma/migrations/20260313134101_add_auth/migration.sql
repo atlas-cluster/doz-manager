@@ -7,6 +7,7 @@ CREATE TABLE `user` (
     `image` TEXT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
+    `isAdmin` BOOLEAN NOT NULL DEFAULT false,
     `twoFactorEnabled` BOOLEAN NULL DEFAULT false,
 
     UNIQUE INDEX `user_email_key`(`email`),
