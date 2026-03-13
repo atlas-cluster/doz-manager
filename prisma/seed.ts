@@ -1,8 +1,4 @@
-import { betterAuth } from 'better-auth'
-import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { symmetricEncrypt } from 'better-auth/crypto'
 import 'dotenv/config'
-import { randomUUID } from 'node:crypto'
 
 import {
   CourseLevel,
@@ -25,148 +21,6 @@ const adapter = new PrismaMariaDb({
 })
 
 const prisma = new PrismaClient({ adapter })
-
-const seedAuth = betterAuth({
-  database: prismaAdapter(prisma, {
-    provider: 'mysql',
-  }),
-  emailAndPassword: {
-    enabled: true,
-  },
-})
-
-function getAuthSecret() {
-  const authSecret = process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET
-
-  if (!authSecret) {
-    throw new Error(
-      'Missing BETTER_AUTH_SECRET (or AUTH_SECRET). It is required to seed predefined 2FA data.'
-    )
-  }
-
-  return authSecret
-}
-
-function getPredefinedAdminTwoFactor() {
-  const secret = process.env.SEED_ADMIN_2FA_SECRET
-  const backupCodesInput = process.env.SEED_ADMIN_2FA_BACKUP_CODES
-
-  if (!secret) {
-    throw new Error(
-      'Missing SEED_ADMIN_2FA_SECRET. Define it in your environment.'
-    )
-  }
-
-  if (!backupCodesInput) {
-    throw new Error(
-      'Missing SEED_ADMIN_2FA_BACKUP_CODES. Define it as a comma-separated list in your environment.'
-    )
-  }
-
-  const backupCodes = backupCodesInput
-    .split(',')
-    .map((code) => code.trim())
-    .filter(Boolean)
-
-  if (backupCodes.length === 0) {
-    throw new Error(
-      'SEED_ADMIN_2FA_BACKUP_CODES must contain at least one comma-separated code.'
-    )
-  }
-
-  return { secret, backupCodes }
-}
-
-async function ensureAdminTwoFactor(adminUserId: string) {
-  const authSecret = getAuthSecret()
-  const predefinedTwoFactor = getPredefinedAdminTwoFactor()
-
-  const encryptedSecret = await symmetricEncrypt({
-    key: authSecret,
-    data: predefinedTwoFactor.secret,
-  })
-
-  const encryptedBackupCodes = await symmetricEncrypt({
-    key: authSecret,
-    data: JSON.stringify(predefinedTwoFactor.backupCodes),
-  })
-
-  await prisma.$transaction([
-    prisma.twoFactor.deleteMany({
-      where: { userId: adminUserId },
-    }),
-    prisma.twoFactor.create({
-      data: {
-        id: randomUUID(),
-        userId: adminUserId,
-        secret: encryptedSecret,
-        backupCodes: encryptedBackupCodes,
-      },
-    }),
-    prisma.user.update({
-      where: { id: adminUserId },
-      data: { twoFactorEnabled: true },
-    }),
-  ])
-}
-
-function getRequiredAdminCredentials() {
-  const email = process.env.SEED_ADMIN_EMAIL
-  const password = process.env.SEED_ADMIN_PASSWORD
-  const name = process.env.SEED_ADMIN_NAME
-
-  if (!email || !password || !name) {
-    console.warn(
-      'Skipping admin seed: define SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD and SEED_ADMIN_NAME in your environment.'
-    )
-    return null
-  }
-
-  return { email, password, name }
-}
-
-async function seedAdminUser() {
-  const credentials = getRequiredAdminCredentials()
-
-  if (!credentials) {
-    return
-  }
-
-  let adminUser = await prisma.user.findUnique({
-    where: { email: credentials.email },
-  })
-
-  if (!adminUser) {
-    await seedAuth.api.signUpEmail({
-      body: {
-        email: credentials.email,
-        password: credentials.password,
-        name: credentials.name,
-      },
-    })
-
-    adminUser = await prisma.user.findUnique({
-      where: { email: credentials.email },
-    })
-
-    if (!adminUser) {
-      throw new Error(`Failed to create admin user: ${credentials.email}`)
-    }
-
-    console.log(`Created admin user: ${credentials.email}`)
-  } else {
-    console.log(`Admin user already exists: ${credentials.email}`)
-  }
-
-  await prisma.user.update({
-    where: { id: adminUser.id },
-    data: { isAdmin: true },
-  })
-  console.log(`Promoted admin user: ${credentials.email}`)
-
-  await ensureAdminTwoFactor(adminUser.id)
-  console.log(`Ensured predefined 2FA for admin user: ${credentials.email}`)
-}
 
 const lecturers = [
   {
@@ -538,8 +392,6 @@ async function main() {
       }
     }
   }
-
-  await seedAdminUser()
 
   console.log(`Seeding finished.`)
 }
