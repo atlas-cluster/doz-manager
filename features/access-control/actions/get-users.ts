@@ -110,6 +110,7 @@ async function getUsersInternal({
     prisma.user.groupBy({
       by: ['isAdmin'],
       where: whereAdminFacet,
+      orderBy: { isAdmin: 'asc' },
       _count: { isAdmin: true },
     }),
   ])
