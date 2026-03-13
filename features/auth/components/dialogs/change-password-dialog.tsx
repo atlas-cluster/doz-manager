@@ -117,7 +117,7 @@ export function ChangePasswordDialog({
                 className="pr-9"
               />
               <Button
-                className="absolute top-0 right-0 h-full px-3 hover:bg-transparent!"
+                className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
                 onClick={() => setShowCurrent(!showCurrent)}
                 size="icon"
                 type="button"
@@ -142,7 +142,7 @@ export function ChangePasswordDialog({
                 className="pr-9"
               />
               <Button
-                className="absolute top-0 right-0 h-full px-3 hover:bg-transparent!"
+                className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
                 onClick={() => setShowNew(!showNew)}
                 size="icon"
                 type="button"
@@ -170,7 +170,7 @@ export function ChangePasswordDialog({
                 className="pr-9"
               />
               <Button
-                className="absolute top-0 right-0 h-full px-3 hover:bg-transparent!"
+                className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
                 onClick={() => setShowConfirm(!showConfirm)}
                 size="icon"
                 type="button"
