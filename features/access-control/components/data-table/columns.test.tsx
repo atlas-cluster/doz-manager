@@ -1,0 +1,176 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { columns } from '@/features/access-control/components/data-table/columns'
+import type {
+  AccessControlTableMeta,
+  AccessControlUser,
+} from '@/features/access-control/types'
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
+import { cleanup, render, screen } from '@testing-library/react'
+
+vi.mock('next/image', () => ({
+  default: (props: Record<string, unknown>) => {
+    const alt = typeof props.alt === 'string' ? props.alt : ''
+    return <img {...props} alt={alt} />
+  },
+}))
+
+function makeUser(
+  overrides: Partial<AccessControlUser> = {}
+): AccessControlUser {
+  return {
+    id: 'user-1',
+    name: 'John Doe',
+    email: 'john@example.com',
+    image: null,
+    isAdmin: false,
+    twoFactorEnabled: false,
+    createdAt: new Date('2025-01-01'),
+    lastLogin: new Date('2025-06-01'),
+    backupCodeCount: 0,
+    authProviders: ['credential'],
+    ...overrides,
+  }
+}
+
+function TestTable({ data }: { data: AccessControlUser[] }) {
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    meta: {
+      currentUserId: 'current-user',
+      createUser: vi.fn(),
+      updateUser: vi.fn(),
+      deleteUser: vi.fn(),
+      deleteUsers: vi.fn(),
+      toggleAdmin: vi.fn(),
+      changePassword: vi.fn(),
+      disable2FA: vi.fn(),
+      refreshUsers: vi.fn(),
+    } satisfies AccessControlTableMeta,
+  })
+
+  return (
+    <table>
+      <thead>
+        {table.getHeaderGroups().map((hg) => (
+          <tr key={hg.id}>
+            {hg.headers.map((h) => (
+              <th key={h.id}>
+                {h.isPlaceholder
+                  ? null
+                  : flexRender(h.column.columnDef.header, h.getContext())}
+              </th>
+            ))}
+          </tr>
+        ))}
+      </thead>
+      <tbody>
+        {table.getRowModel().rows.map((row) => (
+          <tr key={row.id}>
+            {row.getVisibleCells().map((cell) => (
+              <td key={cell.id}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+describe('Access Control columns', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
+  it('should define the expected number of columns', () => {
+    // select, name, email, authProviders, isAdmin, twoFactorEnabled, backupCodeCount, lastLogin, actions
+    expect(columns.length).toBe(9)
+  })
+
+  it('should render the user name', () => {
+    render(<TestTable data={[makeUser()]} />)
+    expect(screen.getByText('John Doe')).toBeInTheDocument()
+  })
+
+  it('should render the user email', () => {
+    render(<TestTable data={[makeUser()]} />)
+    expect(screen.getByText('john@example.com')).toBeInTheDocument()
+  })
+
+  it('should render Admin role for admin users', () => {
+    render(<TestTable data={[makeUser({ isAdmin: true })]} />)
+    expect(screen.getByText('Admin')).toBeInTheDocument()
+  })
+
+  it('should render Benutzer role for non-admin users', () => {
+    render(<TestTable data={[makeUser({ isAdmin: false })]} />)
+    expect(screen.getByText('Benutzer')).toBeInTheDocument()
+  })
+
+  it('should render Aktiviert for 2FA enabled', () => {
+    render(<TestTable data={[makeUser({ twoFactorEnabled: true })]} />)
+    expect(screen.getByText('Aktiviert')).toBeInTheDocument()
+  })
+
+  it('should render Deaktiviert for 2FA disabled', () => {
+    render(<TestTable data={[makeUser({ twoFactorEnabled: false })]} />)
+    expect(screen.getByText('Deaktiviert')).toBeInTheDocument()
+  })
+
+  it('should render "Noch nie" when lastLogin is null', () => {
+    render(<TestTable data={[makeUser({ lastLogin: null })]} />)
+    expect(screen.getByText('Noch nie')).toBeInTheDocument()
+  })
+
+  it('should render credential auth provider as Passwort', () => {
+    render(<TestTable data={[makeUser({ authProviders: ['credential'] })]} />)
+    expect(screen.getByText('Passwort')).toBeInTheDocument()
+  })
+
+  it('should render dash when backupCodeCount shown but 2FA disabled', () => {
+    render(
+      <TestTable
+        data={[makeUser({ twoFactorEnabled: false, backupCodeCount: 0 })]}
+      />
+    )
+    // The dash character for the backup code column
+    const dashes = screen.getAllByText('—')
+    expect(dashes.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('should render multiple users', () => {
+    render(
+      <TestTable
+        data={[
+          makeUser({ id: 'u1', name: 'Alice' }),
+          makeUser({ id: 'u2', name: 'Bob' }),
+        ]}
+      />
+    )
+    expect(screen.getByText('Alice')).toBeInTheDocument()
+    expect(screen.getByText('Bob')).toBeInTheDocument()
+  })
+
+  it('should render user initials in avatar', () => {
+    render(<TestTable data={[makeUser({ name: 'John Doe' })]} />)
+    expect(screen.getByText('JD')).toBeInTheDocument()
+  })
+
+  it('should render the Name sort button', () => {
+    render(<TestTable data={[makeUser()]} />)
+    expect(screen.getByRole('button', { name: /Name/ })).toBeInTheDocument()
+  })
+
+  it('should render the actions menu trigger', () => {
+    render(<TestTable data={[makeUser()]} />)
+    expect(screen.getByRole('button', { name: /Menü/ })).toBeInTheDocument()
+  })
+})
