@@ -91,23 +91,23 @@ async function ensureAdminTwoFactor(adminUserId: string) {
     data: JSON.stringify(predefinedTwoFactor.backupCodes),
   })
 
-  await prisma.twoFactor.deleteMany({
-    where: { userId: adminUserId },
-  })
-
-  await prisma.twoFactor.create({
-    data: {
-      id: randomUUID(),
-      userId: adminUserId,
-      secret: encryptedSecret,
-      backupCodes: encryptedBackupCodes,
-    },
-  })
-
-  await prisma.user.update({
-    where: { id: adminUserId },
-    data: { twoFactorEnabled: true },
-  })
+  await prisma.$transaction([
+    prisma.twoFactor.deleteMany({
+      where: { userId: adminUserId },
+    }),
+    prisma.twoFactor.create({
+      data: {
+        id: randomUUID(),
+        userId: adminUserId,
+        secret: encryptedSecret,
+        backupCodes: encryptedBackupCodes,
+      },
+    }),
+    prisma.user.update({
+      where: { id: adminUserId },
+      data: { twoFactorEnabled: true },
+    }),
+  ])
 }
 
 function getRequiredAdminCredentials() {
