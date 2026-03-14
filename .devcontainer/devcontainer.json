@@ -1,14 +1,7 @@
 {
-  "name": "Next.js + Docker",
+  "name": "Next.js",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "dockerDashComposeVersion": "v2",
-      "moby": false
-    }
-  },
   "postCreateCommand": "npm install",
-  "postStartCommand": "service docker start",
   "forwardPorts": [3000],
   "remoteUser": "node"
 }
