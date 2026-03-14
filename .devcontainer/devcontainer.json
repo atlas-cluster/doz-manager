@@ -8,7 +8,7 @@
     }
   },
   "postCreateCommand": "npm install",
-  "postStartCommand": "sudo service docker start",
+  "postStartCommand": "service docker start",
   "forwardPorts": [3000],
   "remoteUser": "node"
 }
