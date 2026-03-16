@@ -9,6 +9,6 @@ export function formatRoute(route: string) {
     case '/access-control':
       return 'Zugriffsverwaltung'
     case '/reports':
-      return 'Reports'
+      return 'Berichte'
   }
 }
