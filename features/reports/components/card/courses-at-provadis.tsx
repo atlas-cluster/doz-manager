@@ -1,6 +1,7 @@
 'use client'
 
 import { ReportCardExportDropdown } from '@/features/reports/components/report-card-export-dropdown'
+import { downloadCSV, downloadJSON } from '@/features/reports/utils'
 import { Badge } from '@/features/shared/components/ui/badge'
 import {
   Card,
@@ -34,10 +35,20 @@ export function ReportCardCoursesAtProvadis() {
     console.log('Report wird als PDF exportiert')
   }
   const handleExportAsJSON = () => {
-    console.log('Report wird als JSON exportiert')
+    downloadJSON(
+      { vorlesungenAnDerProvadis: qualifications },
+      'vorlesungen-an-der-provadis'
+    )
   }
   const handleExportAsCSV = () => {
-    console.log('Report wird als CSV exportiert')
+    downloadCSV(
+      ['Dozent', 'Vorlesungen'],
+      Object.entries(qualifications).map(([lecturer, courses]) => [
+        lecturer,
+        courses.join('; '),
+      ]),
+      'vorlesungen-an-der-provadis'
+    )
   }
 
   return (

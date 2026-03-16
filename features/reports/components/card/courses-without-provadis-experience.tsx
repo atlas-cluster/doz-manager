@@ -1,6 +1,7 @@
 'use client'
 
 import { ReportCardExportDropdown } from '@/features/reports/components/report-card-export-dropdown'
+import { downloadCSV, downloadJSON } from '@/features/reports/utils'
 import { Badge } from '@/features/shared/components/ui/badge'
 import {
   Card,
@@ -27,10 +28,17 @@ export function ReportCardCoursesWithoutProvadisExperience() {
     console.log('Report wird als PDF exportiert')
   }
   const handleExportAsJSON = () => {
-    console.log('Report wird als JSON exportiert')
+    downloadJSON(
+      { vorlesungenOhneProvadisErfahrung: courses },
+      'vorlesungen-ohne-provadis-erfahrung'
+    )
   }
   const handleExportAsCSV = () => {
-    console.log('Report wird als CSV exportiert')
+    downloadCSV(
+      ['Vorlesung'],
+      courses.map((c) => [c]),
+      'vorlesungen-ohne-provadis-erfahrung'
+    )
   }
 
   return (
