@@ -1,7 +1,13 @@
 'use client'
 
+import autoTable from 'jspdf-autotable'
+
 import { ReportCardExportDropdown } from '@/features/reports/components/report-card-export-dropdown'
-import { downloadCSV, downloadJSON } from '@/features/reports/utils'
+import {
+  downloadCSV,
+  downloadJSON,
+  generatePDF,
+} from '@/features/reports/utils'
 import { Badge } from '@/features/shared/components/ui/badge'
 import {
   Card,
@@ -24,8 +30,19 @@ import {
 export function ReportCardCoursesWithoutProvadisExperience() {
   const courses = ['Mathe', 'Programmieren']
 
-  const handleExportAsPDF = () => {
-    console.log('Report wird als PDF exportiert')
+  const handleExportAsPDF = async () => {
+    const { doc, contentStartY } = await generatePDF(
+      'Vorlesungen ohne Provadis-Erfahrung',
+      'Alle Vorlesungen, für die kein Dozent mit Provadis-Erfahrung verfügbar ist'
+    )
+
+    autoTable(doc, {
+      startY: contentStartY,
+      head: [['Vorlesung']],
+      body: courses.map((c) => [c]),
+    })
+
+    doc.save('vorlesungen-ohne-provadis-erfahrung.pdf')
   }
   const handleExportAsJSON = () => {
     downloadJSON(

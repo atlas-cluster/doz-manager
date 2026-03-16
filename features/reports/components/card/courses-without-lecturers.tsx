@@ -31,10 +31,13 @@ export function ReportCardCoursesWithoutLecturers() {
   const courses = ['Mathe', 'Programmieren']
 
   const handleExportAsPDF = async () => {
-    const { doc, logoY, logoHeight } = await generatePDF()
+    const { doc, contentStartY } = await generatePDF(
+      'Vorlesungen ohne Dozenten',
+      'Alle Vorlesungen, denen noch kein Dozent zugewiesen ist'
+    )
 
     autoTable(doc, {
-      startY: logoY + logoHeight + 10,
+      startY: contentStartY,
       head: [['Vorlesung']],
       body: courses.map((c) => [c]),
     })

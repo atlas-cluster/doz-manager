@@ -51,7 +51,7 @@ export function downloadCSV(
   downloadFile(csv, `${filename}.csv`, 'text/csv;charset=utf-8')
 }
 
-export async function generatePDF() {
+export async function generatePDF(title: string, description: string) {
   const response = await fetch('/provadis-hochschule.svg')
   const svgText = await response.text()
   const logoDataUrl = await svgToDataUrl(svgText)
@@ -67,7 +67,21 @@ export async function generatePDF() {
 
   doc.addImage(logoDataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight)
 
-  return { doc, logoY, logoHeight }
+  // Titel
+  doc.setFontSize(18)
+  doc.setFont('helvetica', 'bold')
+  doc.text(title, 14, logoY + 10)
+
+  // Beschreibung
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(100)
+  doc.text(description, 14, logoY + 18)
+  doc.setTextColor(0)
+
+  const contentStartY = logoY + logoHeight + 16
+
+  return { doc, contentStartY }
 }
 
 function svgToDataUrl(svgText: string): Promise<string> {
