@@ -1,3 +1,5 @@
+'use client'
+
 import { BracesIcon, DownloadIcon, FileTextIcon, SheetIcon } from 'lucide-react'
 
 import { Button } from '@/features/shared/components/ui/button'
@@ -30,6 +32,16 @@ import {
 export function ReportCard() {
   const courses = ['Mathe', 'Programmieren']
 
+  const exportAsPDF = () => {
+    console.log('Report wird als PDF exportiert')
+  }
+  const exportAsJSON = () => {
+    console.log('Report wird als JSON exportiert')
+  }
+  const exportAsCSV = () => {
+    console.log('Report wird als CSV exportiert')
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -47,15 +59,15 @@ export function ReportCard() {
             <DropdownMenuContent>
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Export als...</DropdownMenuLabel>
-                <DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => exportAsPDF()}>
                   <FileTextIcon />
                   PDF
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => exportAsJSON()}>
                   <BracesIcon />
                   JSON
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => exportAsCSV()}>
                   <SheetIcon />
                   CSV
                 </DropdownMenuItem>
