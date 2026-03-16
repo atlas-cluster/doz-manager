@@ -36,15 +36,15 @@ export function ReportCardExportDropdown({
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem onSelect={() => onExportPDF?.()}>
-            <FileTextIcon />
+            <FileTextIcon color="red" />
             PDF
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onExportJSON?.()}>
-            <BracesIcon />
+            <BracesIcon color="yellow" />
             JSON
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onExportCSV?.()}>
-            <SheetIcon />
+            <SheetIcon color="green" />
             CSV
           </DropdownMenuItem>
         </DropdownMenuGroup>
