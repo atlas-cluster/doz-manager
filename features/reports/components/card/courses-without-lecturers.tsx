@@ -1,6 +1,13 @@
 'use client'
 
+import autoTable from 'jspdf-autotable'
+
 import { ReportCardExportDropdown } from '@/features/reports/components/report-card-export-dropdown'
+import {
+  downloadCSV,
+  downloadJSON,
+  generatePDF,
+} from '@/features/reports/utils'
 import { Badge } from '@/features/shared/components/ui/badge'
 import {
   Card,
@@ -23,14 +30,29 @@ import {
 export function ReportCardCoursesWithoutLecturers() {
   const courses = ['Mathe', 'Programmieren']
 
-  const handleExportAsPDF = () => {
-    console.log('Report wird als PDF exportiert')
+  const handleExportAsPDF = async () => {
+    const { doc, logoY, logoHeight } = await generatePDF()
+
+    autoTable(doc, {
+      startY: logoY + logoHeight + 10,
+      head: [['Vorlesung']],
+      body: courses.map((c) => [c]),
+    })
+
+    doc.save('vorlesungen-ohne-dozenten.pdf')
   }
   const handleExportAsJSON = () => {
-    console.log('Report wird als JSON exportiert')
+    downloadJSON(
+      { vorlesungenOhneDozenten: courses },
+      'vorlesungen-ohne-dozenten'
+    )
   }
   const handleExportAsCSV = () => {
-    console.log('Report wird als CSV exportiert')
+    downloadCSV(
+      ['Vorlesung'],
+      courses.map((c) => [c]),
+      'vorlesungen-ohne-dozenten'
+    )
   }
 
   return (
