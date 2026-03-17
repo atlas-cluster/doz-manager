@@ -3,6 +3,7 @@
 import autoTable from 'jspdf-autotable'
 
 import { ReportCardExportDropdown } from '@/features/reports/components/report-card-export-dropdown'
+import { GetCoursesAtProvadisResponse } from '@/features/reports/types'
 import {
   downloadCSV,
   downloadJSON,
@@ -27,12 +28,12 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 
-export function ReportCardCoursesAtProvadis() {
-  const qualifications: Record<string, string[]> = {
-    Volk: ['GDI', 'Theo'],
-    Frenz: ['Datenbanken'],
-    Hutter: ['Mathe1', 'Mathe2'],
-  }
+export function ReportCardCoursesAtProvadis({
+  qualification,
+}: {
+  qualification: GetCoursesAtProvadisResponse
+}) {
+  const qualifications: GetCoursesAtProvadisResponse = qualification
 
   const lecturerCount = Object.keys(qualifications).length
   const courseCount = Object.values(qualifications).flat().length
