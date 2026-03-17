@@ -3,7 +3,8 @@
 import {
   ChartNoAxesCombinedIcon,
   LibraryBigIcon,
-  ShieldUserIcon, UsersIcon,
+  ShieldUserIcon,
+  UsersIcon,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'

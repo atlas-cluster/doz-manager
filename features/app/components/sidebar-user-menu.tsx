@@ -157,8 +157,9 @@ export function SidebarUserMenu({ user: initialUser }: SidebarUserMenuProps) {
       <SidebarMenu>
         <SidebarMenuItem>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild suppressHydrationWarning>
               <SidebarMenuButton
+                suppressHydrationWarning
                 size={'lg'}
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 tooltip={'Konto'}>
