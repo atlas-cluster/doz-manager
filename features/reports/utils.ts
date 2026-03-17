@@ -34,16 +34,22 @@ export function downloadCSV(
   rows: string[][],
   filename: string
 ) {
+  const separator = ';'
+
   const escapeCsvValue = (value: string) => {
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    if (
+      value.includes(separator) ||
+      value.includes('"') ||
+      value.includes('\n')
+    ) {
       return `"${value.replace(/"/g, '""')}"`
     }
     return value
   }
 
   const lines = [
-    headers.map(escapeCsvValue).join(','),
-    ...rows.map((row) => row.map(escapeCsvValue).join(',')),
+    headers.map(escapeCsvValue).join(separator),
+    ...rows.map((row) => row.map(escapeCsvValue).join(separator)),
   ]
 
   // BOM for Excel UTF-8 compatibility

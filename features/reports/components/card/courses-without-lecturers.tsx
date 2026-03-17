@@ -86,7 +86,7 @@ export function ReportCardCoursesWithoutLecturers() {
           <TableBody>
             {courses.map((course) => (
               <TableRow key={course}>
-                <TableCell className="font-medium">{course}</TableCell>
+                <TableCell>{course}</TableCell>
               </TableRow>
             ))}
           </TableBody>

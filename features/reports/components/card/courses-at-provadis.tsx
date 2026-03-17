@@ -65,7 +65,7 @@ export function ReportCardCoursesAtProvadis() {
       ['Dozent', 'Vorlesungen'],
       Object.entries(qualifications).map(([lecturer, courses]) => [
         lecturer,
-        courses.join('; '),
+        courses.join(', '),
       ]),
       'vorlesungen-an-der-provadis'
     )
@@ -90,18 +90,18 @@ export function ReportCardCoursesAtProvadis() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Dozent</TableHead>
+              <TableHead className="w-25">Dozent</TableHead>
               <TableHead>Vorlesungen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Object.entries(qualifications).map(([lecturer, courses]) => (
               <TableRow key={lecturer}>
-                <TableCell className="font-medium">{lecturer}</TableCell>
+                <TableCell>{lecturer}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {courses.map((course) => (
-                      <Badge key={course} variant="secondary">
+                      <Badge key={course} variant="default">
                         {course}
                       </Badge>
                     ))}

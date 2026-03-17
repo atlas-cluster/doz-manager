@@ -40,7 +40,7 @@ export function ReportCardExportDropdown({
             PDF
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onExportJSON?.()}>
-            <BracesIcon color="yellow" />
+            <BracesIcon color="#feb204" />
             JSON
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => onExportCSV?.()}>
