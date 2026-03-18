@@ -5,26 +5,16 @@ import {
   SidebarUserMenu,
 } from '@/features/app/components/sidebar-user-menu'
 import { SidebarProvider } from '@/features/shared/components/ui/sidebar'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }))
 
 const mockSignOut = vi.fn().mockResolvedValue(undefined)
-const mockGetProfile = vi.fn().mockResolvedValue({
-  user: {
-    id: 'user-1',
-    name: 'Test User',
-    email: 'test@example.com',
-    image: null,
-    twoFactorEnabled: false,
-  },
-})
 
 vi.mock('@/features/auth', () => ({
   authClient: { signOut: () => mockSignOut() },
-  getProfile: () => mockGetProfile(),
   AccountSettings: () => <div data-testid="account-settings">Settings</div>,
 }))
 
@@ -33,9 +23,11 @@ vi.mock('sonner', () => ({
 }))
 
 const testUser: SidebarUser = {
+  id: 'user-1',
   name: 'Max Mustermann',
   email: 'max@example.com',
   image: null,
+  twoFactorEnabled: false,
 }
 
 function renderWithSidebar(user: SidebarUser = testUser) {
@@ -68,7 +60,13 @@ describe('SidebarUserMenu', () => {
   })
 
   it('should render single initial for single-name user', () => {
-    renderWithSidebar({ name: 'Admin', email: 'a@b.com', image: null })
+    renderWithSidebar({
+      id: 'admin-1',
+      name: 'Admin',
+      email: 'a@b.com',
+      image: null,
+      twoFactorEnabled: false,
+    })
     expect(screen.getByText('A')).toBeInTheDocument()
   })
 })

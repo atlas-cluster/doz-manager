@@ -75,7 +75,7 @@ export function TwoFactorSetupDialog({
           onOpenChange(v)
         }
       }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent forceMount className="sm:max-w-md">
         {step === 'setup' && (
           <>
             <DialogHeader>

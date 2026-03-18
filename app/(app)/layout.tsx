@@ -26,13 +26,15 @@ export default async function AppLayout({
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { isAdmin: true },
+    select: { isAdmin: true, twoFactorEnabled: true },
   })
 
   const sidebarUser = {
+    id: session.user.id,
     name: session.user.name || 'Benutzer',
     email: session.user.email,
     image: session.user.image,
+    twoFactorEnabled: Boolean(dbUser?.twoFactorEnabled),
   }
 
   return (

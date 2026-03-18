@@ -38,7 +38,7 @@ export function EditFieldDialog({
 }: EditFieldDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent forceMount className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

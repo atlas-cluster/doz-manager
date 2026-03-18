@@ -37,6 +37,10 @@ import {
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
 import {
+  USER_PROFILE_UPDATED_EVENT,
+  type UserProfileUpdatedDetail,
+} from '@/features/shared/lib/user-profile-sync'
+import {
   ColumnFiltersState,
   OnChangeFn,
   PaginationState,
@@ -89,6 +93,28 @@ export function DataTable({
   const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
   const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
   const [facets, setFacets] = useState(initialData.facets)
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const { detail } = event as CustomEvent<UserProfileUpdatedDetail>
+      setData((prev) =>
+        prev.map((user) =>
+          user.id === detail.id
+            ? {
+                ...user,
+                name: detail.name,
+                email: detail.email,
+                image: detail.image,
+                twoFactorEnabled: detail.twoFactorEnabled,
+              }
+            : user
+        )
+      )
+    }
+
+    window.addEventListener(USER_PROFILE_UPDATED_EVENT, handler)
+    return () => window.removeEventListener(USER_PROFILE_UPDATED_EVENT, handler)
+  }, [])
 
   const fetchData = (
     currentPagination = pagination,
@@ -263,6 +289,7 @@ export function DataTable({
     onPaginationChange: setPagination,
 
     getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => row.id,
     autoResetPageIndex: false,
 
     state: {

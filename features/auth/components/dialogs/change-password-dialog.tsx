@@ -98,7 +98,7 @@ export function ChangePasswordDialog({
           onOpenChange(v)
         }
       }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent forceMount className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Passwort ändern</DialogTitle>
           <DialogDescription>

@@ -57,7 +57,7 @@ export function PasswordDialog({
           onOpenChange(v)
         }
       }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent forceMount className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

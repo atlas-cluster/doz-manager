@@ -56,7 +56,7 @@ export function TwoFactorDisableDialog({
           onOpenChangeAction(v)
         }
       }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent forceMount className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>2FA-Code bestaetigen</DialogTitle>
           <DialogDescription>
