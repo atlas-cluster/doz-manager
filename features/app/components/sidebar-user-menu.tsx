@@ -2,7 +2,7 @@
 
 import { LogOutIcon, SettingsIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { AccountSettings } from '@/features/auth'
@@ -93,36 +93,6 @@ export function SidebarUserMenu({ user: initialUser }: SidebarUserMenuProps) {
     }
   }
 
-  const accountSettingsUser = useMemo(
-    () => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      image: user.image ?? null,
-      twoFactorEnabled: user.twoFactorEnabled,
-    }),
-    [user.email, user.id, user.image, user.name, user.twoFactorEnabled]
-  )
-
-  const handleAccountUserChange = useCallback(
-    (updated: {
-      id: string
-      name: string
-      email: string
-      image: string | null
-      twoFactorEnabled: boolean
-    }) => {
-      setUser((prev) => ({
-        ...prev,
-        name: updated.name,
-        email: updated.email,
-        image: updated.image,
-        twoFactorEnabled: updated.twoFactorEnabled,
-      }))
-    },
-    []
-  )
-
   return (
     <>
       <SidebarMenu>
@@ -196,8 +166,22 @@ export function SidebarUserMenu({ user: initialUser }: SidebarUserMenuProps) {
             </DialogDescription>
           </DialogHeader>
           <AccountSettings
-            initialUser={accountSettingsUser}
-            onUserChange={handleAccountUserChange}
+            initialUser={{
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              image: user.image ?? null,
+              twoFactorEnabled: user.twoFactorEnabled,
+            }}
+            onUserChange={(updated) =>
+              setUser((prev) => ({
+                ...prev,
+                name: updated.name,
+                email: updated.email,
+                image: updated.image,
+                twoFactorEnabled: updated.twoFactorEnabled,
+              }))
+            }
           />
         </DialogContent>
       </Dialog>

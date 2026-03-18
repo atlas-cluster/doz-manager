@@ -17,10 +17,6 @@ type EditFieldDialogProps = {
   title: string
   description: string
   inputType?: string
-  autoComplete?: string
-  autoCapitalize?: string
-  autoCorrect?: string
-  spellCheck?: boolean
   placeholder: string
   value: string
   onChange: (value: string) => void
@@ -34,10 +30,6 @@ export function EditFieldDialog({
   title,
   description,
   inputType = 'text',
-  autoComplete,
-  autoCapitalize,
-  autoCorrect,
-  spellCheck,
   placeholder,
   value,
   onChange,
@@ -45,7 +37,7 @@ export function EditFieldDialog({
   isSaving,
 }: EditFieldDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -53,10 +45,6 @@ export function EditFieldDialog({
         </DialogHeader>
         <Input
           type={inputType}
-          autoComplete={autoComplete}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={autoCorrect}
-          spellCheck={spellCheck}
           autoFocus
           value={value}
           onChange={(e) => onChange(e.target.value)}

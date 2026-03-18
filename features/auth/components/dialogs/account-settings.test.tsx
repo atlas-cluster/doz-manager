@@ -202,18 +202,4 @@ describe('AccountSettings', () => {
       'test@example.com'
     )
   })
-
-  it('should disable browser text assistance for the email dialog input', async () => {
-    const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
-
-    const editButtons = screen.getAllByRole('button', { name: /ndern/ })
-    await user.click(editButtons[2])
-
-    const emailInput = screen.getByPlaceholderText('mail@example.com')
-    expect(emailInput).toHaveAttribute('autocomplete', 'off')
-    expect(emailInput).toHaveAttribute('autocapitalize', 'none')
-    expect(emailInput).toHaveAttribute('autocorrect', 'off')
-    expect(emailInput).toHaveAttribute('spellcheck', 'false')
-  })
 })

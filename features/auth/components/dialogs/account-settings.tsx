@@ -56,7 +56,6 @@ export function AccountSettings({
   const [showEmailDialog, setShowEmailDialog] = useState(false)
   const [showImageDialog, setShowImageDialog] = useState(false)
   const [fieldInput, setFieldInput] = useState('')
-  const [emailFieldInput, setEmailFieldInput] = useState(initialUser.email)
 
   const twoFactorEnabledRef = useRef(initialUser.twoFactorEnabled)
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(
@@ -190,7 +189,7 @@ export function AccountSettings({
   }
 
   const handleEmailSave = async () => {
-    const next = emailFieldInput.trim()
+    const next = fieldInput.trim()
     if (!next) {
       toast.error('Bitte geben Sie eine E-Mail ein.')
       return
@@ -400,7 +399,10 @@ export function AccountSettings({
               size="sm"
               variant="outline"
               className="gap-1.5 shrink-0"
-              onClick={() => setShowEmailDialog(true)}>
+              onClick={() => {
+                setFieldInput(saved.email)
+                setShowEmailDialog(true)
+              }}>
               <PencilIcon className="size-4" />
               Ändern
             </Button>
@@ -530,22 +532,13 @@ export function AccountSettings({
 
       <EditFieldDialog
         open={showEmailDialog}
-        onOpenChange={(open) => {
-          setShowEmailDialog(open)
-          if (!open) {
-            setEmailFieldInput(saved.email)
-          }
-        }}
+        onOpenChange={setShowEmailDialog}
         title="E-Mail ändern"
         description="Geben Sie Ihre neue E-Mail-Adresse ein."
         inputType="email"
-        autoComplete="off"
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
         placeholder="mail@example.com"
-        value={emailFieldInput}
-        onChange={setEmailFieldInput}
+        value={fieldInput}
+        onChange={setFieldInput}
         onSave={handleEmailSave}
         isSaving={isSaving}
       />
