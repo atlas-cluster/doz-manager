@@ -101,4 +101,20 @@ describe('EditFieldDialog', () => {
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument()
     expect(screen.queryByPlaceholderText('Ihr Name')).not.toBeInTheDocument()
   })
+
+  it('should disable dialog transition animation to prevent flicker', () => {
+    render(<EditFieldDialog {...defaultProps} />)
+    const content = screen
+      .getByRole('heading', { level: 2 })
+      .closest('[data-slot="dialog-content"]')
+
+    expect(content).toHaveClass('data-[state=open]:animate-none')
+    expect(content).toHaveClass('data-[state=closed]:animate-none')
+    expect(content).toHaveClass('duration-0')
+  })
+
+  it('should autofocus input when dialog opens', () => {
+    render(<EditFieldDialog {...defaultProps} />)
+    expect(screen.getByPlaceholderText('Ihr Name')).toHaveFocus()
+  })
 })

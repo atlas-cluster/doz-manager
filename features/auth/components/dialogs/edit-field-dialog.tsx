@@ -11,6 +11,9 @@ import {
 } from '@/features/shared/components/ui/dialog'
 import { Input } from '@/features/shared/components/ui/input'
 
+const DIALOG_NO_ANIMATION_CLASS =
+  'data-[state=open]:animate-none data-[state=closed]:animate-none duration-0'
+
 type EditFieldDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -45,8 +48,8 @@ export function EditFieldDialog({
   isSaving,
 }: EditFieldDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      <DialogContent className={`sm:max-w-sm ${DIALOG_NO_ANIMATION_CLASS}`}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -57,6 +60,7 @@ export function EditFieldDialog({
           autoCapitalize={autoCapitalize}
           autoCorrect={autoCorrect}
           spellCheck={spellCheck}
+          autoFocus
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
