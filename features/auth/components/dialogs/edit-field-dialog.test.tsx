@@ -82,5 +82,6 @@ describe('EditFieldDialog', () => {
   it('should not render when open is false', () => {
     render(<EditFieldDialog {...defaultProps} open={false} />)
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Ihr Name')).not.toBeInTheDocument()
   })
 })

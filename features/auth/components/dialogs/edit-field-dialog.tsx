@@ -1,5 +1,7 @@
 'use client'
 
+import { useRef } from 'react'
+
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,
@@ -36,14 +38,22 @@ export function EditFieldDialog({
   onSave,
   isSaving,
 }: EditFieldDialogProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent forceMount className="sm:max-w-sm">
+      <DialogContent
+        className="sm:max-w-sm"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          inputRef.current?.focus()
+        }}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <Input
+          ref={inputRef}
           type={inputType}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -51,7 +61,6 @@ export function EditFieldDialog({
           onKeyDown={(e) => {
             if (e.key === 'Enter') void onSave()
           }}
-          autoFocus
         />
         <DialogFooter>
           <Button
