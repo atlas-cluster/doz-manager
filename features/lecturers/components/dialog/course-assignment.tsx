@@ -236,7 +236,7 @@ export function CourseAssignmentDialog({
                             <CommandItem
                               key={course.id}
                               onSelect={() => toggleCourse(course.id)}
-                              value={course.id}>
+                              value={course.name}>
                               <Checkbox
                                 checked={selectedCourses.some(
                                   (c) => c.id === course.id
