@@ -18,6 +18,7 @@ import { getBackupCodeCount } from '@/features/auth/actions/get-backup-code-coun
 import { updateProfile } from '@/features/auth/actions/update-profile'
 import { ChangePasswordDialog } from '@/features/auth/components/dialogs/change-password-dialog'
 import { EditFieldDialog } from '@/features/auth/components/dialogs/edit-field-dialog'
+import { PasskeyManagementDialog } from '@/features/auth/components/dialogs/passkey-management-dialog'
 import { PasswordDialog } from '@/features/auth/components/dialogs/password-dialog'
 import { RegenerateBackupCodesDialog } from '@/features/auth/components/dialogs/regenerate-backup-codes-dialog'
 import { TwoFactorDisableDialog } from '@/features/auth/components/dialogs/two-factor-disable-dialog'
@@ -43,6 +44,10 @@ import { initialsFromName } from '@/features/shared/lib/utils'
 type AccountSettingsProps = {
   initialUser: AccountUser
   onUserChange?: (user: AccountUser) => void
+}
+
+type PasskeyListItem = {
+  id: string
 }
 
 export function AccountSettings({
@@ -82,7 +87,16 @@ export function AccountSettings({
   const [backupCodeCount, setBackupCodeCount] = useState<number | null>(null)
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showPasskeyManagementDialog, setShowPasskeyManagementDialog] =
+    useState(false)
+  const {
+    data: passkeys,
+    isPending: isPasskeysPending,
+    refetch: refetchPasskeys,
+  } = authClient.useListPasskeys()
   const router = useRouter()
+  const passkeyItems = (passkeys ?? []) as PasskeyListItem[]
+  const passkeyCount = passkeyItems.length
 
   useEffect(() => {
     if (twoFactorEnabled) {
@@ -94,6 +108,25 @@ export function AccountSettings({
     const count = await getBackupCodeCount()
     setBackupCodeCount(count)
     return count
+  }
+
+  const handleAddFirstPasskey = async () => {
+    if (typeof window === 'undefined' || !('PublicKeyCredential' in window)) {
+      toast.error('Passkeys werden von diesem Browser nicht unterstützt.')
+      return
+    }
+
+    const { error } = await authClient.passkey.addPasskey({
+      name: `Passkey ${new Date().toLocaleDateString('de-DE')}`,
+    })
+
+    if (error) {
+      toast.error('Passkey konnte nicht hinzugefügt werden.')
+      return
+    }
+
+    await refetchPasskeys()
+    toast.success('Passkey wurde hinzugefügt.')
   }
 
   const handleDeleteAccount = async (password: string) => {
@@ -450,6 +483,34 @@ export function AccountSettings({
             )}
           </div>
 
+          <Separator />
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Passkeys</p>
+              <p className="text-muted-foreground text-xs">
+                {isPasskeysPending
+                  ? 'Passkeys werden geladen...'
+                  : passkeyCount > 0
+                    ? `${passkeyCount} Passkey${passkeyCount > 1 ? 's' : ''} hinterlegt.`
+                    : 'Hinterlegen Sie einen Passkey für eine schnellere Anmeldung ohne Passwort.'}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 gap-1.5"
+              onClick={() =>
+                passkeyCount > 0
+                  ? setShowPasskeyManagementDialog(true)
+                  : handleAddFirstPasskey()
+              }
+              disabled={isPasskeysPending}>
+              <KeyRoundIcon className="size-4" />
+              {passkeyCount > 0 ? 'Verwalten' : 'Hinzufügen'}
+            </Button>
+          </div>
+
           {twoFactorEnabled && (
             <>
               <Separator />
@@ -610,9 +671,8 @@ export function AccountSettings({
       <RegenerateBackupCodesDialog
         open={showRegenerateDialog}
         onOpenChange={setShowRegenerateDialog}
-        onDone={async () => {
-          const nextBackupCodeCount = await refreshBackupCodeCount()
-          notifyUserUpdated(saved, nextBackupCodeCount)
+        onDone={() => {
+          refreshBackupCodeCount()
         }}
       />
 
@@ -625,6 +685,11 @@ export function AccountSettings({
         confirmVariant="destructive"
         isLoading={isDeleting}
         onConfirm={handleDeleteAccount}
+      />
+
+      <PasskeyManagementDialog
+        open={showPasskeyManagementDialog}
+        onOpenChangeAction={setShowPasskeyManagementDialog}
       />
     </>
   )
