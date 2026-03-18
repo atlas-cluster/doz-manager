@@ -3,6 +3,7 @@
 import autoTable from 'jspdf-autotable'
 
 import { ReportCardExportDropdown } from '@/features/reports/components/report-card-export-dropdown'
+import { GetCoursesWithoutProvadisExperienceResponse } from '@/features/reports/types'
 import {
   downloadCSV,
   downloadJSON,
@@ -27,9 +28,11 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 
-export function ReportCardCoursesWithoutProvadisExperience() {
-  const courses = ['Mathe', 'Programmieren']
-
+export function ReportCardCoursesWithoutProvadisExperience({
+  courses,
+}: {
+  courses: GetCoursesWithoutProvadisExperienceResponse
+}) {
   const handleExportAsPDF = async () => {
     const { doc, contentStartY } = await generatePDF(
       'Vorlesungen ohne Provadis-Erfahrung',

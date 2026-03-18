@@ -10,8 +10,12 @@ export default async function ReportsPage() {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       <ReportCardCoursesAtProvadis qualifications={reports.coursesAtProvadis} />
-      <ReportCardCoursesWithoutLecturers />
-      <ReportCardCoursesWithoutProvadisExperience />
+      <ReportCardCoursesWithoutLecturers
+        courses={reports.coursesWithoutLecturer}
+      />
+      <ReportCardCoursesWithoutProvadisExperience
+        courses={reports.coursesWithoutProvadisExperience}
+      />
     </div>
   )
 }

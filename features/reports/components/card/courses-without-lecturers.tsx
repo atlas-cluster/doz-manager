@@ -3,6 +3,7 @@
 import autoTable from 'jspdf-autotable'
 
 import { ReportCardExportDropdown } from '@/features/reports/components/report-card-export-dropdown'
+import { GetCoursesWithoutLecturerResponse } from '@/features/reports/types'
 import {
   downloadCSV,
   downloadJSON,
@@ -27,9 +28,11 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 
-export function ReportCardCoursesWithoutLecturers() {
-  const courses = ['Mathe', 'Programmieren']
-
+export function ReportCardCoursesWithoutLecturers({
+  courses,
+}: {
+  courses: GetCoursesWithoutLecturerResponse
+}) {
   const handleExportAsPDF = async () => {
     const { doc, contentStartY } = await generatePDF(
       'Vorlesungen ohne Dozenten',

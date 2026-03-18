@@ -5,6 +5,7 @@ import { unstable_cache } from 'next/cache'
 import {
   CardData,
   GetCoursesAtProvadisResponse,
+  GetCoursesWithoutProvadisExperienceResponse,
 } from '@/features/reports/types'
 import { prisma } from '@/features/shared/lib/prisma'
 
@@ -33,9 +34,36 @@ async function getCoursesAtProvadis(): Promise<GetCoursesAtProvadisResponse> {
   }, {} as GetCoursesAtProvadisResponse)
 }
 
+async function getCoursesWithoutProvadisExperience(): Promise<GetCoursesWithoutProvadisExperienceResponse> {
+  const courses = await prisma.course.findMany({
+    where: {
+      qualifications: {
+        none: { experience: 'provadis' },
+      },
+    },
+    select: { name: true },
+  })
+  return courses.map((c) => c.name)
+}
+
+async function getCoursesWithoutLecturer(): Promise<GetCoursesWithoutProvadisExperienceResponse> {
+  const courses = await prisma.course.findMany({
+    where: {
+      assignments: {
+        none: {},
+      },
+    },
+    select: { name: true },
+  })
+  return courses.map((c) => c.name)
+}
+
 async function getCardDataInternal(): Promise<CardData> {
   return {
     coursesAtProvadis: await getCoursesAtProvadis(),
+    coursesWithoutProvadisExperience:
+      await getCoursesWithoutProvadisExperience(),
+    coursesWithoutLecturer: await getCoursesWithoutLecturer(),
   }
 }
 
@@ -44,7 +72,7 @@ export async function getCardData(): Promise<CardData> {
     async () => getCardDataInternal(),
     ['reports-card-data-get'],
     {
-      tags: ['reports', 'lecturers'], // Bin mir hier nicht sicher, welche Tags bereits existieren und hier eingefügt werden sollten
+      tags: ['reports', 'lecturers', 'courses'], // Bin mir hier nicht sicher, welche Tags bereits existieren und hier eingefügt werden sollten
       revalidate: 3600,
     }
   )()
