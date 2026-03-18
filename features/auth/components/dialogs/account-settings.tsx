@@ -537,6 +537,10 @@ export function AccountSettings({
         title="E-Mail ändern"
         description="Geben Sie Ihre neue E-Mail-Adresse ein."
         inputType="email"
+        autoComplete="off"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         placeholder="mail@example.com"
         value={emailFieldInput}
         onChange={setEmailFieldInput}

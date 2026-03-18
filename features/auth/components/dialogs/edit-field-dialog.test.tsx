@@ -79,6 +79,23 @@ describe('EditFieldDialog', () => {
     expect(input).toHaveAttribute('type', 'email')
   })
 
+  it('should forward input auto behavior props', () => {
+    render(
+      <EditFieldDialog
+        {...defaultProps}
+        autoComplete="off"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+      />
+    )
+    const input = screen.getByPlaceholderText('Ihr Name')
+    expect(input).toHaveAttribute('autocomplete', 'off')
+    expect(input).toHaveAttribute('autocapitalize', 'none')
+    expect(input).toHaveAttribute('autocorrect', 'off')
+    expect(input).toHaveAttribute('spellcheck', 'false')
+  })
+
   it('should not render when open is false', () => {
     render(<EditFieldDialog {...defaultProps} open={false} />)
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument()

@@ -1,7 +1,5 @@
 'use client'
 
-import { useRef } from 'react'
-
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,
@@ -19,6 +17,10 @@ type EditFieldDialogProps = {
   title: string
   description: string
   inputType?: string
+  autoComplete?: string
+  autoCapitalize?: string
+  autoCorrect?: string
+  spellCheck?: boolean
   placeholder: string
   value: string
   onChange: (value: string) => void
@@ -32,29 +34,29 @@ export function EditFieldDialog({
   title,
   description,
   inputType = 'text',
+  autoComplete,
+  autoCapitalize,
+  autoCorrect,
+  spellCheck,
   placeholder,
   value,
   onChange,
   onSave,
   isSaving,
 }: EditFieldDialogProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-sm"
-        onOpenAutoFocus={(event) => {
-          event.preventDefault()
-          inputRef.current?.focus()
-        }}>
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <Input
-          ref={inputRef}
           type={inputType}
+          autoComplete={autoComplete}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          spellCheck={spellCheck}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
