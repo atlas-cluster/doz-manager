@@ -162,7 +162,7 @@ export const columns: ColumnDef<Course>[] = [
     header: 'Offen',
     cell: ({ row }) => {
       return (
-        <div className={'flex gap-1 items-center'}>
+        <div className={'flex items-center gap-1'}>
           {row.original.isOpen ? (
             <>
               <Check className={'size-4'} />
@@ -186,7 +186,7 @@ export const columns: ColumnDef<Course>[] = [
     id: 'courseLevel',
     cell: ({ row }) => {
       return (
-        <div className={'flex gap-1 items-center'}>
+        <div className={'flex items-center gap-1'}>
           {row.original.courseLevel === 'bachelor' ? (
             <>
               <BookOpen className={'size-5'} />

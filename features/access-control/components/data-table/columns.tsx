@@ -324,7 +324,7 @@ export const columns: ColumnDef<AccessControlUser>[] = [
             </>
           ) : (
             <>
-              <ShieldOff className="size-4 text-muted-foreground" />
+              <ShieldOff className="text-muted-foreground size-4" />
               Deaktiviert
             </>
           )}

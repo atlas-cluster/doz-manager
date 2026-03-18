@@ -383,7 +383,7 @@ export function DataTable({
           )}
         </div>
         {/** Desktop only: Show view options, refresh button and create button on the right */}
-        <div className={'hidden md:flex gap-2'}>
+        <div className={'hidden gap-2 md:flex'}>
           <ButtonGroup>
             <DataTableViewOptions table={table} />
             <Button
@@ -405,7 +405,7 @@ export function DataTable({
           />
         </div>
       </div>
-      <div className="overflow-hidden rounded-md border mb-3">
+      <div className="mb-3 overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

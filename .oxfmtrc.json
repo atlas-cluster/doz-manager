@@ -1,0 +1,22 @@
+{
+  "trailingComma": "es5",
+  "tabWidth": 2,
+  "semi": false,
+  "singleQuote": true,
+  "bracketSameLine": true,
+  "sortTailwindcss": {},
+  "importOrder": ["^[A-Za-z]$", "^[@/]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "printWidth": 80,
+  "sortPackageJson": false,
+  "ignorePatterns": [
+    ".next",
+    "node_modules",
+    "dist",
+    "build",
+    ".out",
+    "public",
+    "package-lock.json"
+  ]
+}

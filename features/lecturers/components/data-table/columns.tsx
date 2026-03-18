@@ -198,7 +198,7 @@ export const columns: ColumnDef<Lecturer>[] = [
     header: 'Beschäftigungsart',
     cell: ({ row }) => {
       return (
-        <div className={'flex gap-1 items-center'}>
+        <div className={'flex items-center gap-1'}>
           {row.original.type === 'internal' ? (
             <>
               <Building2 className={'size-5'} />
@@ -222,7 +222,7 @@ export const columns: ColumnDef<Lecturer>[] = [
     header: 'Vorlesungspräferenz',
     cell: ({ row }) => {
       return (
-        <div className={'flex gap-1 items-center'}>
+        <div className={'flex items-center gap-1'}>
           {row.original.courseLevelPreference === 'bachelor' ? (
             <>
               <BookOpen className={'size-5'} />
@@ -293,7 +293,7 @@ export const columns: ColumnDef<Lecturer>[] = [
           }
           readonly
           trigger={
-            <AvatarGroup className="grayscale cursor-pointer">
+            <AvatarGroup className="cursor-pointer grayscale">
               {displayAssignments.map((assignment, index) => (
                 <Avatar key={index}>
                   <AvatarFallback>

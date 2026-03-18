@@ -38,7 +38,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/features/shared/components/ui/tabs'
-import { dispatchUserProfileUpdated } from '@/features/shared/lib/user-profile-sync'
+import { initialsFromName } from '@/features/shared/lib/utils'
 
 type AccountSettingsProps = {
   initialUser: AccountUser
@@ -92,11 +92,6 @@ export function AccountSettings({
 
   const refreshBackupCodeCount = () => {
     getBackupCodeCount().then(setBackupCodeCount)
-  }
-
-  const notifyUserUpdated = (updated: AccountUser) => {
-    onUserChange?.(updated)
-    dispatchUserProfileUpdated(updated)
   }
 
   const handleDeleteAccount = async (password: string) => {
@@ -161,7 +156,7 @@ export function AccountSettings({
         twoFactorEnabled: twoFactorEnabledRef.current,
       }
       setSaved(updated)
-      notifyUserUpdated(updated)
+      onUserChange?.(updated)
       return true
     } catch {
       return false
@@ -308,8 +303,6 @@ export function AccountSettings({
       setTwoFactorEnabled(false)
       setShowDisableDialog(false)
       setDisablePassword('')
-      const updated = { ...saved, twoFactorEnabled: false }
-      notifyUserUpdated(updated)
     } finally {
       setIsDisabling(false)
     }
@@ -317,13 +310,7 @@ export function AccountSettings({
 
   const displayName = saved.name.trim() ? saved.name : 'Benutzer'
 
-  const initials =
-    displayName
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase())
-      .join('') || 'U'
+  const initials = initialsFromName(displayName)
 
   return (
     <>
@@ -350,7 +337,7 @@ export function AccountSettings({
               </Avatar>
               <div className="space-y-0.5">
                 <p className="text-sm font-medium">Profilbild</p>
-                <p className="text-xs text-muted-foreground truncate max-w-48">
+                <p className="text-muted-foreground max-w-48 truncate text-xs">
                   {saved.image ? saved.image : 'Kein Bild gesetzt'}
                 </p>
               </div>
@@ -358,7 +345,7 @@ export function AccountSettings({
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5 shrink-0"
+              className="shrink-0 gap-1.5"
               onClick={() => {
                 setFieldInput(saved.image ?? '')
                 setShowImageDialog(true)
@@ -373,12 +360,12 @@ export function AccountSettings({
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <p className="text-sm font-medium">Name</p>
-              <p className="text-xs text-muted-foreground">{displayName}</p>
+              <p className="text-muted-foreground text-xs">{displayName}</p>
             </div>
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5 shrink-0"
+              className="shrink-0 gap-1.5"
               onClick={() => {
                 setFieldInput(saved.name)
                 setShowNameDialog(true)
@@ -393,12 +380,12 @@ export function AccountSettings({
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <p className="text-sm font-medium">E-Mail</p>
-              <p className="text-xs text-muted-foreground">{saved.email}</p>
+              <p className="text-muted-foreground text-xs">{saved.email}</p>
             </div>
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5 shrink-0"
+              className="shrink-0 gap-1.5"
               onClick={() => {
                 setFieldInput(saved.email)
                 setShowEmailDialog(true)
@@ -413,14 +400,14 @@ export function AccountSettings({
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <p className="text-sm font-medium">Passwort</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Ändern Sie Ihr Anmelde-Passwort.
               </p>
             </div>
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5 shrink-0"
+              className="shrink-0 gap-1.5"
               onClick={() => setShowChangePasswordDialog(true)}>
               <LockIcon className="size-4" />
               Ändern
@@ -434,7 +421,7 @@ export function AccountSettings({
               <p className="text-sm font-medium">
                 Zwei-Faktor-Authentifizierung
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {twoFactorEnabled
                   ? 'Aktiviert — Ihr Konto ist zusätzlich geschützt.'
                   : 'Deaktiviert — Aktivieren Sie 2FA für mehr Sicherheit.'}
@@ -444,7 +431,7 @@ export function AccountSettings({
               <Button
                 size="sm"
                 variant="outline"
-                className="text-destructive hover:text-destructive gap-1.5 shrink-0"
+                className="text-destructive hover:text-destructive shrink-0 gap-1.5"
                 onClick={() => setShowDisablePasswordDialog(true)}>
                 <ShieldOffIcon className="size-4" />
                 Deaktivieren
@@ -453,7 +440,7 @@ export function AccountSettings({
               <Button
                 size="sm"
                 variant="outline"
-                className="gap-1.5 shrink-0"
+                className="shrink-0 gap-1.5"
                 onClick={() => setShowEnablePasswordDialog(true)}>
                 <ShieldCheckIcon className="size-4" />
                 Aktivieren
@@ -466,7 +453,7 @@ export function AccountSettings({
               <Separator />
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
-                  <p className="text-sm font-medium flex items-center gap-1.5">
+                  <p className="flex items-center gap-1.5 text-sm font-medium">
                     Backup-Codes
                     {backupCodeCount !== null && (
                       <span
@@ -481,7 +468,7 @@ export function AccountSettings({
                       </span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Neu erstellen macht alle alten ungültig.
                   </p>
                 </div>
@@ -501,7 +488,7 @@ export function AccountSettings({
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <p className="text-sm font-medium">Konto löschen</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Ihr Konto und alle zugehörigen Daten werden unwiderruflich
                 gelöscht.
               </p>
@@ -509,7 +496,7 @@ export function AccountSettings({
             <Button
               size="sm"
               variant="outline"
-              className="text-destructive hover:text-destructive gap-1.5 shrink-0"
+              className="text-destructive hover:text-destructive shrink-0 gap-1.5"
               onClick={() => setShowDeleteAccountDialog(true)}>
               <TrashIcon />
               Löschen
@@ -581,8 +568,7 @@ export function AccountSettings({
           twoFactorEnabledRef.current = true
           setTwoFactorEnabled(true)
           setShowSetupDialog(false)
-          const updated = { ...saved, twoFactorEnabled: true }
-          notifyUserUpdated(updated)
+          onUserChange?.({ ...saved, twoFactorEnabled: true })
           refreshBackupCodeCount()
           toast.success('2FA wurde aktiviert.')
         }}
