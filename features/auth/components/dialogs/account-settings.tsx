@@ -633,7 +633,7 @@ export function AccountSettings({
         onOpenChange={setShowRegenerateDialog}
         onDone={async () => {
           const nextBackupCodeCount = await refreshBackupCodeCount()
-          notifyUserUpdated(saved, nextBackupCodeCount ?? undefined)
+          notifyUserUpdated(saved, nextBackupCodeCount)
         }}
       />
 
