@@ -4,6 +4,7 @@ import { unstable_cache } from 'next/cache'
 
 import {
   CardData,
+  GetCoursesAtOtherUniResponse,
   GetCoursesAtProvadisResponse,
   GetCoursesWithoutProvadisExperienceResponse,
 } from '@/features/reports/types'
@@ -34,6 +35,31 @@ async function getCoursesAtProvadis(): Promise<GetCoursesAtProvadisResponse> {
   }, {} as GetCoursesAtProvadisResponse)
 }
 
+async function getCoursesAtOtherUni(): Promise<GetCoursesAtOtherUniResponse> {
+  const response = await prisma.lecturer.findMany({
+    select: {
+      title: true,
+      firstName: true,
+      lastName: true,
+      qualifications: {
+        where: { experience: 'other_uni' },
+        select: {
+          course: {
+            select: { name: true },
+          },
+        },
+      },
+    },
+  })
+
+  return response.reduce((acc, lecturer) => {
+    const lecturerName = `${lecturer.title ? lecturer.title + ' ' : ''}${lecturer.firstName} ${lecturer.lastName}`
+    const courses = lecturer.qualifications.map((q) => q.course.name)
+    acc[lecturerName] = courses
+    return acc
+  }, {} as GetCoursesAtOtherUniResponse)
+}
+
 async function getCoursesWithoutProvadisExperience(): Promise<GetCoursesWithoutProvadisExperienceResponse> {
   const courses = await prisma.course.findMany({
     where: {
@@ -61,6 +87,7 @@ async function getCoursesWithoutLecturer(): Promise<GetCoursesWithoutProvadisExp
 async function getCardDataInternal(): Promise<CardData> {
   return {
     coursesAtProvadis: await getCoursesAtProvadis(),
+    coursesAtOtherUni: await getCoursesAtOtherUni(),
     coursesWithoutProvadisExperience:
       await getCoursesWithoutProvadisExperience(),
     coursesWithoutLecturer: await getCoursesWithoutLecturer(),

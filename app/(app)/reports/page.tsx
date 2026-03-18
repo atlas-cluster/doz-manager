@@ -1,4 +1,5 @@
 import {
+  ReportCardCoursesAtOtherUni,
   ReportCardCoursesAtProvadis,
   ReportCardCoursesWithoutLecturers,
   ReportCardCoursesWithoutProvadisExperience,
@@ -13,14 +14,15 @@ export default async function ReportsPage() {
         <ReportCardCoursesAtProvadis
           qualifications={reports.coursesAtProvadis}
         />
-        <div className="flex min-h-0 flex-col gap-4">
-          <ReportCardCoursesWithoutLecturers
-            courses={reports.coursesWithoutLecturer}
-          />
-          <ReportCardCoursesWithoutProvadisExperience
-            courses={reports.coursesWithoutProvadisExperience}
-          />
-        </div>
+        <ReportCardCoursesAtOtherUni
+          qualifications={reports.coursesAtOtherUni}
+        />
+        <ReportCardCoursesWithoutLecturers
+          courses={reports.coursesWithoutLecturer}
+        />
+        <ReportCardCoursesWithoutProvadisExperience
+          courses={reports.coursesWithoutProvadisExperience}
+        />
       </div>
     </div>
   )
