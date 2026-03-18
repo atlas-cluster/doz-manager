@@ -153,9 +153,33 @@ describe('LoginForm', () => {
     expect(pw).toHaveAttribute('type', 'text')
   })
 
-  it('should render the backup code input', () => {
+  it('should not render 2FA and backup inputs before the 2FA step', () => {
     render(<LoginForm />)
-    expect(document.getElementById('backup-code')).toBeInTheDocument()
+    expect(document.getElementById('backup-code')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Backup-Code verwenden/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('should render 2FA controls only after twoFactorRedirect', async () => {
+    mockSignInEmail.mockResolvedValue({
+      data: { twoFactorRedirect: true },
+      error: null,
+    })
+    render(<LoginForm />)
+    fireEvent.change(document.getElementById('email')!, {
+      target: { value: 'u@e.com' },
+    })
+    fireEvent.change(document.getElementById('password')!, {
+      target: { value: 'pass123' },
+    })
+    fireEvent.submit(document.getElementById('email')!.closest('form')!)
+
+    await vi.waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /Backup-Code verwenden/i })
+      ).toBeInTheDocument()
+    })
   })
 
   it('should render admin contact link', () => {

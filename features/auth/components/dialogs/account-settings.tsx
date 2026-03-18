@@ -38,6 +38,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/features/shared/components/ui/tabs'
+import { dispatchUserProfileUpdated } from '@/features/shared/lib/user-profile-sync'
 
 type AccountSettingsProps = {
   initialUser: AccountUser
@@ -91,6 +92,11 @@ export function AccountSettings({
 
   const refreshBackupCodeCount = () => {
     getBackupCodeCount().then(setBackupCodeCount)
+  }
+
+  const notifyUserUpdated = (updated: AccountUser) => {
+    onUserChange?.(updated)
+    dispatchUserProfileUpdated(updated)
   }
 
   const handleDeleteAccount = async (password: string) => {
@@ -155,7 +161,7 @@ export function AccountSettings({
         twoFactorEnabled: twoFactorEnabledRef.current,
       }
       setSaved(updated)
-      onUserChange?.(updated)
+      notifyUserUpdated(updated)
       return true
     } catch {
       return false
@@ -302,6 +308,8 @@ export function AccountSettings({
       setTwoFactorEnabled(false)
       setShowDisableDialog(false)
       setDisablePassword('')
+      const updated = { ...saved, twoFactorEnabled: false }
+      notifyUserUpdated(updated)
     } finally {
       setIsDisabling(false)
     }
@@ -573,7 +581,8 @@ export function AccountSettings({
           twoFactorEnabledRef.current = true
           setTwoFactorEnabled(true)
           setShowSetupDialog(false)
-          onUserChange?.({ ...saved, twoFactorEnabled: true })
+          const updated = { ...saved, twoFactorEnabled: true }
+          notifyUserUpdated(updated)
           refreshBackupCodeCount()
           toast.success('2FA wurde aktiviert.')
         }}

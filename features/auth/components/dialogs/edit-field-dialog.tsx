@@ -45,13 +45,13 @@ export function EditFieldDialog({
         </DialogHeader>
         <Input
           type={inputType}
+          autoFocus
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           onKeyDown={(e) => {
             if (e.key === 'Enter') void onSave()
           }}
-          autoFocus
         />
         <DialogFooter>
           <Button

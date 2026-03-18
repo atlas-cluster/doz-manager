@@ -26,6 +26,7 @@ vi.mock('@/features/auth', () => ({
   authClient: {
     signOut: vi.fn(),
   },
+  AccountSettings: () => <div data-testid="account-settings">Settings</div>,
 }))
 
 function renderWithSidebar(isAdmin = true) {
@@ -33,9 +34,11 @@ function renderWithSidebar(isAdmin = true) {
     <SidebarProvider>
       <AppSidebar
         user={{
+          id: 'user-1',
           name: 'Max Mustermann',
           email: 'max.mustermann@example.com',
           image: null,
+          twoFactorEnabled: false,
         }}
         isAdmin={isAdmin}
       />

@@ -98,22 +98,26 @@ function ActionsCell({
                 <KeyIcon />
                 Passwort ändern
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
               {!isSelf && (
-                <DropdownMenuItem
-                  onSelect={() => meta?.toggleAdmin?.(user.id, !user.isAdmin)}>
-                  {user.isAdmin ? (
-                    <>
-                      <ShieldMinus />
-                      Admin entziehen
-                    </>
-                  ) : (
-                    <>
-                      <ShieldPlus />
-                      Zum Admin befördern
-                    </>
-                  )}
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      meta?.toggleAdmin?.(user.id, !user.isAdmin)
+                    }>
+                    {user.isAdmin ? (
+                      <>
+                        <ShieldMinus />
+                        Admin entziehen
+                      </>
+                    ) : (
+                      <>
+                        <ShieldPlus />
+                        Zum Admin befördern
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </>
               )}
               {user.twoFactorEnabled && (
                 <DropdownMenuItem onSelect={() => meta?.disable2FA?.(user.id)}>
@@ -208,7 +212,7 @@ export const columns: ColumnDef<AccessControlUser>[] = [
       const user = row.original
       return (
         <div className="flex items-center gap-2">
-          <Avatar className="size-7">
+          <Avatar key={user.image ?? user.id} className="size-7">
             {user.image && <AvatarImage src={user.image} alt={user.name} />}
             <AvatarFallback className="text-xs">
               {getInitials(user.name)}

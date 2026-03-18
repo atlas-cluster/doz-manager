@@ -82,5 +82,22 @@ describe('EditFieldDialog', () => {
   it('should not render when open is false', () => {
     render(<EditFieldDialog {...defaultProps} open={false} />)
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Ihr Name')).not.toBeInTheDocument()
+  })
+
+  it('should use default dialog transition classes', () => {
+    render(<EditFieldDialog {...defaultProps} />)
+    const content = screen
+      .getByRole('heading', { level: 2 })
+      .closest('[data-slot="dialog-content"]')
+
+    expect(content).not.toHaveClass('data-[state=open]:animate-none')
+    expect(content).not.toHaveClass('data-[state=closed]:animate-none')
+    expect(content).not.toHaveClass('duration-0')
+  })
+
+  it('should autofocus input when dialog opens', () => {
+    render(<EditFieldDialog {...defaultProps} />)
+    expect(screen.getByPlaceholderText('Ihr Name')).toHaveFocus()
   })
 })

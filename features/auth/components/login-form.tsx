@@ -311,100 +311,109 @@ const LoginForm = () => {
 
                 {/* Step 2 – TOTP */}
                 <div className="w-1/3 shrink-0 px-1">
-                  <FieldGroup className="gap-6 pt-2">
-                    <div className="flex justify-center">
-                      <InputOTP
-                        ref={otpInputRef}
-                        maxLength={6}
-                        value={totpCode}
-                        onChange={(val) => setTotpCode(val.replace(/\D/g, ''))}
-                        onComplete={handleTotpVerification}
-                        disabled={isSubmitting}
-                        inputMode="numeric"
-                        pattern="[0-9]*">
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-3 pt-2">
-                      <p className="text-xs text-muted-foreground">
-                        Keinen Zugriff auf Ihre Authenticator-App?{' '}
-                        <button
-                          type="button"
+                  {step === 'totp' && (
+                    <FieldGroup className="gap-6 pt-2">
+                      <div className="flex justify-center">
+                        <InputOTP
+                          ref={otpInputRef}
+                          maxLength={6}
+                          value={totpCode}
+                          onChange={(val) =>
+                            setTotpCode(val.replace(/\D/g, ''))
+                          }
+                          onComplete={handleTotpVerification}
                           disabled={isSubmitting}
-                          className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors cursor-pointer disabled:opacity-50"
-                          onClick={() => goToStep('backup')}>
-                          Backup-Code verwenden
-                        </button>
-                      </p>
-                      <Button
-                        type="button"
-                        variant={'ghost'}
-                        size={'sm'}
-                        disabled={isSubmitting}
-                        className={'text-muted-foreground'}
-                        onClick={() => {
-                          goToStep('credentials')
-                          setBackupCode('')
-                        }}>
-                        ← Zurück
-                      </Button>
-                    </div>
-                  </FieldGroup>
+                          inputMode="numeric"
+                          pattern="[0-9]*">
+                          <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                          </InputOTPGroup>
+                        </InputOTP>
+                      </div>
+
+                      <div className="flex flex-col items-center gap-3 pt-2">
+                        <p className="text-xs text-muted-foreground">
+                          Keinen Zugriff auf Ihre Authenticator-App?{' '}
+                          <button
+                            type="button"
+                            disabled={isSubmitting}
+                            className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors cursor-pointer disabled:opacity-50"
+                            onClick={() => goToStep('backup')}>
+                            Backup-Code verwenden
+                          </button>
+                        </p>
+                        <Button
+                          type="button"
+                          variant={'ghost'}
+                          size={'sm'}
+                          disabled={isSubmitting}
+                          className={'text-muted-foreground'}
+                          onClick={() => {
+                            goToStep('credentials')
+                            setBackupCode('')
+                          }}>
+                          ← Zurück
+                        </Button>
+                      </div>
+                    </FieldGroup>
+                  )}
                 </div>
 
                 {/* Step 3 – Backup Code */}
                 <div className="w-1/3 shrink-0 px-1">
-                  <form onSubmit={handleBackupCodeVerification}>
-                    <FieldGroup>
-                      <Field>
-                        <FieldLabel htmlFor="backup-code">
-                          Backup-Code
-                        </FieldLabel>
-                        <Input
-                          ref={backupInputRef}
-                          id="backup-code"
-                          name="backup-code"
-                          value={backupCode}
-                          onChange={(e) => setBackupCode(e.target.value)}
-                          required
-                          className="font-mono"
-                          placeholder="PRVD-XXXX-XXXX"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Jeder Backup-Code kann nur einmal verwendet werden -
-                          bewahren Sie sie an einem sicheren Ort auf.
-                        </p>
-                      </Field>
-                      <Field>
-                        <Button type="submit" size="lg" disabled={isSubmitting}>
-                          {isSubmitting ? <Spinner /> : <Check />}
-                          Backup-Code bestätigen
-                        </Button>
-                        <div className="flex justify-center">
+                  {step === 'backup' && (
+                    <form onSubmit={handleBackupCodeVerification}>
+                      <FieldGroup>
+                        <Field>
+                          <FieldLabel htmlFor="backup-code">
+                            Backup-Code
+                          </FieldLabel>
+                          <Input
+                            ref={backupInputRef}
+                            id="backup-code"
+                            name="backup-code"
+                            value={backupCode}
+                            onChange={(e) => setBackupCode(e.target.value)}
+                            required
+                            className="font-mono"
+                            placeholder="PRVD-XXXX-XXXX"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Jeder Backup-Code kann nur einmal verwendet werden -
+                            bewahren Sie sie an einem sicheren Ort auf.
+                          </p>
+                        </Field>
+                        <Field>
                           <Button
-                            type="button"
-                            variant={'ghost'}
-                            size={'sm'}
-                            disabled={isSubmitting}
-                            className={'text-muted-foreground'}
-                            onClick={() => {
-                              goToStep('totp')
-                              setBackupCode('')
-                            }}>
-                            ← Zurück
+                            type="submit"
+                            size="lg"
+                            disabled={isSubmitting}>
+                            {isSubmitting ? <Spinner /> : <Check />}
+                            Backup-Code bestätigen
                           </Button>
-                        </div>
-                      </Field>
-                    </FieldGroup>
-                  </form>
+                          <div className="flex justify-center">
+                            <Button
+                              type="button"
+                              variant={'ghost'}
+                              size={'sm'}
+                              disabled={isSubmitting}
+                              className={'text-muted-foreground'}
+                              onClick={() => {
+                                goToStep('totp')
+                                setBackupCode('')
+                              }}>
+                              ← Zurück
+                            </Button>
+                          </div>
+                        </Field>
+                      </FieldGroup>
+                    </form>
+                  )}
                 </div>
               </div>
             </div>

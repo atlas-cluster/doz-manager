@@ -56,9 +56,9 @@ export function TwoFactorDisableDialog({
           onOpenChangeAction(v)
         }
       }}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent forceMount className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>2FA-Code bestaetigen</DialogTitle>
+          <DialogTitle>2FA-Code bestätigen</DialogTitle>
           <DialogDescription>
             Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein.
           </DialogDescription>
