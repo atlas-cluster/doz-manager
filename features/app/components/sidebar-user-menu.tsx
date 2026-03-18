@@ -71,6 +71,7 @@ export function SidebarUserMenu({ user: initialUser }: SidebarUserMenuProps) {
   useEffect(() => {
     const handler = (event: Event) => {
       const { detail } = event as CustomEvent<UserProfileUpdatedDetail>
+      if (!detail) return
       if (detail.id !== user.id) return
       setUser((prev) => ({ ...prev, ...detail }))
     }

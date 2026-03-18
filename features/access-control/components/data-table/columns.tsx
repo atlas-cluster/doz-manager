@@ -208,7 +208,7 @@ export const columns: ColumnDef<AccessControlUser>[] = [
       const user = row.original
       return (
         <div className="flex items-center gap-2">
-          <Avatar key={user.image ?? 'no-image'} className="size-7">
+          <Avatar key={user.image ?? user.id} className="size-7">
             {user.image && <AvatarImage src={user.image} alt={user.name} />}
             <AvatarFallback className="text-xs">
               {getInitials(user.name)}

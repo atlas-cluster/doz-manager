@@ -94,6 +94,11 @@ export function AccountSettings({
     getBackupCodeCount().then(setBackupCodeCount)
   }
 
+  const notifyUserUpdated = (updated: AccountUser) => {
+    onUserChange?.(updated)
+    dispatchUserProfileUpdated(updated)
+  }
+
   const handleDeleteAccount = async (password: string) => {
     setIsDeleting(true)
     try {
@@ -156,8 +161,7 @@ export function AccountSettings({
         twoFactorEnabled: twoFactorEnabledRef.current,
       }
       setSaved(updated)
-      onUserChange?.(updated)
-      dispatchUserProfileUpdated(updated)
+      notifyUserUpdated(updated)
       return true
     } catch {
       return false
@@ -305,8 +309,7 @@ export function AccountSettings({
       setShowDisableDialog(false)
       setDisablePassword('')
       const updated = { ...saved, twoFactorEnabled: false }
-      onUserChange?.(updated)
-      dispatchUserProfileUpdated(updated)
+      notifyUserUpdated(updated)
     } finally {
       setIsDisabling(false)
     }
@@ -579,8 +582,7 @@ export function AccountSettings({
           setTwoFactorEnabled(true)
           setShowSetupDialog(false)
           const updated = { ...saved, twoFactorEnabled: true }
-          onUserChange?.(updated)
-          dispatchUserProfileUpdated(updated)
+          notifyUserUpdated(updated)
           refreshBackupCodeCount()
           toast.success('2FA wurde aktiviert.')
         }}

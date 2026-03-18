@@ -22,7 +22,7 @@ describe('TwoFactorDisableDialog', () => {
 
   it('should render the title', () => {
     render(<TwoFactorDisableDialog {...defaultProps} />)
-    expect(screen.getByText('2FA-Code bestaetigen')).toBeInTheDocument()
+    expect(screen.getByText('2FA-Code bestätigen')).toBeInTheDocument()
   })
 
   it('should render the description', () => {

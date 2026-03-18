@@ -1,4 +1,4 @@
-export const USER_PROFILE_UPDATED_EVENT = 'user-profile-updated'
+export const USER_PROFILE_UPDATED_EVENT = 'app:user-profile-updated'
 
 export type UserProfileUpdatedDetail = {
   id: string

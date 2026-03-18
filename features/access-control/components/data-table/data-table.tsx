@@ -97,6 +97,7 @@ export function DataTable({
   useEffect(() => {
     const handler = (event: Event) => {
       const { detail } = event as CustomEvent<UserProfileUpdatedDetail>
+      if (!detail) return
       setData((prev) =>
         prev.map((user) =>
           user.id === detail.id
