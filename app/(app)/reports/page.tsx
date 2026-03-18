@@ -9,13 +9,6 @@ export default async function ReportsPage() {
   const reports = await getCardData()
   return (
     <div className="flex h-[calc(100vh-5rem)] flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Berichte</h1>
-        <p className="text-muted-foreground text-sm">
-          Übersicht über Vorlesungen, Dozentenzuordnungen und
-          Qualifikationslücken.
-        </p>
-      </div>
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-2">
         <ReportCardCoursesAtProvadis
           qualifications={reports.coursesAtProvadis}

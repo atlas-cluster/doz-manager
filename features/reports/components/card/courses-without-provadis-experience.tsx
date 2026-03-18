@@ -49,10 +49,7 @@ export function ReportCardCoursesWithoutProvadisExperience({
     doc.save('vorlesungen-ohne-provadis-erfahrung.pdf')
   }
   const handleExportAsJSON = () => {
-    downloadJSON(
-      { vorlesungenOhneProvadisErfahrung: courses },
-      'vorlesungen-ohne-provadis-erfahrung'
-    )
+    downloadJSON(courses, 'vorlesungen-ohne-provadis-erfahrung')
   }
   const handleExportAsCSV = () => {
     downloadCSV(

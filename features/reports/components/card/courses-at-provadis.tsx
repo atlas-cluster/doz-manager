@@ -55,10 +55,7 @@ export function ReportCardCoursesAtProvadis({
     doc.save('vorlesungen-an-der-provadis.pdf')
   }
   const handleExportAsJSON = () => {
-    downloadJSON(
-      { vorlesungenAnDerProvadis: qualifications },
-      'vorlesungen-an-der-provadis'
-    )
+    downloadJSON(qualifications, 'vorlesungen-an-der-provadis')
   }
   const handleExportAsCSV = () => {
     downloadCSV(

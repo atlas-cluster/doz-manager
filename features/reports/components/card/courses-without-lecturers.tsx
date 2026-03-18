@@ -49,10 +49,7 @@ export function ReportCardCoursesWithoutLecturers({
     doc.save('vorlesungen-ohne-dozenten.pdf')
   }
   const handleExportAsJSON = () => {
-    downloadJSON(
-      { vorlesungenOhneDozenten: courses },
-      'vorlesungen-ohne-dozenten'
-    )
+    downloadJSON(courses, 'vorlesungen-ohne-dozenten')
   }
   const handleExportAsCSV = () => {
     downloadCSV(
