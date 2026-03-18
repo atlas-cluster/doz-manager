@@ -200,7 +200,7 @@ const LoginForm = () => {
         />
       </div>
 
-      <div className="mx-auto w-full max-w-lg px-4 py-10 sm:px-0 md:py-20">
+      <div className="mx-auto w-full max-w-lg px-4 py-4 sm:px-0 md:py-8">
         <Card className="relative max-w-lg gap-6 px-6 py-8 sm:p-12">
           <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
             <ThemeToggle />
