@@ -8,14 +8,27 @@ import {
 export default async function ReportsPage() {
   const reports = await getCardData()
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <ReportCardCoursesAtProvadis qualifications={reports.coursesAtProvadis} />
-      <ReportCardCoursesWithoutLecturers
-        courses={reports.coursesWithoutLecturer}
-      />
-      <ReportCardCoursesWithoutProvadisExperience
-        courses={reports.coursesWithoutProvadisExperience}
-      />
+    <div className="flex h-[calc(100vh-5rem)] flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Berichte</h1>
+        <p className="text-muted-foreground text-sm">
+          Übersicht über Vorlesungen, Dozentenzuordnungen und
+          Qualifikationslücken.
+        </p>
+      </div>
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-2">
+        <ReportCardCoursesAtProvadis
+          qualifications={reports.coursesAtProvadis}
+        />
+        <div className="flex min-h-0 flex-col gap-4">
+          <ReportCardCoursesWithoutLecturers
+            courses={reports.coursesWithoutLecturer}
+          />
+          <ReportCardCoursesWithoutProvadisExperience
+            courses={reports.coursesWithoutProvadisExperience}
+          />
+        </div>
+      </div>
     </div>
   )
 }

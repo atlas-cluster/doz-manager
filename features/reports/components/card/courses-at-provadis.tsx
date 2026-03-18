@@ -19,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/features/shared/components/ui/card'
+import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import {
   Table,
   TableBody,
@@ -71,7 +72,7 @@ export function ReportCardCoursesAtProvadis({
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex min-h-0 flex-col">
       <CardHeader>
         <CardTitle>Vorlesungen an der Provadis</CardTitle>
         <CardDescription>
@@ -85,31 +86,43 @@ export function ReportCardCoursesAtProvadis({
           />
         </CardAction>
       </CardHeader>
-      <CardContent className="flex-1">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-25">Dozent</TableHead>
-              <TableHead>Vorlesungen</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Object.entries(qualifications).map(([lecturer, courses]) => (
-              <TableRow key={lecturer}>
-                <TableCell>{lecturer}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {courses.map((course) => (
-                      <Badge key={course} variant="default">
-                        {course}
-                      </Badge>
-                    ))}
-                  </div>
-                </TableCell>
+      <CardContent className="min-h-0 flex-1">
+        <ScrollArea className="h-full **:data-[slot=scroll-area-viewport]:max-h-full">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-48">Dozent</TableHead>
+                <TableHead>Vorlesungen</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {lecturerCount === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={2}
+                    className="text-muted-foreground h-24 text-center">
+                    Keine Daten vorhanden.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                Object.entries(qualifications).map(([lecturer, courses]) => (
+                  <TableRow key={lecturer}>
+                    <TableCell className="font-medium">{lecturer}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {courses.map((course) => (
+                          <Badge key={course} variant="default">
+                            {course}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
       </CardContent>
       <CardFooter className="text-muted-foreground text-xs">
         {lecturerCount} Dozenten &middot; {courseCount} Vorlesungen

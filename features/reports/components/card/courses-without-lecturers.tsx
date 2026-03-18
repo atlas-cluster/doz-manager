@@ -19,6 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/features/shared/components/ui/card'
+import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import {
   Table,
   TableBody,
@@ -62,7 +63,7 @@ export function ReportCardCoursesWithoutLecturers({
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex min-h-0 flex-1 flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           Vorlesungen ohne Dozenten
@@ -79,21 +80,31 @@ export function ReportCardCoursesWithoutLecturers({
           />
         </CardAction>
       </CardHeader>
-      <CardContent className="flex-1">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vorlesung</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {courses.map((course) => (
-              <TableRow key={course}>
-                <TableCell>{course}</TableCell>
+      <CardContent className="min-h-0 flex-1">
+        <ScrollArea className="h-full **:data-[slot=scroll-area-viewport]:max-h-full">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Vorlesung</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {courses.length === 0 ? (
+                <TableRow>
+                  <TableCell className="text-muted-foreground h-24 text-center">
+                    Alle Vorlesungen haben einen Dozenten.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                courses.map((course) => (
+                  <TableRow key={course}>
+                    <TableCell>{course}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
       </CardContent>
       <CardFooter className="text-muted-foreground text-xs">
         {courses.length} Vorlesungen ohne Zuordnung
