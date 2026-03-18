@@ -2,7 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { DataTable } from '@/features/access-control/components/data-table/data-table'
 import type { GetUsersResponse } from '@/features/access-control/types'
-import { cleanup, render, screen } from '@testing-library/react'
+import { USER_PROFILE_UPDATED_EVENT } from '@/features/shared/lib/user-profile-sync'
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 
 vi.mock('@/features/access-control/actions/create-user', () => ({
   createUser: vi.fn().mockResolvedValue({}),
@@ -132,5 +139,36 @@ describe('Access Control DataTable', () => {
   it('should render role filter', () => {
     render(<DataTable initialData={sampleData} currentUserId="admin-1" />)
     expect(screen.getByRole('button', { name: /Rolle/ })).toBeInTheDocument()
+  })
+
+  it('should sync two factor and backup code count from profile update events', async () => {
+    render(<DataTable initialData={sampleData} currentUserId="admin-1" />)
+    const aliceRow = screen.getByText('Alice Admin').closest('tr')
+    expect(aliceRow).not.toBeNull()
+    expect(
+      within(aliceRow as HTMLTableRowElement).getByText('5')
+    ).toBeInTheDocument()
+
+    window.dispatchEvent(
+      new CustomEvent(USER_PROFILE_UPDATED_EVENT, {
+        detail: {
+          id: 'u1',
+          name: 'Alice Admin',
+          email: 'alice@example.com',
+          image: null,
+          twoFactorEnabled: true,
+          backupCodeCount: 2,
+        },
+      })
+    )
+
+    await waitFor(() => {
+      expect(
+        within(aliceRow as HTMLTableRowElement).getByText('2')
+      ).toBeInTheDocument()
+      expect(
+        within(aliceRow as HTMLTableRowElement).queryByText('5')
+      ).not.toBeInTheDocument()
+    })
   })
 })

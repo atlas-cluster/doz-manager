@@ -90,13 +90,21 @@ export function AccountSettings({
     }
   }, [twoFactorEnabled])
 
-  const refreshBackupCodeCount = () => {
-    getBackupCodeCount().then(setBackupCodeCount)
+  const refreshBackupCodeCount = async () => {
+    const count = await getBackupCodeCount()
+    setBackupCodeCount(count)
+    return count
   }
 
-  const notifyUserUpdated = (updated: AccountUser) => {
+  const notifyUserUpdated = (
+    updated: AccountUser,
+    backupCodeCount?: number
+  ) => {
     onUserChange?.(updated)
-    dispatchUserProfileUpdated(updated)
+    dispatchUserProfileUpdated({
+      ...updated,
+      ...(backupCodeCount === undefined ? {} : { backupCodeCount }),
+    })
   }
 
   const handleDeleteAccount = async (password: string) => {
@@ -308,8 +316,9 @@ export function AccountSettings({
       setTwoFactorEnabled(false)
       setShowDisableDialog(false)
       setDisablePassword('')
+      setBackupCodeCount(0)
       const updated = { ...saved, twoFactorEnabled: false }
-      notifyUserUpdated(updated)
+      notifyUserUpdated(updated, 0)
     } finally {
       setIsDisabling(false)
     }
@@ -579,11 +588,13 @@ export function AccountSettings({
         onVerify={handleVerifySetup}
         onDone={() => {
           twoFactorEnabledRef.current = true
+          const nextBackupCodeCount = setupBackupCodes.length
+          setBackupCodeCount(nextBackupCodeCount)
           setTwoFactorEnabled(true)
           setShowSetupDialog(false)
           const updated = { ...saved, twoFactorEnabled: true }
-          notifyUserUpdated(updated)
-          refreshBackupCodeCount()
+          notifyUserUpdated(updated, nextBackupCodeCount)
+          void refreshBackupCodeCount()
           toast.success('2FA wurde aktiviert.')
         }}
         isVerifying={isVerifyingSetup}
@@ -620,8 +631,9 @@ export function AccountSettings({
       <RegenerateBackupCodesDialog
         open={showRegenerateDialog}
         onOpenChange={setShowRegenerateDialog}
-        onDone={() => {
-          refreshBackupCodeCount()
+        onDone={async () => {
+          const nextBackupCodeCount = await refreshBackupCodeCount()
+          notifyUserUpdated(saved, nextBackupCodeCount ?? undefined)
         }}
       />
 
