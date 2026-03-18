@@ -4,6 +4,7 @@ import { KeyRoundIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { invalidateUsersCache } from '@/features/access-control/actions/invalidate-users-cache'
 import { PasskeyRevokeDialog } from '@/features/auth/components/dialogs/passkey-revoke-dialog'
 import { authClient } from '@/features/auth/lib/client'
 import { Button } from '@/features/shared/components/ui/button'
@@ -26,6 +27,7 @@ import { Spinner } from '@/features/shared/components/ui/spinner'
 type PasskeyManagementDialogProps = {
   open: boolean
   onOpenChangeAction: (open: boolean) => void
+  onPasskeyCountChangeAction?: (count: number) => void
 }
 
 type PasskeyListItem = {
@@ -37,6 +39,7 @@ type PasskeyListItem = {
 export function PasskeyManagementDialog({
   open,
   onOpenChangeAction,
+  onPasskeyCountChangeAction,
 }: PasskeyManagementDialogProps) {
   const [isAddingPasskey, setIsAddingPasskey] = useState(false)
   const [isRevokingPasskey, setIsRevokingPasskey] = useState(false)
@@ -51,6 +54,19 @@ export function PasskeyManagementDialog({
   } = authClient.useListPasskeys()
 
   const passkeyItems = (passkeys ?? []) as PasskeyListItem[]
+
+  const getRefetchedPasskeyCount = (result: unknown, fallback: number) => {
+    if (
+      typeof result === 'object' &&
+      result !== null &&
+      'data' in result &&
+      Array.isArray((result as { data?: unknown }).data)
+    ) {
+      return (result as { data: unknown[] }).data.length
+    }
+
+    return fallback
+  }
 
   const formatPasskeyCreatedAt = (createdAt?: string | Date | null) => {
     if (!createdAt) return null
@@ -76,7 +92,11 @@ export function PasskeyManagementDialog({
         return
       }
 
-      await refetchPasskeys()
+      const refetchResult = await refetchPasskeys()
+      await invalidateUsersCache()
+      onPasskeyCountChangeAction?.(
+        getRefetchedPasskeyCount(refetchResult, passkeyItems.length + 1)
+      )
       toast.success('Passkey wurde hinzugefügt.')
     } finally {
       setIsAddingPasskey(false)
@@ -105,7 +125,14 @@ export function PasskeyManagementDialog({
         return
       }
 
-      await refetchPasskeys()
+      const refetchResult = await refetchPasskeys()
+      await invalidateUsersCache()
+      onPasskeyCountChangeAction?.(
+        getRefetchedPasskeyCount(
+          refetchResult,
+          Math.max(passkeyItems.length - 1, 0)
+        )
+      )
       toast.success('Passkey wurde widerrufen.')
       setShowRevokeDialog(false)
       setSelectedPasskey(null)

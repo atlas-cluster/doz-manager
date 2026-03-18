@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { invalidateUsersCache } from '@/features/access-control/actions/invalidate-users-cache'
 import { deleteAccount } from '@/features/auth/actions/delete-account'
 import { getBackupCodeCount } from '@/features/auth/actions/get-backup-code-count'
 import { updateProfile } from '@/features/auth/actions/update-profile'
@@ -39,6 +40,10 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/features/shared/components/ui/tabs'
+import {
+  dispatchUserProfileUpdated,
+  type UserProfileUpdatedDetail,
+} from '@/features/shared/lib/user-profile-sync'
 import { initialsFromName } from '@/features/shared/lib/utils'
 
 type AccountSettingsProps = {
@@ -98,6 +103,20 @@ export function AccountSettings({
   const passkeyItems = (passkeys ?? []) as PasskeyListItem[]
   const passkeyCount = passkeyItems.length
 
+  const emitUserProfileUpdated = (
+    overrides: Partial<UserProfileUpdatedDetail> = {}
+  ) => {
+    dispatchUserProfileUpdated({
+      id: saved.id,
+      name: saved.name,
+      email: saved.email,
+      image: saved.image,
+      twoFactorEnabled: twoFactorEnabledRef.current,
+      hasPasskey: passkeyCount > 0,
+      ...overrides,
+    })
+  }
+
   useEffect(() => {
     if (twoFactorEnabled) {
       getBackupCodeCount().then(setBackupCodeCount)
@@ -126,6 +145,8 @@ export function AccountSettings({
     }
 
     await refetchPasskeys()
+    await invalidateUsersCache()
+    emitUserProfileUpdated({ hasPasskey: true })
     toast.success('Passkey wurde hinzugefügt.')
   }
 
@@ -192,6 +213,14 @@ export function AccountSettings({
       }
       setSaved(updated)
       onUserChange?.(updated)
+      dispatchUserProfileUpdated({
+        id: updated.id,
+        name: updated.name,
+        email: updated.email,
+        image: updated.image,
+        twoFactorEnabled: twoFactorEnabledRef.current,
+        hasPasskey: passkeyCount > 0,
+      })
       return true
     } catch {
       return false
@@ -334,8 +363,13 @@ export function AccountSettings({
       })
 
       await disablePromise
+      await invalidateUsersCache()
       twoFactorEnabledRef.current = false
       setTwoFactorEnabled(false)
+      emitUserProfileUpdated({
+        twoFactorEnabled: false,
+        backupCodeCount: 0,
+      })
       setShowDisableDialog(false)
       setDisablePassword('')
     } finally {
@@ -634,6 +668,11 @@ export function AccountSettings({
           setTwoFactorEnabled(true)
           setShowSetupDialog(false)
           onUserChange?.({ ...saved, twoFactorEnabled: true })
+          void invalidateUsersCache()
+          emitUserProfileUpdated({
+            twoFactorEnabled: true,
+            backupCodeCount: nextBackupCodeCount,
+          })
           refreshBackupCodeCount()
           toast.success('2FA wurde aktiviert.')
         }}
@@ -690,6 +729,9 @@ export function AccountSettings({
       <PasskeyManagementDialog
         open={showPasskeyManagementDialog}
         onOpenChangeAction={setShowPasskeyManagementDialog}
+        onPasskeyCountChangeAction={(count) => {
+          emitUserProfileUpdated({ hasPasskey: count > 0 })
+        }}
       />
     </>
   )

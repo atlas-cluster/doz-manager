@@ -5,12 +5,17 @@ import type { AccountUser } from '@/features/auth/types'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
+const mockInvalidateUsersCache = vi.fn().mockResolvedValue(undefined)
 const mockAddPasskey = vi.fn()
 mockAddPasskey.mockResolvedValue({ data: {}, error: null })
 const mockDeletePasskey = vi.fn()
 mockDeletePasskey.mockResolvedValue({ data: { status: true }, error: null })
 const mockRefetchPasskeys = vi.fn().mockResolvedValue(undefined)
 let mockPasskeys: Array<{ id: string; name?: string; createdAt?: string }> = []
+
+vi.mock('@/features/access-control/actions/invalidate-users-cache', () => ({
+  invalidateUsersCache: () => mockInvalidateUsersCache(),
+}))
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -172,6 +177,7 @@ describe('AccountSettings', () => {
 
     expect(mockAddPasskey).toHaveBeenCalledTimes(1)
     expect(mockRefetchPasskeys).toHaveBeenCalledTimes(1)
+    expect(mockInvalidateUsersCache).toHaveBeenCalledTimes(1)
     expect(screen.queryByText('Passkeys verwalten')).not.toBeInTheDocument()
   })
 

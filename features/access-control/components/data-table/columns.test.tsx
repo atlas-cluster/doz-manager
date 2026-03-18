@@ -92,8 +92,24 @@ describe('Access Control columns', () => {
   })
 
   it('should define the expected number of columns', () => {
-    // select, name, email, authProviders, isAdmin, twoFactorEnabled, backupCodeCount, lastLogin, actions
-    expect(columns.length).toBe(9)
+    // select, name, email, isAdmin, authProviders, actions
+    expect(columns.length).toBe(6)
+  })
+
+  it('should render Rolle before Anmeldung in the header order', () => {
+    render(<TestTable data={[makeUser()]} />)
+
+    const headers = screen.getAllByRole('columnheader')
+    const roleIndex = headers.findIndex((header) =>
+      header.textContent?.includes('Rolle')
+    )
+    const anmeldungIndex = headers.findIndex((header) =>
+      header.textContent?.includes('Anmeldung')
+    )
+
+    expect(roleIndex).toBeGreaterThanOrEqual(0)
+    expect(anmeldungIndex).toBeGreaterThanOrEqual(0)
+    expect(roleIndex).toBeLessThan(anmeldungIndex)
   })
 
   it('should render the user name', () => {
@@ -116,35 +132,33 @@ describe('Access Control columns', () => {
     expect(screen.getByText('Benutzer')).toBeInTheDocument()
   })
 
-  it('should render Aktiviert for 2FA enabled', () => {
-    render(<TestTable data={[makeUser({ twoFactorEnabled: true })]} />)
-    expect(screen.getByText('Aktiviert')).toBeInTheDocument()
-  })
-
-  it('should render Deaktiviert for 2FA disabled', () => {
-    render(<TestTable data={[makeUser({ twoFactorEnabled: false })]} />)
-    expect(screen.getByText('Deaktiviert')).toBeInTheDocument()
-  })
-
-  it('should render "Noch nie" when lastLogin is null', () => {
-    render(<TestTable data={[makeUser({ lastLogin: null })]} />)
-    expect(screen.getByText('Noch nie')).toBeInTheDocument()
-  })
-
   it('should render credential auth provider as Passwort', () => {
     render(<TestTable data={[makeUser({ authProviders: ['credential'] })]} />)
     expect(screen.getByText('Passwort')).toBeInTheDocument()
   })
 
-  it('should render dash when backupCodeCount shown but 2FA disabled', () => {
+  it('should render 2FA as badge in Anmeldung when enabled', () => {
     render(
       <TestTable
-        data={[makeUser({ twoFactorEnabled: false, backupCodeCount: 0 })]}
+        data={[makeUser({ authProviders: [], twoFactorEnabled: true })]}
       />
     )
-    // The dash character for the backup code column
-    const dashes = screen.getAllByText('—')
-    expect(dashes.length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('2FA')).toBeInTheDocument()
+  })
+
+  it('should render passkey and microsoft badges when available', () => {
+    render(
+      <TestTable
+        data={[makeUser({ authProviders: ['passkey', 'microsoft'] })]}
+      />
+    )
+    expect(screen.getByText('Passkey')).toBeInTheDocument()
+    expect(screen.getByText('Microsoft')).toBeInTheDocument()
+  })
+
+  it('should render unknown providers as uppercase badges', () => {
+    render(<TestTable data={[makeUser({ authProviders: ['github'] })]} />)
+    expect(screen.getByText('GITHUB')).toBeInTheDocument()
   })
 
   it('should render multiple users', () => {

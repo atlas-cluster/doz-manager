@@ -105,6 +105,10 @@ async function getUsersInternal({
         accounts: {
           select: { providerId: true },
         },
+        passkeys: {
+          select: { id: true },
+          take: 1,
+        },
       },
     }),
     prisma.user.groupBy({
@@ -124,7 +128,10 @@ async function getUsersInternal({
         ? await decryptBackupCodeCount(twoFactor.backupCodes)
         : 0
 
-      const authProviders = [...new Set(user.accounts.map((a) => a.providerId))]
+      const authProviders = new Set(user.accounts.map((a) => a.providerId))
+      if (user.passkeys.length > 0) {
+        authProviders.add('passkey')
+      }
 
       return {
         id: user.id,
@@ -136,7 +143,7 @@ async function getUsersInternal({
         createdAt: user.createdAt,
         lastLogin: lastSession?.createdAt ?? null,
         backupCodeCount,
-        authProviders,
+        authProviders: Array.from(authProviders),
       }
     })
   )

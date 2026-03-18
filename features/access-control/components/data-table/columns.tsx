@@ -30,6 +30,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@/features/shared/components/ui/avatar'
+import { Badge } from '@/features/shared/components/ui/badge'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
@@ -49,6 +50,72 @@ function getInitials(name: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('')
+}
+
+type AuthBadge = {
+  key: string
+  label: string
+  icon: React.ReactNode
+}
+
+function getAuthBadges(user: AccessControlUser): AuthBadge[] {
+  const providers = new Set(
+    (user.authProviders ?? []).map((provider) => provider.toLowerCase())
+  )
+
+  const badges: AuthBadge[] = []
+  const knownProviders = new Set(['credential', 'passkey', 'microsoft'])
+
+  if (providers.has('credential')) {
+    badges.push({
+      key: 'credential',
+      label: 'Passwort',
+      icon: <KeyRound className="size-3" />,
+    })
+  }
+
+  if (providers.has('passkey')) {
+    badges.push({
+      key: 'passkey',
+      label: 'Passkey',
+      icon: <KeyIcon className="size-3" />,
+    })
+  }
+
+  if (providers.has('microsoft')) {
+    badges.push({
+      key: 'microsoft',
+      label: 'Microsoft',
+      icon: (
+        <Image
+          src="/microsoft.svg"
+          alt="Microsoft Logo"
+          width={16}
+          height={16}
+          className="size-3"
+        />
+      ),
+    })
+  }
+
+  if (user.twoFactorEnabled) {
+    badges.push({
+      key: '2fa',
+      label: '2FA',
+      icon: <ShieldCheck className="size-3" />,
+    })
+  }
+
+  providers.forEach((provider) => {
+    if (knownProviders.has(provider)) return
+    badges.push({
+      key: provider,
+      label: provider.toUpperCase(),
+      icon: <KeyIcon className="size-3" />,
+    })
+  })
+
+  return badges
 }
 
 function ActionsCell({
@@ -235,57 +302,6 @@ export const columns: ColumnDef<AccessControlUser>[] = [
     enableGlobalFilter: true,
   },
   {
-    accessorKey: 'authProviders',
-    id: 'authProviders',
-    header: 'Anmeldung',
-    cell: ({ row }) => {
-      const providers = row.original.authProviders ?? []
-      if (!providers.length) {
-        return <span className="text-muted-foreground">—</span>
-      }
-
-      const providerConfig: Record<
-        string,
-        { label: string; icon: React.ReactNode }
-      > = {
-        credential: {
-          label: 'Passwort',
-          icon: <KeyRound className="size-4" />,
-        },
-        microsoft: {
-          label: 'EntraID',
-          icon: (
-            <Image
-              src="/microsoft.svg"
-              alt="Microsoft Logo"
-              width={16}
-              height={16}
-              className="size-4"
-            />
-          ),
-        },
-      }
-
-      return (
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          {providers.map((p) => {
-            const config = providerConfig[p]
-            if (!config) return null
-            return (
-              <div key={p} className="flex items-center gap-1">
-                {config.icon}
-                {config.label}
-              </div>
-            )
-          })}
-        </div>
-      )
-    },
-    enableSorting: false,
-    enableHiding: true,
-    enableGlobalFilter: false,
-  },
-  {
     accessorKey: 'isAdmin',
     id: 'isAdmin',
     header: 'Rolle',
@@ -311,98 +327,30 @@ export const columns: ColumnDef<AccessControlUser>[] = [
     enableGlobalFilter: false,
   },
   {
-    accessorKey: 'twoFactorEnabled',
-    id: 'twoFactorEnabled',
-    header: '2FA',
+    accessorKey: 'authProviders',
+    id: 'authProviders',
+    header: 'Anmeldung',
     cell: ({ row }) => {
+      const badges = getAuthBadges(row.original)
+
+      if (!badges.length) {
+        return <span className="text-muted-foreground">—</span>
+      }
+
       return (
-        <div className="flex items-center gap-1">
-          {row.original.twoFactorEnabled ? (
-            <>
-              <ShieldCheck className="size-4 text-green-600" />
-              Aktiviert
-            </>
-          ) : (
-            <>
-              <ShieldOff className="text-muted-foreground size-4" />
-              Deaktiviert
-            </>
-          )}
+        <div className="flex flex-wrap gap-1.5">
+          {badges.map((badge) => {
+            return (
+              <Badge key={badge.key} variant="secondary" className="gap-1">
+                {badge.icon}
+                {badge.label}
+              </Badge>
+            )
+          })}
         </div>
       )
     },
     enableSorting: false,
-    enableHiding: true,
-    enableGlobalFilter: false,
-  },
-  {
-    accessorKey: 'backupCodeCount',
-    id: 'backupCodeCount',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Recovery Codes
-          {column.getIsSorted() === 'asc' ? (
-            <ArrowUp />
-          ) : column.getIsSorted() === 'desc' ? (
-            <ArrowDown />
-          ) : (
-            <ArrowUpDown />
-          )}
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const count = row.original.backupCodeCount
-      if (!row.original.twoFactorEnabled) {
-        return <span className="text-muted-foreground">—</span>
-      }
-      return (
-        <div className="flex items-center gap-1">
-          <KeyRound className="size-4" />
-          <span>{count}</span>
-        </div>
-      )
-    },
-    enableSorting: true,
-    enableHiding: true,
-    enableGlobalFilter: false,
-  },
-  {
-    accessorKey: 'lastLogin',
-    id: 'lastLogin',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Letzter Login
-          {column.getIsSorted() === 'asc' ? (
-            <ArrowUp />
-          ) : column.getIsSorted() === 'desc' ? (
-            <ArrowDown />
-          ) : (
-            <ArrowUpDown />
-          )}
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const lastLogin = row.original.lastLogin
-      if (!lastLogin) {
-        return <span className="text-muted-foreground">Noch nie</span>
-      }
-      return new Date(lastLogin).toLocaleString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    },
-    enableSorting: true,
     enableHiding: true,
     enableGlobalFilter: false,
   },

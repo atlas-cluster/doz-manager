@@ -108,6 +108,23 @@ export function DataTable({
                 image: detail.image,
                 twoFactorEnabled: detail.twoFactorEnabled,
                 backupCodeCount: detail.backupCodeCount ?? user.backupCodeCount,
+                authProviders: (() => {
+                  if (Array.isArray(detail.authProviders)) {
+                    return detail.authProviders
+                  }
+
+                  if (typeof detail.hasPasskey !== 'boolean') {
+                    return user.authProviders
+                  }
+
+                  const providers = user.authProviders.filter(
+                    (provider) => provider.toLowerCase() !== 'passkey'
+                  )
+                  if (detail.hasPasskey) {
+                    providers.push('passkey')
+                  }
+                  return providers
+                })(),
               }
             : user
         )
