@@ -90,8 +90,10 @@ export function AccountSettings({
     }
   }, [twoFactorEnabled])
 
-  const refreshBackupCodeCount = () => {
-    getBackupCodeCount().then(setBackupCodeCount)
+  const refreshBackupCodeCount = async () => {
+    const count = await getBackupCodeCount()
+    setBackupCodeCount(count)
+    return count
   }
 
   const handleDeleteAccount = async (password: string) => {
@@ -566,6 +568,8 @@ export function AccountSettings({
         onVerify={handleVerifySetup}
         onDone={() => {
           twoFactorEnabledRef.current = true
+          const nextBackupCodeCount = setupBackupCodes.length
+          setBackupCodeCount(nextBackupCodeCount)
           setTwoFactorEnabled(true)
           setShowSetupDialog(false)
           onUserChange?.({ ...saved, twoFactorEnabled: true })
@@ -606,8 +610,9 @@ export function AccountSettings({
       <RegenerateBackupCodesDialog
         open={showRegenerateDialog}
         onOpenChange={setShowRegenerateDialog}
-        onDone={() => {
-          refreshBackupCodeCount()
+        onDone={async () => {
+          const nextBackupCodeCount = await refreshBackupCodeCount()
+          notifyUserUpdated(saved, nextBackupCodeCount)
         }}
       />
 

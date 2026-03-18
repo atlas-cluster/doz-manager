@@ -107,6 +107,7 @@ export function DataTable({
                 email: detail.email,
                 image: detail.image,
                 twoFactorEnabled: detail.twoFactorEnabled,
+                backupCodeCount: detail.backupCodeCount ?? user.backupCodeCount,
               }
             : user
         )
