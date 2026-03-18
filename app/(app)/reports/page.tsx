@@ -9,7 +9,7 @@ export default async function ReportsPage() {
   const reports = await getCardData()
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <ReportCardCoursesAtProvadis qualification={reports.coursesAtProvadis} />
+      <ReportCardCoursesAtProvadis qualifications={reports.coursesAtProvadis} />
       <ReportCardCoursesWithoutLecturers />
       <ReportCardCoursesWithoutProvadisExperience />
     </div>
