@@ -102,15 +102,15 @@ describe('EditFieldDialog', () => {
     expect(screen.queryByPlaceholderText('Ihr Name')).not.toBeInTheDocument()
   })
 
-  it('should disable dialog transition animation to prevent flicker', () => {
+  it('should use default dialog transition classes', () => {
     render(<EditFieldDialog {...defaultProps} />)
     const content = screen
       .getByRole('heading', { level: 2 })
       .closest('[data-slot="dialog-content"]')
 
-    expect(content).toHaveClass('data-[state=open]:animate-none')
-    expect(content).toHaveClass('data-[state=closed]:animate-none')
-    expect(content).toHaveClass('duration-0')
+    expect(content).not.toHaveClass('data-[state=open]:animate-none')
+    expect(content).not.toHaveClass('data-[state=closed]:animate-none')
+    expect(content).not.toHaveClass('duration-0')
   })
 
   it('should autofocus input when dialog opens', () => {
