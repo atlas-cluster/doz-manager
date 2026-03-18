@@ -29,12 +29,10 @@ import {
 } from '@/features/shared/components/ui/table'
 
 export function ReportCardCoursesAtProvadis({
-  qualification,
+  qualifications,
 }: {
-  qualification: GetCoursesAtProvadisResponse
+  qualifications: GetCoursesAtProvadisResponse
 }) {
-  const qualifications: GetCoursesAtProvadisResponse = qualification
-
   const lecturerCount = Object.keys(qualifications).length
   const courseCount = Object.values(qualifications).flat().length
 
