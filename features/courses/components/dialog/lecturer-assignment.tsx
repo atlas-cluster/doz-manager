@@ -10,7 +10,6 @@ import {
   Timer,
   Trash2,
   XCircle,
-  XIcon,
 } from 'lucide-react'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -82,7 +81,6 @@ export function LecturerAssignmentDialog({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   onSubmit,
-  readonly = false,
 }: LecturerAssignmentDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen ?? internalOpen
@@ -100,8 +98,6 @@ export function LecturerAssignmentDialog({
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebounce(searchQuery)
 
-  type StatusFilterValue = 'with_qualification' | 'without_qualification'
-  const [statusFilter, setStatusFilter] = useState<StatusFilterValue[]>([])
   const [experienceFilter, setExperienceFilter] = useState<ExperienceOption[]>(
     []
   )
@@ -132,16 +128,6 @@ export function LecturerAssignmentDialog({
     fetchData()
   }, [open, course.id])
 
-  const statusCounts = useMemo(() => {
-    const map = new Map<string, number>()
-    lecturers.forEach((l) => {
-      const hasQ = qualifications.some((q) => q.lecturerId === l.id)
-      const key = hasQ ? 'with_qualification' : 'without_qualification'
-      map.set(key, (map.get(key) ?? 0) + 1)
-    })
-    return map
-  }, [lecturers, qualifications])
-
   const experienceCounts = useMemo(() => {
     const map = new Map<string, number>()
     qualifications.forEach((q) =>
@@ -170,14 +156,6 @@ export function LecturerAssignmentDialog({
       const lq = qualifications.find((q) => q.lecturerId === lecturer.id)
       const hasQ = !!lq
 
-      if (statusFilter.length > 0) {
-        if (
-          (statusFilter.includes('with_qualification') && !hasQ) ||
-          (statusFilter.includes('without_qualification') && hasQ)
-        )
-          return false
-      }
-
       if (
         experienceFilter.length > 0 &&
         (!lq || !experienceFilter.includes(lq.experience))
@@ -196,7 +174,6 @@ export function LecturerAssignmentDialog({
     lecturers,
     qualifications,
     debouncedSearchQuery,
-    statusFilter,
     experienceFilter,
     leadTimeFilter,
   ])
@@ -259,25 +236,6 @@ export function LecturerAssignmentDialog({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="md:w-64"
-              />
-
-              <DataTableFacetedFilter
-                title="Status"
-                options={[
-                  {
-                    value: 'with_qualification',
-                    label: 'Mit Qualifikation',
-                    icon: CheckCircle2,
-                  },
-                  {
-                    value: 'without_qualification',
-                    label: 'Ohne Qualifikation',
-                    icon: XCircle,
-                  },
-                ]}
-                value={statusFilter}
-                onChange={(v) => setStatusFilter(v as StatusFilterValue[])}
-                facets={statusCounts}
               />
 
               <DataTableFacetedFilter
@@ -372,7 +330,8 @@ export function LecturerAssignmentDialog({
                             </Avatar>
                           </ItemMedia>
                           <ItemContent>
-                            <ItemTitle>
+                            <ItemTitle
+                              className={isAssigned ? 'text-blue-900' : ''}>
                               {lecturerDisplayName(lecturer)}
                             </ItemTitle>
                             <ItemDescription>
