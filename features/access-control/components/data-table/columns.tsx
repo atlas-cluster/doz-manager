@@ -98,22 +98,26 @@ function ActionsCell({
                 <KeyIcon />
                 Passwort ändern
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
               {!isSelf && (
-                <DropdownMenuItem
-                  onSelect={() => meta?.toggleAdmin?.(user.id, !user.isAdmin)}>
-                  {user.isAdmin ? (
-                    <>
-                      <ShieldMinus />
-                      Admin entziehen
-                    </>
-                  ) : (
-                    <>
-                      <ShieldPlus />
-                      Zum Admin befördern
-                    </>
-                  )}
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      meta?.toggleAdmin?.(user.id, !user.isAdmin)
+                    }>
+                    {user.isAdmin ? (
+                      <>
+                        <ShieldMinus />
+                        Admin entziehen
+                      </>
+                    ) : (
+                      <>
+                        <ShieldPlus />
+                        Zum Admin befördern
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                </>
               )}
               {user.twoFactorEnabled && (
                 <DropdownMenuItem onSelect={() => meta?.disable2FA?.(user.id)}>

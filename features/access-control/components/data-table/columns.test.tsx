@@ -11,6 +11,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 vi.mock('next/image', () => ({
   default: (props: Record<string, unknown>) => {
@@ -172,5 +173,15 @@ describe('Access Control columns', () => {
   it('should render the actions menu trigger', () => {
     render(<TestTable data={[makeUser()]} />)
     expect(screen.getByRole('button', { name: /Menü/ })).toBeInTheDocument()
+  })
+
+  it('should not render a separator for own user with basic actions only', async () => {
+    const user = userEvent.setup()
+    render(<TestTable data={[makeUser({ id: 'current-user' })]} />)
+    await user.click(screen.getByRole('button', { name: /Menü/ }))
+
+    expect(screen.getByText('Bearbeiten')).toBeInTheDocument()
+    expect(screen.getByText('Passwort ändern')).toBeInTheDocument()
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument()
   })
 })

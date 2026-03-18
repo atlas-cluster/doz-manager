@@ -183,4 +183,23 @@ describe('AccountSettings', () => {
     // Just verifying the prop is accepted without error
     expect(onUserChange).not.toHaveBeenCalled()
   })
+
+  it('should prefill email dialog with current email each time it opens', async () => {
+    const user = userEvent.setup()
+    render(<AccountSettings initialUser={mockUser} />)
+
+    const editButtons = screen.getAllByRole('button', { name: /ndern/ })
+    await user.click(editButtons[2])
+    const emailInput = screen.getByPlaceholderText('mail@example.com')
+    expect(emailInput).toHaveValue('test@example.com')
+
+    await user.type(emailInput, 'draft')
+    expect(emailInput).toHaveValue('test@example.comdraft')
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }))
+
+    await user.click(editButtons[2])
+    expect(screen.getByPlaceholderText('mail@example.com')).toHaveValue(
+      'test@example.com'
+    )
+  })
 })
