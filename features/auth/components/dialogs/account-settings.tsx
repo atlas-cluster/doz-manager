@@ -400,10 +400,7 @@ export function AccountSettings({
               size="sm"
               variant="outline"
               className="gap-1.5 shrink-0"
-              onClick={() => {
-                setEmailFieldInput(saved.email)
-                setShowEmailDialog(true)
-              }}>
+              onClick={() => setShowEmailDialog(true)}>
               <PencilIcon className="size-4" />
               Ändern
             </Button>
@@ -533,7 +530,12 @@ export function AccountSettings({
 
       <EditFieldDialog
         open={showEmailDialog}
-        onOpenChange={setShowEmailDialog}
+        onOpenChange={(open) => {
+          setShowEmailDialog(open)
+          if (!open) {
+            setEmailFieldInput(saved.email)
+          }
+        }}
         title="E-Mail ändern"
         description="Geben Sie Ihre neue E-Mail-Adresse ein."
         inputType="email"
