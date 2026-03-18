@@ -105,6 +105,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  passkeys      Passkey[]
 
   isAdmin          Boolean     @default(false)
   twoFactorEnabled Boolean?    @default(false)
@@ -112,6 +113,25 @@ model User {
 
   @@unique([email])
   @@map("user")
+}
+
+model Passkey {
+  id           String   @id
+  name         String?
+  publicKey    String   @db.Text
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?  @db.Text
+  createdAt    DateTime @default(now())
+  aaguid       String?
+
+  @@unique([credentialID])
+  @@index([userId(length: 191)])
+  @@map("passkey")
 }
 
 model Session {

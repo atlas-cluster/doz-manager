@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, EyeIcon, EyeOffIcon, LogIn } from 'lucide-react'
+import { Check, EyeIcon, EyeOffIcon, KeyRoundIcon, LogIn } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { FormEvent } from 'react'
@@ -34,6 +34,7 @@ import {
 import { Spinner } from '@/features/shared/components/ui/spinner'
 
 type Step = 'credentials' | 'totp' | 'backup'
+type LoadingAction = 'email' | 'passkey' | 'totp' | 'backup' | null
 
 const SLIDE: Record<Step, string> = {
   credentials: 'translateX(0)',
@@ -43,13 +44,14 @@ const SLIDE: Record<Step, string> = {
 
 const LoginForm = () => {
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loadingAction, setLoadingAction] = useState<LoadingAction>(null)
   const [step, setStep] = useState<Step>('credentials')
   const [totpCode, setTotpCode] = useState('')
   const [backupCode, setBackupCode] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const backupInputRef = useRef<HTMLInputElement>(null)
   const otpInputRef = useRef<HTMLInputElement>(null)
+  const isSubmitting = loadingAction !== null
 
   useEffect(() => {
     if (step === 'totp') {
@@ -78,9 +80,9 @@ const LoginForm = () => {
       return
     }
 
-    setIsSubmitting(true)
+    setLoadingAction('email')
     const { data, error } = await authClient.signIn.email({ email, password })
-    setIsSubmitting(false)
+    setLoadingAction(null)
 
     if (error) {
       toast.error(
@@ -100,15 +102,35 @@ const LoginForm = () => {
     router.refresh()
   }
 
+  const handlePasskeySignIn = async () => {
+    if (typeof window === 'undefined' || !('PublicKeyCredential' in window)) {
+      toast.error('Passkeys werden von diesem Browser nicht unterstützt.')
+      return
+    }
+
+    setLoadingAction('passkey')
+    const { error } = await authClient.signIn.passkey()
+    setLoadingAction(null)
+
+    if (error) {
+      toast.error('Passkey-Anmeldung fehlgeschlagen. Bitte erneut versuchen.')
+      return
+    }
+
+    toast.success('Erfolgreich angemeldet.')
+    router.push('/lecturers')
+    router.refresh()
+  }
+
   const handleTotpVerification = async () => {
     if (totpCode.length !== 6) {
       toast.error('Bitte geben Sie einen gültigen 6-stelligen Code ein.')
       return
     }
 
-    setIsSubmitting(true)
+    setLoadingAction('totp')
     const { error } = await authClient.twoFactor.verifyTotp({ code: totpCode })
-    setIsSubmitting(false)
+    setLoadingAction(null)
 
     if (error) {
       toast.error('2FA-Verifizierung fehlgeschlagen. Bitte erneut versuchen.')
@@ -135,7 +157,7 @@ const LoginForm = () => {
 
     const canonicalCode = toCanonicalBackupCode(rawCode)
 
-    setIsSubmitting(true)
+    setLoadingAction('backup')
     const primaryAttempt = await authClient.twoFactor.verifyBackupCode({
       code: canonicalCode ?? rawCode,
     })
@@ -144,14 +166,14 @@ const LoginForm = () => {
       const fallbackAttempt = await authClient.twoFactor.verifyBackupCode({
         code: rawCode,
       })
-      setIsSubmitting(false)
+      setLoadingAction(null)
 
       if (fallbackAttempt.error) {
         toast.error('Ungültiger Backup-Code. Bitte erneut versuchen.')
         return
       }
     } else {
-      setIsSubmitting(false)
+      setLoadingAction(null)
 
       if (primaryAttempt.error) {
         toast.error('Ungültiger Backup-Code. Bitte erneut versuchen.')
@@ -222,10 +244,11 @@ const LoginForm = () => {
                 {/* Step 1 – Credentials */}
                 <div className="w-1/3 shrink-0 px-1">
                   <form onSubmit={handleSignIn}>
-                    <FieldGroup className="gap-6">
+                    <FieldGroup className="gap-3">
                       <Button
                         variant="outline"
                         type="button"
+                        disabled={isSubmitting}
                         onClick={() =>
                           toast.error(
                             'Microsoft Login ist derzeit nicht verfügbar'
@@ -240,7 +263,19 @@ const LoginForm = () => {
                         />
                         Anmelden mit Microsoft
                       </Button>
-                      <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card text-muted-foreground bg-transparent text-sm">
+                      <Button
+                        variant="outline"
+                        type="button"
+                        onClick={handlePasskeySignIn}
+                        disabled={isSubmitting}>
+                        {loadingAction === 'passkey' ? (
+                          <Spinner />
+                        ) : (
+                          <KeyRoundIcon />
+                        )}
+                        Mit Passkey anmelden
+                      </Button>
+                      <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card text-muted-foreground mt-3 bg-transparent text-sm">
                         <span className="px-4">oder anmelden mit</span>
                       </FieldSeparator>
                       <div className="flex flex-col gap-4">
@@ -293,7 +328,7 @@ const LoginForm = () => {
                       </div>
                       <Field className="gap-4">
                         <Button type="submit" size="lg" disabled={isSubmitting}>
-                          {isSubmitting ? <Spinner /> : <LogIn />}
+                          {loadingAction === 'email' ? <Spinner /> : <LogIn />}
                           Anmelden
                         </Button>
                         <FieldDescription className="text-muted-foreground text-center text-sm font-normal">
@@ -393,7 +428,11 @@ const LoginForm = () => {
                             type="submit"
                             size="lg"
                             disabled={isSubmitting}>
-                            {isSubmitting ? <Spinner /> : <Check />}
+                            {loadingAction === 'backup' ? (
+                              <Spinner />
+                            ) : (
+                              <Check />
+                            )}
                             Backup-Code bestätigen
                           </Button>
                           <div className="flex justify-center">
