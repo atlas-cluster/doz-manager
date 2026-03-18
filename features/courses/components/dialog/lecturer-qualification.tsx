@@ -296,7 +296,7 @@ export function LecturerQualificationDialog({
         className={
           'flex h-[90vh] max-h-[90vh] min-w-[60vw] flex-col overflow-hidden'
         }>
-        <DialogHeader className="sticky top-0 z-10 bg-background pb-2">
+        <DialogHeader className="bg-background sticky top-0 z-10 pb-2">
           <DialogTitle>Qualifikationen Bearbeiten - {course.name}</DialogTitle>
           <DialogDescription>
             Hier können Sie die Qualifikationen der Dozenten für diese Vorlesung
@@ -511,7 +511,7 @@ export function LecturerQualificationDialog({
                       </Item>
                     ))
                   ) : (
-                    <div className="col-span-full py-8 text-center text-muted-foreground">
+                    <div className="text-muted-foreground col-span-full py-8 text-center">
                       Keine Dozenten gefunden.
                     </div>
                   )}
@@ -520,7 +520,7 @@ export function LecturerQualificationDialog({
             </>
           )}
         </div>
-        <DialogFooter className="sticky bottom-0 z-10 items-end bg-background pt-2">
+        <DialogFooter className="bg-background sticky bottom-0 z-10 items-end pt-2">
           <DialogClose asChild>
             <Button variant="outline">{'Abbrechen'}</Button>
           </DialogClose>

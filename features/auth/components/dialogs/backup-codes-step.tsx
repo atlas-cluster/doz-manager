@@ -42,7 +42,7 @@ export function BackupCodesStep({ backupCodes, onDone }: BackupCodesStepProps) {
           {backupCodes.map((c) => (
             <span
               key={c}
-              className="rounded bg-background px-2 py-1 text-center">
+              className="bg-background rounded px-2 py-1 text-center">
               {c}
             </span>
           ))}

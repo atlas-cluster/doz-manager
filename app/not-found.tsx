@@ -27,7 +27,7 @@ export default function NotFound() {
           sizes="(min-width: 768px) 100vw"
           quality={75}
           alt="404 illustration"
-          className="object-cover rounded-2xl"
+          className="rounded-2xl object-cover"
         />
       </div>
     </div>

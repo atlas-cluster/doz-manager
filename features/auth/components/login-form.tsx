@@ -165,7 +165,7 @@ const LoginForm = () => {
   }
 
   return (
-    <section className="bg-foreground dark:bg-background min-h-screen flex items-center justify-center relative">
+    <section className="bg-foreground dark:bg-background relative flex min-h-screen items-center justify-center">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <Image
           src={'/bg.png'}
@@ -178,12 +178,12 @@ const LoginForm = () => {
         />
       </div>
 
-      <div className="py-10 md:py-20 max-w-lg px-4 sm:px-0 mx-auto w-full">
-        <Card className="max-w-lg px-6 py-8 sm:p-12 relative gap-6">
-          <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+      <div className="mx-auto w-full max-w-lg px-4 py-10 sm:px-0 md:py-20">
+        <Card className="relative max-w-lg gap-6 px-6 py-8 sm:p-12">
+          <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
             <ThemeToggle />
           </div>
-          <CardHeader className="text-center gap-6 p-0">
+          <CardHeader className="gap-6 p-0 text-center">
             <div className="mx-auto">
               <Image
                 src={'/provadis-hochschule.svg'}
@@ -201,10 +201,10 @@ const LoginForm = () => {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <CardTitle className="text-2xl font-medium text-card-foreground">
+              <CardTitle className="text-card-foreground text-2xl font-medium">
                 Willkommen zum Dozentenverwaltungsportal
               </CardTitle>
-              <CardDescription className="text-sm text-muted-foreground font-normal">
+              <CardDescription className="text-muted-foreground text-sm font-normal">
                 {step === 'credentials'
                   ? 'Melden Sie sich mit Ihrem Konto an'
                   : step === 'totp'
@@ -240,7 +240,7 @@ const LoginForm = () => {
                         />
                         Anmelden mit Microsoft
                       </Button>
-                      <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card text-sm text-muted-foreground bg-transparent">
+                      <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card text-muted-foreground bg-transparent text-sm">
                         <span className="px-4">oder anmelden mit</span>
                       </FieldSeparator>
                       <div className="flex flex-col gap-4">
@@ -296,11 +296,11 @@ const LoginForm = () => {
                           {isSubmitting ? <Spinner /> : <LogIn />}
                           Anmelden
                         </Button>
-                        <FieldDescription className="text-center text-sm font-normal text-muted-foreground">
+                        <FieldDescription className="text-muted-foreground text-center text-sm font-normal">
                           Sie haben noch kein Konto?{' '}
                           <a
                             href={`mailto:${process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? ''}`}
-                            className="font-medium text-card-foreground no-underline!">
+                            className="text-card-foreground font-medium no-underline!">
                             Kontaktieren Sie einen Administrator
                           </a>
                         </FieldDescription>
@@ -337,12 +337,12 @@ const LoginForm = () => {
                       </div>
 
                       <div className="flex flex-col items-center gap-3 pt-2">
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           Keinen Zugriff auf Ihre Authenticator-App?{' '}
                           <button
                             type="button"
                             disabled={isSubmitting}
-                            className="text-foreground underline underline-offset-4 hover:text-foreground/70 transition-colors cursor-pointer disabled:opacity-50"
+                            className="text-foreground hover:text-foreground/70 cursor-pointer underline underline-offset-4 transition-colors disabled:opacity-50"
                             onClick={() => goToStep('backup')}>
                             Backup-Code verwenden
                           </button>
@@ -383,7 +383,7 @@ const LoginForm = () => {
                             className="font-mono"
                             placeholder="PRVD-XXXX-XXXX"
                           />
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-muted-foreground text-xs">
                             Jeder Backup-Code kann nur einmal verwendet werden -
                             bewahren Sie sie an einem sicheren Ort auf.
                           </p>

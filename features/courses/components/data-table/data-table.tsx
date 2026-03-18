@@ -268,7 +268,7 @@ export function DataTable({
           </div>
           {/** REPLACE THIS DIV WITH FACETED FILTERS ONCE IMPLEMENTED */}
           {/** This div's only purpose is to push the clear filters button to the bottom on mobile, when no faceted filters are present */}
-          <div className={'w-full h-0 md:hidden'} />
+          <div className={'h-0 w-full md:hidden'} />
           {(table.getState().columnFilters.length > 0 || globalFilter) && (
             <Button
               variant="ghost"
@@ -281,7 +281,7 @@ export function DataTable({
           )}
         </div>
         {/** Desktop only: Show view options, refresh button and create button on the right */}
-        <div className={'hidden md:flex gap-2'}>
+        <div className={'hidden gap-2 md:flex'}>
           <ButtonGroup>
             <DataTableViewOptions table={table} />
             <Button
@@ -303,7 +303,7 @@ export function DataTable({
           />
         </div>
       </div>
-      <div className="overflow-hidden rounded-md border mb-3">
+      <div className="mb-3 overflow-hidden rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

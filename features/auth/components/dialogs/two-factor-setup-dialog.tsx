@@ -96,10 +96,10 @@ export function TwoFactorSetupDialog({
                   unoptimized
                 />
               ) : (
-                <div className="size-50 rounded-lg border bg-muted animate-pulse" />
+                <div className="bg-muted size-50 animate-pulse rounded-lg border" />
               )}
               <div className="w-full space-y-1.5">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Oder URI manuell eingeben:
                 </p>
                 <div className="flex gap-2">
@@ -124,7 +124,7 @@ export function TwoFactorSetupDialog({
             <div className="space-y-3">
               <div className="space-y-0.5">
                 <p className="text-sm font-medium">Bestätigungscode</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App
                   ein.
                 </p>
