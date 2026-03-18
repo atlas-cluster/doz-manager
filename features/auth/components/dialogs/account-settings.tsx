@@ -533,12 +533,7 @@ export function AccountSettings({
 
       <EditFieldDialog
         open={showEmailDialog}
-        onOpenChange={(open) => {
-          setShowEmailDialog(open)
-          if (open) {
-            setEmailFieldInput(saved.email)
-          }
-        }}
+        onOpenChange={setShowEmailDialog}
         title="E-Mail ändern"
         description="Geben Sie Ihre neue E-Mail-Adresse ein."
         inputType="email"
