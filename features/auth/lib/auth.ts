@@ -144,7 +144,7 @@ function createAuthInstance(
     }),
     appName,
     emailAndPassword: {
-      enabled: true,
+      enabled: row?.passwordEnabled ?? true,
     },
     account: {
       accountLinking: {
