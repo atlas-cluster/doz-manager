@@ -441,7 +441,7 @@ export function SettingsTabs({
                           autoComplete={'off'}
                         />
                         <Button
-                          className="absolute top-0 right-0 h-full px-3 hover:bg-transparent!"
+                          className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
                           onClick={() =>
                             setShowMicrosoftSecret(!showMicrosoftSecret)
                           }
@@ -584,7 +584,7 @@ export function SettingsTabs({
                           autoComplete={'off'}
                         />
                         <Button
-                          className="absolute top-0 right-0 h-full px-3 hover:bg-transparent!"
+                          className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
                           onClick={() => setShowGithubSecret(!showGithubSecret)}
                           size="icon"
                           type="button"
@@ -729,7 +729,7 @@ export function SettingsTabs({
                           autoComplete={'off'}
                         />
                         <Button
-                          className="absolute top-0 right-0 h-full px-3 hover:bg-transparent!"
+                          className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
                           onClick={() => setShowOauthSecret(!showOauthSecret)}
                           size="icon"
                           type="button"
