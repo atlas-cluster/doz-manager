@@ -420,7 +420,7 @@ export function SettingsTabs({
                       <FieldLabel htmlFor="ms-clientSecret">
                         Client Secret
                         {initialSettings.microsoftHasSecret && (
-                          <span className="text-muted-foreground ml-2 text-xs font-normal">
+                          <span className="text-muted-foreground ml-1 text-xs font-normal">
                             (gespeichert)
                           </span>
                         )}
@@ -563,7 +563,7 @@ export function SettingsTabs({
                       <FieldLabel htmlFor="gh-clientSecret">
                         Client Secret
                         {initialSettings.githubHasSecret && (
-                          <span className="text-muted-foreground ml-2 text-xs font-normal">
+                          <span className="text-muted-foreground ml-1 text-xs font-normal">
                             (gespeichert)
                           </span>
                         )}
@@ -708,7 +708,7 @@ export function SettingsTabs({
                       <FieldLabel htmlFor="oauth-clientSecret">
                         Client Secret
                         {initialSettings.oauthHasSecret && (
-                          <span className="text-muted-foreground ml-2 text-xs font-normal">
+                          <span className="text-muted-foreground ml-1 text-xs font-normal">
                             (gespeichert)
                           </span>
                         )}
