@@ -1,5 +1,8 @@
 'use server'
 
+import { headers } from 'next/headers'
+
+import { auth } from '@/features/auth/lib/auth'
 import { decrypt } from '@/features/auth/lib/encrypt'
 import type { AuthSettingsData } from '@/features/auth/types'
 import { prisma } from '@/features/shared/lib/prisma'
@@ -9,6 +12,23 @@ import { prisma } from '@/features/shared/lib/prisma'
  * Returns field values with secrets masked — only boolean `hasSecret` flags.
  */
 export async function getAuthSettings(): Promise<AuthSettingsData> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  if (!session?.user?.id) {
+    throw new Error('Nicht authentifiziert')
+  }
+
+  const caller = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isAdmin: true },
+  })
+
+  if (!caller?.isAdmin) {
+    throw new Error('Keine Berechtigung')
+  }
+
   const row = await prisma.authSettings.findUnique({
     where: { id: 'singleton' },
   })
