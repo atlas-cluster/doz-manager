@@ -13,9 +13,15 @@ export default async function SettingsPage() {
     getProviderUserCounts(),
   ])
 
+  const baseUrl = process.env.BETTER_AUTH_URL ?? ''
+
   return (
     <div className={'flex w-full items-center justify-center'}>
-      <SettingsTabs initialSettings={settings} userCounts={userCounts} />
+      <SettingsTabs
+        initialSettings={settings}
+        userCounts={userCounts}
+        baseUrl={baseUrl}
+      />
     </div>
   )
 }

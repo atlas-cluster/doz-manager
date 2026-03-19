@@ -76,6 +76,7 @@ function renderTabs(
     <SettingsTabs
       initialSettings={{ ...defaultSettings, ...overrides }}
       userCounts={{ ...defaultCounts, ...counts }}
+      baseUrl="http://localhost:3000"
     />
   )
 }
@@ -268,12 +269,8 @@ describe('SettingsTabs', () => {
     const secretInput = screen.getByLabelText(/Client Secret/)
     expect(secretInput).toHaveAttribute('type', 'password')
 
-    // Click the eye toggle button (the one inside the secret field)
-    const toggleButtons = screen
-      .getAllByRole('button')
-      .filter((btn) => !btn.textContent?.includes('Speichern'))
-    // Find the toggle button near the secret field
-    const eyeToggle = toggleButtons[0]
+    // Click the eye toggle button inside the secret field's wrapper
+    const eyeToggle = secretInput.parentElement!.querySelector('button')!
     await user.click(eyeToggle)
 
     expect(secretInput).toHaveAttribute('type', 'text')

@@ -2,10 +2,13 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
+  CheckIcon,
+  ClipboardIcon,
   EyeIcon,
   EyeOffIcon,
   Fingerprint,
   GithubIcon,
+  InfoIcon,
   Save,
   SquareAsterisk,
   UsersIcon,
@@ -50,6 +53,7 @@ const SECRET_PLACEHOLDER = '••••••••••••••••'
 type SettingsTabsProps = {
   initialSettings: AuthSettingsData
   userCounts: ProviderUserCounts
+  baseUrl: string
 }
 
 function UserCountBadge({ count }: { count: number }) {
@@ -61,9 +65,55 @@ function UserCountBadge({ count }: { count: number }) {
   )
 }
 
+function CopyableUrl({ label, url }: { label: string; url: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="space-y-1">
+      <p className="text-muted-foreground text-xs font-medium">{label}</p>
+      <div className="flex items-center gap-2">
+        <code className="bg-muted flex-1 truncate rounded-md px-3 py-2 font-mono text-xs select-all">
+          {url}
+        </code>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          onClick={handleCopy}>
+          {copied ? (
+            <CheckIcon className="size-4 text-green-500" />
+          ) : (
+            <ClipboardIcon className="size-4" />
+          )}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function CallbackUrlInfo({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-muted/50 mt-4 rounded-lg border p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <InfoIcon className="text-muted-foreground size-4" />
+        <p className="text-sm font-medium">Einrichtungsinformationen</p>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </div>
+  )
+}
+
 export function SettingsTabs({
   initialSettings,
   userCounts,
+  baseUrl,
 }: SettingsTabsProps) {
   const router = useRouter()
 
@@ -388,6 +438,12 @@ export function SettingsTabs({
               </div>
             </div>
             <Separator />
+            <CallbackUrlInfo>
+              <CopyableUrl
+                label="Redirect URI (für Azure App Registration)"
+                url={`${baseUrl}/api/auth/callback/microsoft`}
+              />
+            </CallbackUrlInfo>
             <form
               onSubmit={microsoftForm.handleSubmit(handleMicrosoftSubmit)}
               className={'space-y-4 pt-4'}>
@@ -417,10 +473,10 @@ export function SettingsTabs({
                   control={microsoftForm.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="ms-clientSecret">
+                      <FieldLabel htmlFor="ms-clientSecret" className={'gap-1'}>
                         Client Secret
                         {initialSettings.microsoftHasSecret && (
-                          <span className="text-muted-foreground ml-1 text-xs font-normal">
+                          <span className="text-muted-foreground text-xs font-normal">
                             (gespeichert)
                           </span>
                         )}
@@ -531,6 +587,13 @@ export function SettingsTabs({
               </div>
             </div>
             <Separator />
+            <CallbackUrlInfo>
+              <CopyableUrl
+                label="Authorization callback URL (für GitHub OAuth App)"
+                url={`${baseUrl}/api/auth/callback/github`}
+              />
+              <CopyableUrl label="Homepage URL" url={baseUrl} />
+            </CallbackUrlInfo>
             <form
               onSubmit={githubForm.handleSubmit(handleGithubSubmit)}
               className={'space-y-4 pt-4'}>
@@ -560,10 +623,10 @@ export function SettingsTabs({
                   control={githubForm.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="gh-clientSecret">
+                      <FieldLabel htmlFor="gh-clientSecret" className={'gap-1'}>
                         Client Secret
                         {initialSettings.githubHasSecret && (
-                          <span className="text-muted-foreground ml-1 text-xs font-normal">
+                          <span className="text-muted-foreground text-xs font-normal">
                             (gespeichert)
                           </span>
                         )}
@@ -652,6 +715,12 @@ export function SettingsTabs({
               </div>
             </div>
             <Separator />
+            <CallbackUrlInfo>
+              <CopyableUrl
+                label="Redirect / Callback URI (für Ihren OAuth2-Provider)"
+                url={`${baseUrl}/api/auth/callback/oauth`}
+              />
+            </CallbackUrlInfo>
             <form
               onSubmit={oauthForm.handleSubmit(handleOauthSubmit)}
               className={'space-y-4 pt-4'}>
@@ -705,10 +774,12 @@ export function SettingsTabs({
                   control={oauthForm.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="oauth-clientSecret">
+                      <FieldLabel
+                        htmlFor="oauth-clientSecret"
+                        className={'gap-1'}>
                         Client Secret
                         {initialSettings.oauthHasSecret && (
-                          <span className="text-muted-foreground ml-1 text-xs font-normal">
+                          <span className="text-muted-foreground text-xs font-normal">
                             (gespeichert)
                           </span>
                         )}
