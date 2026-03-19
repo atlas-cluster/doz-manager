@@ -221,7 +221,7 @@ export function LecturerAssignmentDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="flex h-[90vh] max-h-[90vh] min-w-[60vw] flex-col overflow-hidden">
-        <DialogHeader className="sticky top-0 bg-background pb-2">
+        <DialogHeader className="bg-background sticky top-0 pb-2">
           <DialogTitle>Dozenten zuordnen – {course.name}</DialogTitle>
           <DialogDescription>
             Hier können Sie der Vorlesung Dozenten zuweisen.
@@ -286,7 +286,7 @@ export function LecturerAssignmentDialog({
                   ))}
                 </div>
               ) : filteredLecturers.length === 0 ? (
-                <div className="col-span-full text-center text-muted-foreground py-4">
+                <div className="text-muted-foreground col-span-full py-4 text-center">
                   Keine Dozenten gefunden.
                 </div>
               ) : (
@@ -370,7 +370,7 @@ export function LecturerAssignmentDialog({
           </>
         </div>
 
-        <DialogFooter className="sticky bottom-0 bg-background pt-2">
+        <DialogFooter className="bg-background sticky bottom-0 pt-2">
           <DialogClose asChild>
             <Button variant="outline">Abbrechen</Button>
           </DialogClose>

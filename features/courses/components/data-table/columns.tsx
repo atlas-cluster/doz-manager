@@ -156,7 +156,7 @@ function LecturerAssignmentsCell({
         (table.options.meta as CourseTableMeta | undefined)?.refreshCourses()
       }
       trigger={
-        <AvatarGroup className="grayscale cursor-pointer">
+        <AvatarGroup className="cursor-pointer grayscale">
           {displayAssignments.map((assignment, index) => (
             <Avatar key={index}>
               <AvatarFallback>
