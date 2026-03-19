@@ -5,6 +5,7 @@ import { auth } from '@/features/auth/lib/auth'
 import { prisma } from '@/features/shared/lib/prisma'
 
 vi.mock('@/features/shared/lib/prisma')
+vi.mock('next/cache', () => ({ updateTag: vi.fn() }))
 vi.mock('next/headers', () => ({
   headers: vi.fn().mockResolvedValue(new Headers()),
 }))
