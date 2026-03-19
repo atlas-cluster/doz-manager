@@ -49,9 +49,7 @@ export async function getProviderUserCounts(): Promise<ProviderUserCounts> {
       }),
       prisma.account.groupBy({
         by: ['userId'],
-        where: {
-          providerId: { notIn: ['credential', 'microsoft', 'github'] },
-        },
+        where: { providerId: 'oauth' },
       }),
     ])
 
