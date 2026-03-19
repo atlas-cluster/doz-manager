@@ -91,6 +91,7 @@ describe('AccountSettings', () => {
     mockPasskeys = []
     mockAddPasskey.mockResolvedValue({ data: {}, error: null })
     mockDeletePasskey.mockResolvedValue({ data: { status: true }, error: null })
+    mockRefetchPasskeys.mockReset().mockResolvedValue(undefined)
   })
 
   it('should render the Profil tab by default', () => {
@@ -164,12 +165,16 @@ describe('AccountSettings', () => {
       configurable: true,
     })
 
+    const user = userEvent.setup()
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
+
+    // Set the implementation after mount so the mount refetch doesn't affect it
     mockRefetchPasskeys.mockImplementation(async () => {
       mockPasskeys = [{ id: 'passkey-1' }]
     })
+    mockRefetchPasskeys.mockClear()
+    mockInvalidateUsersCache.mockClear()
 
-    const user = userEvent.setup()
-    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
 
@@ -239,12 +244,15 @@ describe('AccountSettings', () => {
       configurable: true,
     })
 
+    const user = userEvent.setup()
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
+
+    // Set the implementation after mount so the mount refetch doesn't affect it
     mockRefetchPasskeys.mockImplementation(async () => {
       mockPasskeys = [{ id: 'passkey-1' }]
     })
+    mockRefetchPasskeys.mockClear()
 
-    const user = userEvent.setup()
-    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     await user.click(screen.getByRole('button', { name: 'Verwalten' }))
@@ -265,12 +273,16 @@ describe('AccountSettings', () => {
         createdAt: '2026-03-18T10:00:00.000Z',
       },
     ]
-    mockRefetchPasskeys.mockImplementation(async () => {
-      mockPasskeys = []
-    })
 
     const user = userEvent.setup()
     render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
+
+    // Set the implementation after mount so the mount refetch doesn't clear passkeys
+    mockRefetchPasskeys.mockImplementation(async () => {
+      mockPasskeys = []
+    })
+    mockRefetchPasskeys.mockClear()
+
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     await user.click(screen.getByRole('button', { name: 'Verwalten' }))

@@ -132,6 +132,13 @@ export function AccountSettings({
     })
   }
 
+  // Refetch passkeys on mount so the dialog always shows fresh data
+  // (e.g. after an admin removed passkeys via access-control).
+  useEffect(() => {
+    refetchPasskeys()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     if (twoFactorEnabled) {
       getBackupCodeCount().then(setBackupCodeCount)
