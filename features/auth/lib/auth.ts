@@ -205,8 +205,18 @@ function createAuthInstance(
   })
 }
 
+function isSameUpdatedAt(a: Date | null, b: Date | null): boolean {
+  if (a === null && b === null) return true
+  if (a === null || b === null) return false
+  return a.getTime() === b.getTime()
+}
+
 // Start with a default instance (password + passkey only)
 export let auth = createAuthInstance(null)
+
+// Tracks the updatedAt of the last-loaded settings row.
+// undefined = never initialized; null = no row in DB; Date = last seen updatedAt
+let cachedSettingsUpdatedAt: Date | null | undefined = undefined
 
 /**
  * Re-create the BetterAuth instance from current DB settings.
@@ -217,15 +227,34 @@ export async function reinitializeAuth() {
     where: { id: 'singleton' },
   })
   auth = createAuthInstance(row)
+  cachedSettingsUpdatedAt = row?.updatedAt ?? null
 }
 
 /**
  * Ensure the auth instance is initialized from DB settings.
- * Safe to call multiple times.
+ * Caches the last-seen `updatedAt` and only re-creates the instance
+ * when settings have actually changed, avoiding per-request overhead.
  */
 export async function ensureAuthInitialized() {
+  const stamp = await prisma.authSettings.findUnique({
+    where: { id: 'singleton' },
+    select: { updatedAt: true },
+  })
+
+  const newUpdatedAt = stamp?.updatedAt ?? null
+
+  // Skip rebuild when already initialized and settings are unchanged
+  if (
+    cachedSettingsUpdatedAt !== undefined &&
+    isSameUpdatedAt(cachedSettingsUpdatedAt, newUpdatedAt)
+  ) {
+    return
+  }
+
+  // First call or settings changed — fetch full row and rebuild
   const row = await prisma.authSettings.findUnique({
     where: { id: 'singleton' },
   })
   auth = createAuthInstance(row)
+  cachedSettingsUpdatedAt = newUpdatedAt
 }
