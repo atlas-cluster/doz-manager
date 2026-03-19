@@ -166,7 +166,7 @@ export function CourseAssignmentDialog({
         className={
           'flex h-[90vh] max-h-[90vh] min-w-[60vw] flex-col overflow-hidden'
         }>
-        <DialogHeader className="sticky top-0 z-10 bg-background pb-2">
+        <DialogHeader className="bg-background sticky top-0 z-10 pb-2">
           <DialogTitle>
             {readonlyMode
               ? 'Vorlesungen ansehen - '
@@ -236,7 +236,7 @@ export function CourseAssignmentDialog({
                             <CommandItem
                               key={course.id}
                               onSelect={() => toggleCourse(course.id)}
-                              value={course.id}>
+                              value={course.name}>
                               <Checkbox
                                 checked={selectedCourses.some(
                                   (c) => c.id === course.id
@@ -314,7 +314,7 @@ export function CourseAssignmentDialog({
             </>
           )}
         </div>
-        <DialogFooter className="sticky bottom-0 z-10 items-end bg-background pt-2">
+        <DialogFooter className="bg-background sticky bottom-0 z-10 items-end pt-2">
           <DialogClose asChild>
             <Button variant="outline">
               {readonly ? 'Schließen' : 'Abbrechen'}

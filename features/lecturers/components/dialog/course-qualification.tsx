@@ -288,7 +288,7 @@ export function CourseQualificationDialog({
         className={
           'flex h-[90vh] max-h-[90vh] min-w-[60vw] flex-col overflow-hidden'
         }>
-        <DialogHeader className="sticky top-0 z-10 bg-background pb-2">
+        <DialogHeader className="bg-background sticky top-0 z-10 pb-2">
           <DialogTitle>
             Qualifikationen Bearbeiten -{' '}
             {lecturer.title ? lecturer.title + ' ' : ''}
@@ -421,7 +421,7 @@ export function CourseQualificationDialog({
                         variant="outline"
                         size={'sm'}
                         className={'flex flex-nowrap'}>
-                        <ItemMedia className="flex justify-center items-center h-full">
+                        <ItemMedia className="flex h-full items-center justify-center">
                           <Avatar className={'size-10'}>
                             <AvatarFallback>
                               {initialsFromName(course.name)}
@@ -506,7 +506,7 @@ export function CourseQualificationDialog({
                       </Item>
                     ))
                   ) : (
-                    <div className="col-span-full text-center py-8 text-muted-foreground">
+                    <div className="text-muted-foreground col-span-full py-8 text-center">
                       Keine Kurse gefunden.
                     </div>
                   )}
@@ -515,7 +515,7 @@ export function CourseQualificationDialog({
             </>
           )}
         </div>
-        <DialogFooter className="sticky bottom-0 z-10 items-end bg-background pt-2">
+        <DialogFooter className="bg-background sticky bottom-0 z-10 items-end pt-2">
           <DialogClose asChild>
             <Button variant="outline">{'Abbrechen'}</Button>
           </DialogClose>

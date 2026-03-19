@@ -1,3 +1,5 @@
+import { betterAuth } from 'better-auth'
+import { prismaAdapter } from 'better-auth/adapters/prisma'
 import 'dotenv/config'
 
 import {
@@ -21,6 +23,11 @@ const adapter = new PrismaMariaDb({
 })
 
 const prisma = new PrismaClient({ adapter })
+
+const seedAuth = betterAuth({
+  database: prismaAdapter(prisma, { provider: 'mysql' }),
+  emailAndPassword: { enabled: true },
+})
 
 const lecturers = [
   {
@@ -287,6 +294,52 @@ const lecturerAssignments = {
 
 async function main() {
   console.log(`Start seeding ...`)
+
+  // --- Seed initial admin user ---
+  const adminEmail = process.env.SEED_ADMIN_EMAIL
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD
+  const adminName = process.env.SEED_ADMIN_NAME ?? 'Admin'
+
+  if (adminEmail && adminPassword) {
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: adminEmail },
+    })
+
+    if (!existingAdmin) {
+      if (adminPassword.length < 8) {
+        console.error('SEED_ADMIN_PASSWORD must be at least 8 characters.')
+        process.exit(1)
+      }
+
+      await seedAuth.api.signUpEmail({
+        body: { email: adminEmail, password: adminPassword, name: adminName },
+      })
+
+      const adminUser = await prisma.user.findUnique({
+        where: { email: adminEmail },
+      })
+
+      if (adminUser) {
+        await prisma.user.update({
+          where: { id: adminUser.id },
+          data: { isAdmin: true },
+        })
+        console.log(`Created admin user: ${adminName} <${adminEmail}>`)
+      } else {
+        console.error(
+          'Admin user creation failed – user not found after sign-up.'
+        )
+        process.exit(1)
+      }
+    } else {
+      console.log(`Admin user already exists: ${adminEmail}`)
+    }
+  } else {
+    console.warn(
+      'Skipping admin user seed: SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD not set.'
+    )
+  }
+
   for (const lecturer of lecturers) {
     const user = await prisma.lecturer.upsert({
       where: { email: lecturer.email },

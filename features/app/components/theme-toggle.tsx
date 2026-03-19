@@ -27,25 +27,21 @@ const IconSwitcher = React.memo(function IconSwitcher({
         aria-hidden
         className={
           baseClass +
-          (theme === 'light'
-            ? ' opacity-100'
-            : ' pointer-events-none opacity-0')
+          (theme === 'light' ? 'opacity-100' : 'pointer-events-none opacity-0')
         }
       />
       <MoonIcon
         aria-hidden
         className={
           baseClass +
-          (theme === 'dark' ? ' opacity-100' : ' pointer-events-none opacity-0')
+          (theme === 'dark' ? 'opacity-100' : 'pointer-events-none opacity-0')
         }
       />
       <ContrastIcon
         aria-hidden
         className={
           baseClass +
-          (theme === 'system'
-            ? ' opacity-100'
-            : ' pointer-events-none opacity-0')
+          (theme === 'system' ? 'opacity-100' : 'pointer-events-none opacity-0')
         }
       />
     </span>

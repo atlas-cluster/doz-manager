@@ -6,5 +6,7 @@ export function formatRoute(route: string) {
       return 'Dozenten'
     case '/courses':
       return 'Vorlesungen'
+    case '/access-control':
+      return 'Zugriffsverwaltung'
   }
 }

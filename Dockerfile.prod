@@ -13,6 +13,9 @@ RUN npm run prisma:generate
 
 COPY . .
 
+ARG NEXT_PUBLIC_ADMIN_EMAIL
+ENV NEXT_PUBLIC_ADMIN_EMAIL=$NEXT_PUBLIC_ADMIN_EMAIL
+
 RUN npm run build
 
 FROM node:22-alpine AS runner

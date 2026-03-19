@@ -53,6 +53,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_ADMIN_EMAIL=${{ secrets.NEXT_PUBLIC_ADMIN_EMAIL }}
 
   migrate:
     name: Run Migrations
@@ -153,6 +155,9 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
+          NEXT_PUBLIC_ADMIN_EMAIL: ${{ secrets.NEXT_PUBLIC_ADMIN_EMAIL }}
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.actor }}
         with:
@@ -164,14 +169,14 @@ jobs:
           proxy_username: ${{ secrets.JUMP_USER }}
           proxy_key: ${{ secrets.JUMP_SSH_KEY }}
           proxy_port: ${{ secrets.JUMP_PORT || 22 }}
-          envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,REGISTRY_TOKEN,USERNAME
+          envs: REGISTRY,IMAGE_NAME,CONTAINER_NAME,IMAGE_TAG,DB_HOST,DB_NAME,DB_USER,DB_PASSWORD,BETTER_AUTH_SECRET,BETTER_AUTH_URL,NEXT_PUBLIC_ADMIN_EMAIL,REGISTRY_TOKEN,USERNAME
           script: |
             FULL_IMAGE_NAME=$(echo "$REGISTRY/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
 
             echo "$REGISTRY_TOKEN" | docker login $REGISTRY -u $USERNAME --password-stdin
             docker pull $FULL_IMAGE_NAME:$IMAGE_TAG
             docker stop $CONTAINER_NAME || true
-            docker rm $CONTAINER_NAME || true
+            docker rm -v $CONTAINER_NAME || true
             docker run -d \
               --name $CONTAINER_NAME \
               --restart unless-stopped \
@@ -180,6 +185,9 @@ jobs:
               -e DB_USER="$DB_USER" \
               -e DB_PASSWORD="$DB_PASSWORD" \
               -e DB_NAME="$DB_NAME" \
+              -e BETTER_AUTH_SECRET="$BETTER_AUTH_SECRET" \
+              -e BETTER_AUTH_URL="$BETTER_AUTH_URL" \
+              -e NEXT_PUBLIC_ADMIN_EMAIL="$NEXT_PUBLIC_ADMIN_EMAIL" \
               -e NODE_ENV=production \
               $FULL_IMAGE_NAME:$IMAGE_TAG
             docker image prune -a -f --filter "until=24h"

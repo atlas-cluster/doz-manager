@@ -23,15 +23,22 @@ async function getLecturersInternal({
   const prefConditions: Prisma.LecturerWhereInput[] = []
 
   if (globalFilter) {
-    globalConditions.push({
-      OR: [
-        { firstName: { contains: globalFilter } },
-        { secondName: { contains: globalFilter } },
-        { lastName: { contains: globalFilter } },
-        { email: { contains: globalFilter } },
-        { phone: { contains: globalFilter } },
-      ],
-    })
+    const tokens = globalFilter.trim().split(/\s+/)
+
+    const tokenConditions: Prisma.LecturerWhereInput[] = tokens.map(
+      (token) => ({
+        OR: [
+          { title: { contains: token } },
+          { firstName: { contains: token } },
+          { secondName: { contains: token } },
+          { lastName: { contains: token } },
+          { email: { contains: token } },
+          { phone: { contains: token } },
+        ],
+      })
+    )
+
+    globalConditions.push({ AND: tokenConditions })
   }
 
   for (const filter of columnFilters) {
