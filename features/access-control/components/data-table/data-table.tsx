@@ -6,12 +6,15 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+import { addAuthMethod } from '@/features/access-control/actions/add-auth-method'
 import { changeUserPassword } from '@/features/access-control/actions/change-user-password'
 import { createUser } from '@/features/access-control/actions/create-user'
 import { deleteUser } from '@/features/access-control/actions/delete-user'
 import { deleteUsers } from '@/features/access-control/actions/delete-users'
 import { disableUser2FA } from '@/features/access-control/actions/disable-user-2fa'
 import { getUsers } from '@/features/access-control/actions/get-users'
+import { removeAuthMethod } from '@/features/access-control/actions/remove-auth-method'
+import { removePasskeys } from '@/features/access-control/actions/remove-passkeys'
 import { toggleAdmin } from '@/features/access-control/actions/toggle-admin'
 import { updateUser } from '@/features/access-control/actions/update-user'
 import { columns } from '@/features/access-control/components/data-table/columns'
@@ -21,6 +24,7 @@ import {
   AccessControlUser,
   GetUsersResponse,
 } from '@/features/access-control/types'
+import type { PublicAuthSettings } from '@/features/auth/types'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
@@ -55,9 +59,11 @@ import {
 export function DataTable({
   initialData,
   currentUserId,
+  enabledMethods,
 }: {
   initialData: GetUsersResponse
   currentUserId: string
+  enabledMethods?: PublicAuthSettings
 }) {
   const [isPending, startTransition] = useTransition()
 
@@ -108,6 +114,23 @@ export function DataTable({
                 image: detail.image,
                 twoFactorEnabled: detail.twoFactorEnabled,
                 backupCodeCount: detail.backupCodeCount ?? user.backupCodeCount,
+                authProviders: (() => {
+                  if (Array.isArray(detail.authProviders)) {
+                    return detail.authProviders
+                  }
+
+                  if (typeof detail.hasPasskey !== 'boolean') {
+                    return user.authProviders
+                  }
+
+                  const providers = user.authProviders.filter(
+                    (provider) => provider.toLowerCase() !== 'passkey'
+                  )
+                  if (detail.hasPasskey) {
+                    providers.push('passkey')
+                  }
+                  return providers
+                })(),
               }
             : user
         )
@@ -232,6 +255,47 @@ export function DataTable({
     })
   }
 
+  const handleAddPassword = (userId: string, password: string) => {
+    const promise = addAuthMethod(userId, password).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Passwort wird hinzugefügt...',
+      success: 'Passwort erfolgreich hinzugefügt',
+      error: (err) =>
+        err instanceof Error
+          ? err.message
+          : 'Fehler beim Hinzufügen des Passworts',
+    })
+  }
+
+  const handleRemovePassword = (userId: string) => {
+    const promise = removeAuthMethod(userId, 'credential').then(() =>
+      fetchData()
+    )
+
+    toast.promise(promise, {
+      loading: 'Passwort wird entfernt...',
+      success: 'Passwort erfolgreich entfernt',
+      error: (err) =>
+        err instanceof Error
+          ? err.message
+          : 'Fehler beim Entfernen des Passworts',
+    })
+  }
+
+  const handleRemovePasskeys = (userId: string) => {
+    const promise = removePasskeys(userId).then(() => fetchData())
+
+    toast.promise(promise, {
+      loading: 'Passkeys werden entfernt...',
+      success: 'Passkeys erfolgreich entfernt',
+      error: (err) =>
+        err instanceof Error
+          ? err.message
+          : 'Fehler beim Entfernen der Passkeys',
+    })
+  }
+
   const handleRefresh = () => {
     fetchData()
   }
@@ -279,7 +343,11 @@ export function DataTable({
       toggleAdmin: handleToggleAdmin,
       changePassword: handleChangePassword,
       disable2FA: handleDisable2FA,
+      addPassword: handleAddPassword,
+      removePassword: handleRemovePassword,
+      removePasskeys: handleRemovePasskeys,
       refreshUsers: handleRefresh,
+      enabledMethods,
     },
 
     enableRowSelection: true,

@@ -141,12 +141,12 @@ describe('Access Control DataTable', () => {
     expect(screen.getByRole('button', { name: /Rolle/ })).toBeInTheDocument()
   })
 
-  it('should sync two factor and backup code count from profile update events', async () => {
+  it('should sync two factor badge from profile update events', async () => {
     render(<DataTable initialData={sampleData} currentUserId="admin-1" />)
     const aliceRow = screen.getByText('Alice Admin').closest('tr')
     expect(aliceRow).not.toBeNull()
     expect(
-      within(aliceRow as HTMLTableRowElement).getByText('5')
+      within(aliceRow as HTMLTableRowElement).getByText('2FA')
     ).toBeInTheDocument()
 
     window.dispatchEvent(
@@ -156,7 +156,7 @@ describe('Access Control DataTable', () => {
           name: 'Alice Admin',
           email: 'alice@example.com',
           image: null,
-          twoFactorEnabled: true,
+          twoFactorEnabled: false,
           backupCodeCount: 2,
         },
       })
@@ -164,11 +164,36 @@ describe('Access Control DataTable', () => {
 
     await waitFor(() => {
       expect(
-        within(aliceRow as HTMLTableRowElement).getByText('2')
-      ).toBeInTheDocument()
-      expect(
-        within(aliceRow as HTMLTableRowElement).queryByText('5')
+        within(aliceRow as HTMLTableRowElement).queryByText('2FA')
       ).not.toBeInTheDocument()
+    })
+  })
+
+  it('should sync passkey badge from profile update events', async () => {
+    render(<DataTable initialData={sampleData} currentUserId="admin-1" />)
+    const bobRow = screen.getByText('Bob User').closest('tr')
+    expect(bobRow).not.toBeNull()
+    expect(
+      within(bobRow as HTMLTableRowElement).queryByText('Passkey')
+    ).not.toBeInTheDocument()
+
+    window.dispatchEvent(
+      new CustomEvent(USER_PROFILE_UPDATED_EVENT, {
+        detail: {
+          id: 'u2',
+          name: 'Bob User',
+          email: 'bob@example.com',
+          image: null,
+          twoFactorEnabled: false,
+          hasPasskey: true,
+        },
+      })
+    )
+
+    await waitFor(() => {
+      expect(
+        within(bobRow as HTMLTableRowElement).getByText('Passkey')
+      ).toBeInTheDocument()
     })
   })
 })

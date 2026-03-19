@@ -5,12 +5,17 @@ import type { AccountUser } from '@/features/auth/types'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
+const mockInvalidateUsersCache = vi.fn().mockResolvedValue(undefined)
 const mockAddPasskey = vi.fn()
 mockAddPasskey.mockResolvedValue({ data: {}, error: null })
 const mockDeletePasskey = vi.fn()
 mockDeletePasskey.mockResolvedValue({ data: { status: true }, error: null })
 const mockRefetchPasskeys = vi.fn().mockResolvedValue(undefined)
 let mockPasskeys: Array<{ id: string; name?: string; createdAt?: string }> = []
+
+vi.mock('@/features/access-control/actions/invalidate-users-cache', () => ({
+  invalidateUsersCache: () => mockInvalidateUsersCache(),
+}))
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -86,26 +91,27 @@ describe('AccountSettings', () => {
     mockPasskeys = []
     mockAddPasskey.mockResolvedValue({ data: {}, error: null })
     mockDeletePasskey.mockResolvedValue({ data: { status: true }, error: null })
+    mockRefetchPasskeys.mockReset().mockResolvedValue(undefined)
   })
 
   it('should render the Profil tab by default', () => {
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     expect(screen.getByText('Profil')).toBeInTheDocument()
     expect(screen.getByText('Sicherheit')).toBeInTheDocument()
   })
 
   it('should display the user name', () => {
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     expect(screen.getByText('Test User')).toBeInTheDocument()
   })
 
   it('should display the user email', () => {
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     expect(screen.getByText('test@example.com')).toBeInTheDocument()
   })
 
   it('should display the profile image URL', () => {
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     expect(
       screen.getByText('https://example.com/avatar.png')
     ).toBeInTheDocument()
@@ -113,19 +119,19 @@ describe('AccountSettings', () => {
 
   it('should show "Kein Bild gesetzt" when image is null', () => {
     const userNoImage = { ...mockUser, image: null }
-    render(<AccountSettings initialUser={userNoImage} />)
+    render(<AccountSettings hasPassword={true} initialUser={userNoImage} />)
     expect(screen.getByText('Kein Bild gesetzt')).toBeInTheDocument()
   })
 
   it('should render edit buttons on profile tab', () => {
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const editButtons = screen.getAllByRole('button', { name: /ndern/ })
     expect(editButtons.length).toBeGreaterThanOrEqual(3)
   })
 
   it('should render the Sicherheit tab content when clicked', async () => {
     const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     expect(screen.getByText('Passwort')).toBeInTheDocument()
@@ -136,7 +142,7 @@ describe('AccountSettings', () => {
 
   it('should show Aktivieren button when 2FA is disabled', async () => {
     const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     expect(
@@ -146,7 +152,7 @@ describe('AccountSettings', () => {
 
   it('should render passkey section on security tab', async () => {
     const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     expect(screen.getByText('Passkeys')).toBeInTheDocument()
@@ -159,12 +165,16 @@ describe('AccountSettings', () => {
       configurable: true,
     })
 
+    const user = userEvent.setup()
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
+
+    // Set the implementation after mount so the mount refetch doesn't affect it
     mockRefetchPasskeys.mockImplementation(async () => {
       mockPasskeys = [{ id: 'passkey-1' }]
     })
+    mockRefetchPasskeys.mockClear()
+    mockInvalidateUsersCache.mockClear()
 
-    const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
 
@@ -172,6 +182,7 @@ describe('AccountSettings', () => {
 
     expect(mockAddPasskey).toHaveBeenCalledTimes(1)
     expect(mockRefetchPasskeys).toHaveBeenCalledTimes(1)
+    expect(mockInvalidateUsersCache).toHaveBeenCalledTimes(1)
     expect(screen.queryByText('Passkeys verwalten')).not.toBeInTheDocument()
   })
 
@@ -190,7 +201,7 @@ describe('AccountSettings', () => {
     ]
 
     const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     await user.click(screen.getByRole('button', { name: 'Verwalten' }))
@@ -211,7 +222,7 @@ describe('AccountSettings', () => {
     mockPasskeys = [{ id: 'passkey-seed' }]
 
     const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
 
@@ -233,12 +244,15 @@ describe('AccountSettings', () => {
       configurable: true,
     })
 
+    const user = userEvent.setup()
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
+
+    // Set the implementation after mount so the mount refetch doesn't affect it
     mockRefetchPasskeys.mockImplementation(async () => {
       mockPasskeys = [{ id: 'passkey-1' }]
     })
+    mockRefetchPasskeys.mockClear()
 
-    const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     await user.click(screen.getByRole('button', { name: 'Verwalten' }))
@@ -259,12 +273,16 @@ describe('AccountSettings', () => {
         createdAt: '2026-03-18T10:00:00.000Z',
       },
     ]
+
+    const user = userEvent.setup()
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
+
+    // Set the implementation after mount so the mount refetch doesn't clear passkeys
     mockRefetchPasskeys.mockImplementation(async () => {
       mockPasskeys = []
     })
+    mockRefetchPasskeys.mockClear()
 
-    const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     await user.click(screen.getByRole('button', { name: 'Verwalten' }))
@@ -285,7 +303,7 @@ describe('AccountSettings', () => {
   it('should show Deaktivieren button when 2FA is enabled', async () => {
     const user = userEvent.setup()
     const user2FA = { ...mockUser, twoFactorEnabled: true }
-    render(<AccountSettings initialUser={user2FA} />)
+    render(<AccountSettings hasPassword={true} initialUser={user2FA} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     expect(
@@ -296,7 +314,7 @@ describe('AccountSettings', () => {
   it('should show backup codes section when 2FA is enabled', async () => {
     const user = userEvent.setup()
     const user2FA = { ...mockUser, twoFactorEnabled: true }
-    render(<AccountSettings initialUser={user2FA} />)
+    render(<AccountSettings hasPassword={true} initialUser={user2FA} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     expect(screen.getByText('Backup-Codes')).toBeInTheDocument()
@@ -307,7 +325,7 @@ describe('AccountSettings', () => {
 
   it('should not show backup codes section when 2FA is disabled', async () => {
     const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     expect(screen.queryByText('Backup-Codes')).not.toBeInTheDocument()
@@ -315,19 +333,19 @@ describe('AccountSettings', () => {
 
   it('should show Konto löschen section on security tab', async () => {
     const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     const tabs = screen.getAllByText('Sicherheit')
     await user.click(tabs[0])
     expect(screen.getByRole('button', { name: /schen/ })).toBeInTheDocument()
   })
 
   it('should show Profilbild label', () => {
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     expect(screen.getByText('Profilbild')).toBeInTheDocument()
   })
 
   it('should show Name and E-Mail labels on profile tab', () => {
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
     expect(screen.getByText('Name')).toBeInTheDocument()
     expect(screen.getByText('E-Mail')).toBeInTheDocument()
   })
@@ -335,7 +353,11 @@ describe('AccountSettings', () => {
   it('should call onUserChange callback', () => {
     const onUserChange = vi.fn()
     render(
-      <AccountSettings initialUser={mockUser} onUserChange={onUserChange} />
+      <AccountSettings
+        hasPassword={true}
+        initialUser={mockUser}
+        onUserChange={onUserChange}
+      />
     )
     // Just verifying the prop is accepted without error
     expect(onUserChange).not.toHaveBeenCalled()
@@ -343,7 +365,7 @@ describe('AccountSettings', () => {
 
   it('should prefill email dialog with current email each time it opens', async () => {
     const user = userEvent.setup()
-    render(<AccountSettings initialUser={mockUser} />)
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
 
     const editButtons = screen.getAllByRole('button', { name: /ndern/ })
     await user.click(editButtons[2])
@@ -358,5 +380,97 @@ describe('AccountSettings', () => {
     expect(screen.getByPlaceholderText('mail@example.com')).toHaveValue(
       'test@example.com'
     )
+  })
+
+  it('should hide password section when passwordEnabled is false', async () => {
+    const user = userEvent.setup()
+    render(
+      <AccountSettings
+        hasPassword={true}
+        initialUser={mockUser}
+        authSettings={{
+          passwordEnabled: false,
+          passkeyEnabled: true,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
+    )
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(screen.queryByText('Passwort')).not.toBeInTheDocument()
+  })
+
+  it('should hide 2FA section when passwordEnabled is false', async () => {
+    const user = userEvent.setup()
+    render(
+      <AccountSettings
+        hasPassword={true}
+        initialUser={mockUser}
+        authSettings={{
+          passwordEnabled: false,
+          passkeyEnabled: true,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
+    )
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(
+      screen.queryByText(/Zwei-Faktor-Authentifizierung/)
+    ).not.toBeInTheDocument()
+  })
+
+  it('should hide passkey section when passkeyEnabled is false', async () => {
+    const user = userEvent.setup()
+    render(
+      <AccountSettings
+        hasPassword={true}
+        initialUser={mockUser}
+        authSettings={{
+          passwordEnabled: true,
+          passkeyEnabled: false,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
+    )
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(screen.queryByText('Passkeys')).not.toBeInTheDocument()
+  })
+
+  it('should hide backup codes when passwordEnabled is false even if 2FA was enabled', async () => {
+    const user = userEvent.setup()
+    const user2FA = { ...mockUser, twoFactorEnabled: true }
+    render(
+      <AccountSettings
+        hasPassword={true}
+        initialUser={user2FA}
+        authSettings={{
+          passwordEnabled: false,
+          passkeyEnabled: true,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
+    )
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(screen.queryByText('Backup-Codes')).not.toBeInTheDocument()
+  })
+
+  it('should show all sections when authSettings is not provided (defaults)', async () => {
+    const user = userEvent.setup()
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(screen.getByText('Passwort')).toBeInTheDocument()
+    expect(screen.getByText('Passkeys')).toBeInTheDocument()
   })
 })

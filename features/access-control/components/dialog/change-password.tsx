@@ -38,6 +38,8 @@ interface ChangePasswordDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (newPassword: string) => void
+  title?: string
+  description?: string
 }
 
 export function ChangePasswordDialog({
@@ -45,6 +47,8 @@ export function ChangePasswordDialog({
   open,
   onOpenChange,
   onSubmit,
+  title,
+  description,
 }: ChangePasswordDialogProps) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -91,9 +95,9 @@ export function ChangePasswordDialog({
       }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Passwort ändern</DialogTitle>
+          <DialogTitle>{title ?? 'Passwort ändern'}</DialogTitle>
           <DialogDescription>
-            Neues Passwort für {userName} festlegen.
+            {description ?? `Neues Passwort für ${userName} festlegen.`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-3">

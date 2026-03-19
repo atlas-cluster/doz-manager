@@ -1,8 +1,15 @@
 'use client'
 
-import { Check, EyeIcon, EyeOffIcon, KeyRoundIcon, LogIn } from 'lucide-react'
+import {
+  Check,
+  EyeIcon,
+  EyeOffIcon,
+  GithubIcon,
+  KeyRoundIcon,
+  LogIn,
+} from 'lucide-react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { FormEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -10,6 +17,7 @@ import { toast } from 'sonner'
 import { ThemeToggle } from '@/features/app'
 import { toCanonicalBackupCode } from '@/features/auth/lib/backup-code-format'
 import { authClient } from '@/features/auth/lib/client'
+import type { PublicAuthSettings } from '@/features/auth/types'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Card,
@@ -42,8 +50,13 @@ const SLIDE: Record<Step, string> = {
   backup: 'translateX(-66.666%)',
 }
 
-const LoginForm = () => {
+type LoginFormProps = {
+  enabledMethods: PublicAuthSettings
+}
+
+const LoginForm = ({ enabledMethods }: LoginFormProps) => {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loadingAction, setLoadingAction] = useState<LoadingAction>(null)
   const [step, setStep] = useState<Step>('credentials')
   const [totpCode, setTotpCode] = useState('')
@@ -52,6 +65,33 @@ const LoginForm = () => {
   const backupInputRef = useRef<HTMLInputElement>(null)
   const otpInputRef = useRef<HTMLInputElement>(null)
   const isSubmitting = loadingAction !== null
+
+  // Show error toast when redirected back from a failed social login
+  useEffect(() => {
+    const error = searchParams.get('error')
+    if (!error) return
+
+    const messages: Record<string, string> = {
+      signup_disabled:
+        'Kein Konto vorhanden. Bitte wenden Sie sich an einen Administrator.',
+      unable_to_link_account:
+        'Kontoverknüpfung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+    }
+    toast.error(
+      messages[error] ??
+        'Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.'
+    )
+    // Clean up URL
+    router.replace('/login', { scroll: false })
+  }, [searchParams, router])
+
+  const hasSocialMethods =
+    enabledMethods.microsoftEnabled ||
+    enabledMethods.githubEnabled ||
+    enabledMethods.oauthEnabled ||
+    enabledMethods.passkeyEnabled
+  const hasPasswordAndSocial =
+    enabledMethods.passwordEnabled && hasSocialMethods
 
   useEffect(() => {
     if (step === 'totp') {
@@ -245,101 +285,152 @@ const LoginForm = () => {
                 <div className="w-1/3 shrink-0 px-1">
                   <form onSubmit={handleSignIn}>
                     <FieldGroup className="gap-3">
-                      <Button
-                        variant="outline"
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() =>
-                          toast.error(
-                            'Microsoft Login ist derzeit nicht verfügbar'
-                          )
-                        }>
-                        <Image
-                          src={'/microsoft.svg'}
-                          alt={'Microsoft Logo'}
-                          width={20}
-                          height={20}
-                          className="size-5"
-                        />
-                        Anmelden mit Microsoft
-                      </Button>
-                      <Button
-                        variant="outline"
-                        type="button"
-                        onClick={handlePasskeySignIn}
-                        disabled={isSubmitting}>
-                        {loadingAction === 'passkey' ? (
-                          <Spinner />
-                        ) : (
-                          <KeyRoundIcon />
-                        )}
-                        Mit Passkey anmelden
-                      </Button>
-                      <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card text-muted-foreground mt-3 bg-transparent text-sm">
-                        <span className="px-4">oder anmelden mit</span>
-                      </FieldSeparator>
-                      <div className="flex flex-col gap-4">
-                        <Field>
-                          <FieldLabel htmlFor="email">
-                            <div>
-                              E-Mail
-                              <sup className="text-destructive">*</sup>
-                            </div>
-                          </FieldLabel>
-                          <Input
-                            id="email"
-                            name="email"
-                            disabled={isSubmitting}
-                            type="email"
-                            placeholder="mail@provadis-hochschule.de"
+                      {enabledMethods.microsoftEnabled && (
+                        <Button
+                          variant="outline"
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() =>
+                            authClient.signIn.social({
+                              provider: 'microsoft',
+                              callbackURL: '/lecturers',
+                              errorCallbackURL: '/login',
+                            })
+                          }>
+                          <Image
+                            src={'/microsoft.svg'}
+                            alt={'Microsoft Logo'}
+                            width={20}
+                            height={20}
+                            className="size-5"
                           />
-                        </Field>
-                        <Field>
-                          <FieldLabel htmlFor="password">
-                            <div>
-                              Passwort
-                              <sup className="text-destructive">*</sup>
-                            </div>
-                          </FieldLabel>
-                          <div className="relative">
-                            <Input
-                              id="password"
-                              name="password"
-                              type={showPassword ? 'text' : 'password'}
-                              disabled={isSubmitting}
-                              placeholder="Geben Sie Ihr Passwort ein"
-                              className="pr-9"
-                            />
-                            <Button
-                              className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
-                              onClick={() => setShowPassword(!showPassword)}
-                              size="icon"
-                              type="button"
-                              disabled={isSubmitting}
-                              variant="ghost">
-                              {showPassword ? (
-                                <EyeOffIcon className="text-muted-foreground" />
-                              ) : (
-                                <EyeIcon className="text-muted-foreground" />
-                              )}
-                            </Button>
-                          </div>
-                        </Field>
-                      </div>
-                      <Field className="gap-4">
-                        <Button type="submit" size="lg" disabled={isSubmitting}>
-                          {loadingAction === 'email' ? <Spinner /> : <LogIn />}
-                          Anmelden
+                          Anmelden mit Microsoft
                         </Button>
-                        <FieldDescription className="text-muted-foreground text-center text-sm font-normal">
-                          Sie haben noch kein Konto?{' '}
-                          <a
-                            href={`mailto:${process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? ''}`}
-                            className="text-card-foreground font-medium no-underline!">
-                            Kontaktieren Sie einen Administrator
-                          </a>
-                        </FieldDescription>
-                      </Field>
+                      )}
+                      {enabledMethods.githubEnabled && (
+                        <Button
+                          variant="outline"
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() =>
+                            authClient.signIn.social({
+                              provider: 'github',
+                              callbackURL: '/lecturers',
+                              errorCallbackURL: '/login',
+                            })
+                          }>
+                          <GithubIcon className="size-5" />
+                          Anmelden mit GitHub
+                        </Button>
+                      )}
+                      {enabledMethods.oauthEnabled && (
+                        <Button
+                          variant="outline"
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() =>
+                            authClient.signIn.social({
+                              provider: 'oauth',
+                              callbackURL: '/lecturers',
+                              errorCallbackURL: '/login',
+                            })
+                          }>
+                          <LogIn className="size-5" />
+                          Anmelden mit SSO
+                        </Button>
+                      )}
+                      {enabledMethods.passkeyEnabled && (
+                        <Button
+                          variant="outline"
+                          type="button"
+                          onClick={handlePasskeySignIn}
+                          disabled={isSubmitting}>
+                          {loadingAction === 'passkey' ? (
+                            <Spinner />
+                          ) : (
+                            <KeyRoundIcon />
+                          )}
+                          Mit Passkey anmelden
+                        </Button>
+                      )}
+                      {hasPasswordAndSocial && (
+                        <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card text-muted-foreground mt-3 bg-transparent text-sm">
+                          <span className="px-4">oder anmelden mit</span>
+                        </FieldSeparator>
+                      )}
+                      {enabledMethods.passwordEnabled && (
+                        <>
+                          <div className="flex flex-col gap-4">
+                            <Field>
+                              <FieldLabel htmlFor="email">
+                                <div>
+                                  E-Mail
+                                  <sup className="text-destructive">*</sup>
+                                </div>
+                              </FieldLabel>
+                              <Input
+                                id="email"
+                                name="email"
+                                disabled={isSubmitting}
+                                type="email"
+                                placeholder="mail@provadis-hochschule.de"
+                              />
+                            </Field>
+                            <Field>
+                              <FieldLabel htmlFor="password">
+                                <div>
+                                  Passwort
+                                  <sup className="text-destructive">*</sup>
+                                </div>
+                              </FieldLabel>
+                              <div className="relative">
+                                <Input
+                                  id="password"
+                                  name="password"
+                                  type={showPassword ? 'text' : 'password'}
+                                  disabled={isSubmitting}
+                                  placeholder="Geben Sie Ihr Passwort ein"
+                                  className="pr-9"
+                                />
+                                <Button
+                                  className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  size="icon"
+                                  type="button"
+                                  disabled={isSubmitting}
+                                  variant="ghost">
+                                  {showPassword ? (
+                                    <EyeOffIcon className="text-muted-foreground" />
+                                  ) : (
+                                    <EyeIcon className="text-muted-foreground" />
+                                  )}
+                                </Button>
+                              </div>
+                            </Field>
+                          </div>
+                          <Field className="gap-4">
+                            <Button
+                              type="submit"
+                              size="lg"
+                              disabled={isSubmitting}>
+                              {loadingAction === 'email' ? (
+                                <Spinner />
+                              ) : (
+                                <LogIn />
+                              )}
+                              Anmelden
+                            </Button>
+                          </Field>
+                        </>
+                      )}
+                      <FieldDescription className="text-muted-foreground text-center text-sm font-normal">
+                        Sie haben noch kein Konto?{' '}
+                        <a
+                          href={`mailto:${process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? ''}`}
+                          className="text-card-foreground font-medium no-underline!">
+                          Kontaktieren Sie einen Administrator
+                        </a>
+                      </FieldDescription>
                     </FieldGroup>
                   </form>
                 </div>

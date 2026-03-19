@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { AccountSettings } from '@/features/auth'
 import { authClient } from '@/features/auth'
+import type { PublicAuthSettings } from '@/features/auth/types'
 import {
   Avatar,
   AvatarFallback,
@@ -44,6 +45,7 @@ export type SidebarUser = {
   email: string
   image?: string | null
   twoFactorEnabled: boolean
+  hasPassword: boolean
 }
 
 const getInitials = (name: string) => {
@@ -59,9 +61,13 @@ const getInitials = (name: string) => {
 
 type SidebarUserMenuProps = {
   user: SidebarUser
+  authSettings: PublicAuthSettings
 }
 
-export function SidebarUserMenu({ user: initialUser }: SidebarUserMenuProps) {
+export function SidebarUserMenu({
+  user: initialUser,
+  authSettings,
+}: SidebarUserMenuProps) {
   const router = useRouter()
   const { isMobile } = useSidebar()
   const [user, setUser] = useState<SidebarUser>(initialUser)
@@ -174,6 +180,8 @@ export function SidebarUserMenu({ user: initialUser }: SidebarUserMenuProps) {
               image: user.image ?? null,
               twoFactorEnabled: user.twoFactorEnabled,
             }}
+            hasPassword={user.hasPassword}
+            authSettings={authSettings}
             onUserChange={(updated) =>
               setUser((prev) => ({
                 ...prev,

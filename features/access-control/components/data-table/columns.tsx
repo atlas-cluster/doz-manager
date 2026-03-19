@@ -5,8 +5,11 @@ import {
   ArrowUp,
   ArrowUpDown,
   Crown,
+  Fingerprint,
+  GithubIcon,
   KeyIcon,
   KeyRound,
+  LogIn,
   MoreHorizontalIcon,
   PencilIcon,
   ShieldCheck,
@@ -15,6 +18,7 @@ import {
   ShieldPlus,
   TrashIcon,
   UserRound,
+  XCircle,
 } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState } from 'react'
@@ -25,11 +29,13 @@ import {
   AccessControlTableMeta,
   AccessControlUser,
 } from '@/features/access-control/types'
+import type { PublicAuthSettings } from '@/features/auth/types'
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from '@/features/shared/components/ui/avatar'
+import { Badge } from '@/features/shared/components/ui/badge'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
@@ -51,6 +57,103 @@ function getInitials(name: string) {
     .join('')
 }
 
+type AuthBadge = {
+  key: string
+  label: string
+  icon: React.ReactNode
+}
+
+function getAuthBadges(
+  user: AccessControlUser,
+  enabledMethods?: PublicAuthSettings
+): AuthBadge[] {
+  const providers = new Set(
+    (user.authProviders ?? []).map((provider) => provider.toLowerCase())
+  )
+
+  const badges: AuthBadge[] = []
+  const knownProviders = new Set([
+    'credential',
+    'passkey',
+    'microsoft',
+    'github',
+    'oauth',
+  ])
+
+  if (
+    providers.has('credential') &&
+    (enabledMethods?.passwordEnabled ?? true)
+  ) {
+    badges.push({
+      key: 'credential',
+      label: 'Passwort',
+      icon: <KeyRound className="size-4!" />,
+    })
+  }
+
+  if (providers.has('passkey') && (enabledMethods?.passkeyEnabled ?? true)) {
+    badges.push({
+      key: 'passkey',
+      label: 'Passkey',
+      icon: <KeyIcon className="size-4!" />,
+    })
+  }
+
+  if (providers.has('microsoft') && enabledMethods?.microsoftEnabled) {
+    badges.push({
+      key: 'microsoft',
+      label: 'Microsoft',
+      icon: (
+        <Image
+          src="/microsoft.svg"
+          alt="Microsoft Logo"
+          width={16}
+          height={16}
+          className="size-4!"
+        />
+      ),
+    })
+  }
+
+  if (providers.has('github') && enabledMethods?.githubEnabled) {
+    badges.push({
+      key: 'github',
+      label: 'GitHub',
+      icon: <GithubIcon className="size-4!" />,
+    })
+  }
+
+  if (
+    (providers.has('oauth') || providers.has('custom-oauth')) &&
+    enabledMethods?.oauthEnabled
+  ) {
+    badges.push({
+      key: 'oauth',
+      label: 'OAuth',
+      icon: <LogIn className="size-4!" />,
+    })
+  }
+
+  if (user.twoFactorEnabled) {
+    badges.push({
+      key: '2fa',
+      label: '2FA',
+      icon: <ShieldCheck className="size-4!" />,
+    })
+  }
+
+  providers.forEach((provider) => {
+    if (knownProviders.has(provider)) return
+    badges.push({
+      key: provider,
+      label: provider.toUpperCase(),
+      icon: <KeyIcon className="size-4!" />,
+    })
+  })
+
+  return badges
+}
+
 function ActionsCell({
   row,
   table,
@@ -62,7 +165,20 @@ function ActionsCell({
   const user = row.original
   const [editOpen, setEditOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const [addPasswordOpen, setAddPasswordOpen] = useState(false)
   const isSelf = user.id === meta?.currentUserId
+
+  const hasPassword = (user.authProviders ?? [])
+    .map((p) => p.toLowerCase())
+    .includes('credential')
+
+  const hasPasskey = (user.authProviders ?? [])
+    .map((p) => p.toLowerCase())
+    .includes('passkey')
+
+  const enabledMethods = meta?.enabledMethods
+  const passwordMethodEnabled = enabledMethods?.passwordEnabled ?? true
+  const passkeyMethodEnabled = enabledMethods?.passkeyEnabled ?? true
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
@@ -79,6 +195,14 @@ function ActionsCell({
         onOpenChange={setPasswordOpen}
         onSubmit={(newPassword) => meta?.changePassword?.(user.id, newPassword)}
       />
+      <ChangePasswordDialog
+        userName={user.name}
+        open={addPasswordOpen}
+        onOpenChange={setAddPasswordOpen}
+        title="Passwort hinzufügen"
+        description={`Passwort für ${user.name} festlegen, um die Anmeldung per E-Mail und Passwort zu ermöglichen.`}
+        onSubmit={(newPassword) => meta?.addPassword?.(user.id, newPassword)}
+      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
@@ -94,10 +218,35 @@ function ActionsCell({
                 <PencilIcon />
                 Bearbeiten
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
-                <KeyIcon />
-                Passwort ändern
-              </DropdownMenuItem>
+              {passwordMethodEnabled && (
+                <>
+                  {hasPassword ? (
+                    <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
+                      <KeyIcon />
+                      Passwort ändern
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onSelect={() => setAddPasswordOpen(true)}>
+                      <KeyRound />
+                      Passwort hinzufügen
+                    </DropdownMenuItem>
+                  )}
+                  {hasPassword && (
+                    <DropdownMenuItem
+                      onSelect={() => meta?.removePassword?.(user.id)}>
+                      <XCircle />
+                      Passwort entfernen
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+              {passkeyMethodEnabled && hasPasskey && (
+                <DropdownMenuItem
+                  onSelect={() => meta?.removePasskeys?.(user.id)}>
+                  <Fingerprint />
+                  Passkeys entfernen
+                </DropdownMenuItem>
+              )}
               {!isSelf && (
                 <>
                   <DropdownMenuSeparator />
@@ -119,7 +268,7 @@ function ActionsCell({
                   </DropdownMenuItem>
                 </>
               )}
-              {user.twoFactorEnabled && (
+              {passwordMethodEnabled && user.twoFactorEnabled && (
                 <DropdownMenuItem onSelect={() => meta?.disable2FA?.(user.id)}>
                   <ShieldOff />
                   2FA deaktivieren
@@ -235,57 +384,6 @@ export const columns: ColumnDef<AccessControlUser>[] = [
     enableGlobalFilter: true,
   },
   {
-    accessorKey: 'authProviders',
-    id: 'authProviders',
-    header: 'Anmeldung',
-    cell: ({ row }) => {
-      const providers = row.original.authProviders ?? []
-      if (!providers.length) {
-        return <span className="text-muted-foreground">—</span>
-      }
-
-      const providerConfig: Record<
-        string,
-        { label: string; icon: React.ReactNode }
-      > = {
-        credential: {
-          label: 'Passwort',
-          icon: <KeyRound className="size-4" />,
-        },
-        microsoft: {
-          label: 'EntraID',
-          icon: (
-            <Image
-              src="/microsoft.svg"
-              alt="Microsoft Logo"
-              width={16}
-              height={16}
-              className="size-4"
-            />
-          ),
-        },
-      }
-
-      return (
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          {providers.map((p) => {
-            const config = providerConfig[p]
-            if (!config) return null
-            return (
-              <div key={p} className="flex items-center gap-1">
-                {config.icon}
-                {config.label}
-              </div>
-            )
-          })}
-        </div>
-      )
-    },
-    enableSorting: false,
-    enableHiding: true,
-    enableGlobalFilter: false,
-  },
-  {
     accessorKey: 'isAdmin',
     id: 'isAdmin',
     header: 'Rolle',
@@ -311,98 +409,31 @@ export const columns: ColumnDef<AccessControlUser>[] = [
     enableGlobalFilter: false,
   },
   {
-    accessorKey: 'twoFactorEnabled',
-    id: 'twoFactorEnabled',
-    header: '2FA',
-    cell: ({ row }) => {
+    accessorKey: 'authProviders',
+    id: 'authProviders',
+    header: 'Anmeldung',
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as AccessControlTableMeta | undefined
+      const badges = getAuthBadges(row.original, meta?.enabledMethods)
+
+      if (!badges.length) {
+        return <span className="text-muted-foreground">—</span>
+      }
+
       return (
-        <div className="flex items-center gap-1">
-          {row.original.twoFactorEnabled ? (
-            <>
-              <ShieldCheck className="size-4 text-green-600" />
-              Aktiviert
-            </>
-          ) : (
-            <>
-              <ShieldOff className="text-muted-foreground size-4" />
-              Deaktiviert
-            </>
-          )}
+        <div className="flex flex-wrap gap-1.5">
+          {badges.map((badge) => {
+            return (
+              <Badge key={badge.key} variant="secondary" className="gap-1">
+                {badge.icon}
+                {badge.label}
+              </Badge>
+            )
+          })}
         </div>
       )
     },
     enableSorting: false,
-    enableHiding: true,
-    enableGlobalFilter: false,
-  },
-  {
-    accessorKey: 'backupCodeCount',
-    id: 'backupCodeCount',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Recovery Codes
-          {column.getIsSorted() === 'asc' ? (
-            <ArrowUp />
-          ) : column.getIsSorted() === 'desc' ? (
-            <ArrowDown />
-          ) : (
-            <ArrowUpDown />
-          )}
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const count = row.original.backupCodeCount
-      if (!row.original.twoFactorEnabled) {
-        return <span className="text-muted-foreground">—</span>
-      }
-      return (
-        <div className="flex items-center gap-1">
-          <KeyRound className="size-4" />
-          <span>{count}</span>
-        </div>
-      )
-    },
-    enableSorting: true,
-    enableHiding: true,
-    enableGlobalFilter: false,
-  },
-  {
-    accessorKey: 'lastLogin',
-    id: 'lastLogin',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Letzter Login
-          {column.getIsSorted() === 'asc' ? (
-            <ArrowUp />
-          ) : column.getIsSorted() === 'desc' ? (
-            <ArrowDown />
-          ) : (
-            <ArrowUpDown />
-          )}
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const lastLogin = row.original.lastLogin
-      if (!lastLogin) {
-        return <span className="text-muted-foreground">Noch nie</span>
-      }
-      return new Date(lastLogin).toLocaleString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    },
-    enableSorting: true,
     enableHiding: true,
     enableGlobalFilter: false,
   },

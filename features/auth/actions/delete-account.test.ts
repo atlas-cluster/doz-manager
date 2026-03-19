@@ -5,6 +5,7 @@ import { auth } from '@/features/auth/lib/auth'
 import { prisma } from '@/features/shared/lib/prisma'
 
 vi.mock('@/features/shared/lib/prisma')
+vi.mock('next/cache', () => ({ updateTag: vi.fn() }))
 vi.mock('next/headers', () => ({
   headers: vi.fn().mockResolvedValue(new Headers()),
 }))
@@ -37,28 +38,36 @@ describe('deleteAccount', () => {
     )
   })
 
-  it('should throw if password is empty', async () => {
+  it('should throw if password is empty and user has a credential account', async () => {
+    vi.mocked(prisma.account.findFirst).mockResolvedValue({
+      password: 'hashed-password',
+    } as never)
+
     await expect(deleteAccount('')).rejects.toThrow(
       'Bitte geben Sie Ihr Passwort ein.'
     )
   })
 
-  it('should throw if no credential account found', async () => {
+  it('should delete without password when user has no credential account', async () => {
     vi.mocked(prisma.account.findFirst).mockResolvedValue(null as never)
 
-    await expect(deleteAccount('password123')).rejects.toThrow(
-      'Konto-Löschung fehlgeschlagen.'
-    )
+    await deleteAccount()
+
+    expect(prisma.user.delete).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+    })
   })
 
-  it('should throw if account has no password', async () => {
+  it('should delete without password when credential account has no password hash', async () => {
     vi.mocked(prisma.account.findFirst).mockResolvedValue({
       password: null,
     } as never)
 
-    await expect(deleteAccount('password123')).rejects.toThrow(
-      'Konto-Löschung fehlgeschlagen.'
-    )
+    await deleteAccount()
+
+    expect(prisma.user.delete).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+    })
   })
 
   it('should throw if password is incorrect', async () => {
@@ -113,7 +122,7 @@ describe('deleteAccount', () => {
   it('should look up the credential account for the session user', async () => {
     vi.mocked(prisma.account.findFirst).mockResolvedValue(null as never)
 
-    await expect(deleteAccount('pass')).rejects.toThrow()
+    await deleteAccount('pass')
 
     expect(prisma.account.findFirst).toHaveBeenCalledWith({
       where: {

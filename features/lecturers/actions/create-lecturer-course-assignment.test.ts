@@ -29,6 +29,8 @@ describe('createLecturerCourseAssignment', () => {
     await createLecturerCourseAssignment('lecturer-1', 'course-1')
 
     expect(updateTag).toHaveBeenCalledWith('lecturers')
+    expect(updateTag).toHaveBeenCalledWith('courses')
     expect(updateTag).toHaveBeenCalledWith('lecturer-lecturer-1-courses')
+    expect(updateTag).toHaveBeenCalledWith('course-course-1-lecturers')
   })
 })

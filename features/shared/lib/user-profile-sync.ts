@@ -7,6 +7,8 @@ export type UserProfileUpdatedDetail = {
   image: string | null
   twoFactorEnabled: boolean
   backupCodeCount?: number
+  hasPasskey?: boolean
+  authProviders?: string[]
 }
 
 export const dispatchUserProfileUpdated = (

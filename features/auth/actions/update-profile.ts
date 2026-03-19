@@ -1,5 +1,6 @@
 'use server'
 
+import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
@@ -54,6 +55,8 @@ export async function updateProfile(data: {
         twoFactorEnabled: true,
       },
     })
+
+    updateTag('users')
 
     return {
       user: {

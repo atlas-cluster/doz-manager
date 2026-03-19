@@ -47,17 +47,8 @@ export function UserDialog({
   const setOpen = setControlledOpen ?? setInternalOpen
   const isEditing = !!user
 
-  const formSchema = isEditing
-    ? userSchema
-    : userSchema.extend({
-        password: z
-          .string()
-          .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.')
-          .max(128, 'Das Passwort darf maximal 128 Zeichen lang sein.'),
-      })
-
   const form = useForm<z.infer<typeof userSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(userSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -76,20 +67,18 @@ export function UserDialog({
           password: undefined,
         })
       } else {
-        form.reset({
-          name: '',
-          email: '',
-          image: '',
-          password: '',
-        })
+        form.reset({ name: '', email: '', image: '', password: '' })
       }
+      setShowPassword(false)
     }
   }, [user, form, open])
 
   async function handleSubmit(data: z.infer<typeof userSchema>) {
-    await onSubmit?.(data)
+    await onSubmit?.({
+      ...data,
+      password: data.password || undefined,
+    })
     setOpen(false)
-    setShowPassword(false)
     form.reset()
   }
 
@@ -110,7 +99,7 @@ export function UserDialog({
         <form
           id="user-form"
           onSubmit={form.handleSubmit(handleSubmit)}
-          className={'space-y-3'}>
+          className={'space-y-4'}>
           <FieldGroup>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
@@ -193,9 +182,7 @@ export function UserDialog({
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
                       <FieldLabel htmlFor="password">
-                        <span>
-                          Passwort<sup className={'text-destructive'}>*</sup>
-                        </span>
+                        <span>Passwort</span>
                       </FieldLabel>
                       <div className="relative">
                         <Input

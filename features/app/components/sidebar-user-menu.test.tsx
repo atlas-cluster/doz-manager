@@ -28,12 +28,22 @@ const testUser: SidebarUser = {
   email: 'max@example.com',
   image: null,
   twoFactorEnabled: false,
+  hasPassword: true,
 }
 
 function renderWithSidebar(user: SidebarUser = testUser) {
   return render(
     <SidebarProvider>
-      <SidebarUserMenu user={user} />
+      <SidebarUserMenu
+        user={user}
+        authSettings={{
+          passwordEnabled: true,
+          passkeyEnabled: true,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
     </SidebarProvider>
   )
 }
@@ -66,6 +76,7 @@ describe('SidebarUserMenu', () => {
       email: 'a@b.com',
       image: null,
       twoFactorEnabled: false,
+      hasPassword: true,
     })
     expect(screen.getByText('A')).toBeInTheDocument()
   })

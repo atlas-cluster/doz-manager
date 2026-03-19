@@ -446,6 +446,27 @@ async function main() {
     }
   }
 
+  // --- Seed default auth settings ---
+  const existingAuthSettings = await prisma.authSettings.findUnique({
+    where: { id: 'singleton' },
+  })
+
+  if (!existingAuthSettings) {
+    await prisma.authSettings.create({
+      data: {
+        id: 'singleton',
+        passwordEnabled: true,
+        passkeyEnabled: true,
+        microsoftEnabled: false,
+        githubEnabled: false,
+        oauthEnabled: false,
+      },
+    })
+    console.log('Created default auth settings')
+  } else {
+    console.log('Auth settings already exist')
+  }
+
   console.log(`Seeding finished.`)
 }
 

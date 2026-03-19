@@ -4,6 +4,7 @@ import React from 'react'
 
 import { AppHeader } from '@/features/app'
 import { AppSidebar } from '@/features/app'
+import { getPublicAuthSettings } from '@/features/auth/actions/get-public-auth-settings'
 import { auth } from '@/features/auth/lib/auth'
 import {
   SidebarInset,
@@ -24,10 +25,17 @@ export default async function AppLayout({
     redirect('/login')
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { isAdmin: true, twoFactorEnabled: true },
-  })
+  const [dbUser, credentialAccount, authSettings] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { isAdmin: true, twoFactorEnabled: true },
+    }),
+    prisma.account.findFirst({
+      where: { userId: session.user.id, providerId: 'credential' },
+      select: { id: true },
+    }),
+    getPublicAuthSettings(),
+  ])
 
   const sidebarUser = {
     id: session.user.id,
@@ -35,11 +43,16 @@ export default async function AppLayout({
     email: session.user.email,
     image: session.user.image,
     twoFactorEnabled: Boolean(dbUser?.twoFactorEnabled),
+    hasPassword: !!credentialAccount,
   }
 
   return (
     <SidebarProvider>
-      <AppSidebar user={sidebarUser} isAdmin={dbUser?.isAdmin ?? false} />
+      <AppSidebar
+        user={sidebarUser}
+        isAdmin={dbUser?.isAdmin ?? false}
+        authSettings={authSettings}
+      />
       <SidebarInset>
         <AppHeader />
         <div className={'p-3'}>{children}</div>

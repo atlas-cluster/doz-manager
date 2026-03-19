@@ -4,10 +4,15 @@ import { PasskeyManagementDialog } from '@/features/auth/components/dialogs/pass
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
+const mockInvalidateUsersCache = vi.fn().mockResolvedValue(undefined)
 const mockAddPasskey = vi.fn()
 const mockDeletePasskey = vi.fn()
 const mockRefetchPasskeys = vi.fn().mockResolvedValue(undefined)
 let mockPasskeys: Array<{ id: string; name?: string; createdAt?: string }> = []
+
+vi.mock('@/features/access-control/actions/invalidate-users-cache', () => ({
+  invalidateUsersCache: () => mockInvalidateUsersCache(),
+}))
 
 vi.mock('@/features/auth/lib/client', () => ({
   authClient: {
@@ -81,6 +86,7 @@ describe('PasskeyManagementDialog', () => {
 
     expect(mockAddPasskey).toHaveBeenCalledTimes(1)
     expect(mockRefetchPasskeys).toHaveBeenCalledTimes(1)
+    expect(mockInvalidateUsersCache).toHaveBeenCalledTimes(1)
   })
 
   it('should open subdialog and revoke selected passkey', async () => {
@@ -106,5 +112,6 @@ describe('PasskeyManagementDialog', () => {
 
     expect(mockDeletePasskey).toHaveBeenCalledWith({ id: 'pk-1' })
     expect(mockRefetchPasskeys).toHaveBeenCalledTimes(1)
+    expect(mockInvalidateUsersCache).toHaveBeenCalledTimes(1)
   })
 })

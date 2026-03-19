@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { invalidateUsersCache } from '@/features/access-control/actions/invalidate-users-cache'
 import { deleteAccount } from '@/features/auth/actions/delete-account'
 import { getBackupCodeCount } from '@/features/auth/actions/get-backup-code-count'
 import { updateProfile } from '@/features/auth/actions/update-profile'
@@ -25,13 +26,21 @@ import { TwoFactorDisableDialog } from '@/features/auth/components/dialogs/two-f
 import { TwoFactorSetupDialog } from '@/features/auth/components/dialogs/two-factor-setup-dialog'
 import { formatBackupCodes } from '@/features/auth/lib/backup-code-format'
 import { authClient } from '@/features/auth/lib/client'
-import { AccountUser } from '@/features/auth/types'
+import { AccountUser, PublicAuthSettings } from '@/features/auth/types'
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/features/shared/components/ui/dialog'
 import { Separator } from '@/features/shared/components/ui/separator'
 import {
   Tabs,
@@ -39,10 +48,16 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/features/shared/components/ui/tabs'
+import {
+  dispatchUserProfileUpdated,
+  type UserProfileUpdatedDetail,
+} from '@/features/shared/lib/user-profile-sync'
 import { initialsFromName } from '@/features/shared/lib/utils'
 
 type AccountSettingsProps = {
   initialUser: AccountUser
+  hasPassword: boolean
+  authSettings?: PublicAuthSettings
   onUserChange?: (user: AccountUser) => void
 }
 
@@ -52,14 +67,19 @@ type PasskeyListItem = {
 
 export function AccountSettings({
   initialUser,
+  hasPassword: initialHasPassword,
+  authSettings,
   onUserChange,
 }: AccountSettingsProps) {
   const [saved, setSaved] = useState<AccountUser>(initialUser)
   const [isSaving, setIsSaving] = useState(false)
+  const [hasPassword, setHasPassword] = useState(initialHasPassword)
 
   const [showNameDialog, setShowNameDialog] = useState(false)
   const [showEmailDialog, setShowEmailDialog] = useState(false)
   const [showImageDialog, setShowImageDialog] = useState(false)
+  const [showAddPasswordDialog, setShowAddPasswordDialog] = useState(false)
+  const [isAddingPassword, setIsAddingPassword] = useState(false)
   const [fieldInput, setFieldInput] = useState('')
 
   const twoFactorEnabledRef = useRef(initialUser.twoFactorEnabled)
@@ -98,6 +118,27 @@ export function AccountSettings({
   const passkeyItems = (passkeys ?? []) as PasskeyListItem[]
   const passkeyCount = passkeyItems.length
 
+  const emitUserProfileUpdated = (
+    overrides: Partial<UserProfileUpdatedDetail> = {}
+  ) => {
+    dispatchUserProfileUpdated({
+      id: saved.id,
+      name: saved.name,
+      email: saved.email,
+      image: saved.image,
+      twoFactorEnabled: twoFactorEnabledRef.current,
+      hasPasskey: passkeyCount > 0,
+      ...overrides,
+    })
+  }
+
+  // Refetch passkeys on mount so the dialog always shows fresh data
+  // (e.g. after an admin removed passkeys via access-control).
+  useEffect(() => {
+    refetchPasskeys()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     if (twoFactorEnabled) {
       getBackupCodeCount().then(setBackupCodeCount)
@@ -126,10 +167,12 @@ export function AccountSettings({
     }
 
     await refetchPasskeys()
+    await invalidateUsersCache()
+    emitUserProfileUpdated({ hasPasskey: true })
     toast.success('Passkey wurde hinzugefügt.')
   }
 
-  const handleDeleteAccount = async (password: string) => {
+  const handleDeleteAccount = async (password?: string) => {
     setIsDeleting(true)
     try {
       const promise = deleteAccount(password).then(() => {
@@ -192,6 +235,14 @@ export function AccountSettings({
       }
       setSaved(updated)
       onUserChange?.(updated)
+      dispatchUserProfileUpdated({
+        id: updated.id,
+        name: updated.name,
+        email: updated.email,
+        image: updated.image,
+        twoFactorEnabled: twoFactorEnabledRef.current,
+        hasPasskey: passkeyCount > 0,
+      })
       return true
     } catch {
       return false
@@ -247,6 +298,28 @@ export function AccountSettings({
     )
     if (didSave) {
       setShowImageDialog(false)
+    }
+  }
+
+  const handleAddPassword = async (password: string) => {
+    setIsAddingPassword(true)
+    try {
+      const { error } = await authClient.changePassword({
+        newPassword: password,
+        currentPassword: '',
+        revokeOtherSessions: false,
+      })
+      if (error) {
+        toast.error('Passwort konnte nicht gesetzt werden.')
+        return
+      }
+      setHasPassword(true)
+      setShowAddPasswordDialog(false)
+      toast.success('Passwort wurde hinzugefügt.')
+    } catch {
+      toast.error('Passwort konnte nicht gesetzt werden.')
+    } finally {
+      setIsAddingPassword(false)
     }
   }
 
@@ -334,8 +407,13 @@ export function AccountSettings({
       })
 
       await disablePromise
+      await invalidateUsersCache()
       twoFactorEnabledRef.current = false
       setTwoFactorEnabled(false)
+      emitUserProfileUpdated({
+        twoFactorEnabled: false,
+        backupCodeCount: 0,
+      })
       setShowDisableDialog(false)
       setDisablePassword('')
     } finally {
@@ -432,88 +510,114 @@ export function AccountSettings({
         </TabsContent>
 
         <TabsContent value="security" className="mt-6 flex flex-col gap-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium">Passwort</p>
-              <p className="text-muted-foreground text-xs">
-                Ändern Sie Ihr Anmelde-Passwort.
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-1.5"
-              onClick={() => setShowChangePasswordDialog(true)}>
-              <LockIcon className="size-4" />
-              Ändern
-            </Button>
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium">
-                Zwei-Faktor-Authentifizierung
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {twoFactorEnabled
-                  ? 'Aktiviert — Ihr Konto ist zusätzlich geschützt.'
-                  : 'Deaktiviert — Aktivieren Sie 2FA für mehr Sicherheit.'}
-              </p>
-            </div>
-            {twoFactorEnabled ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-destructive hover:text-destructive shrink-0 gap-1.5"
-                onClick={() => setShowDisablePasswordDialog(true)}>
-                <ShieldOffIcon className="size-4" />
-                Deaktivieren
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 gap-1.5"
-                onClick={() => setShowEnablePasswordDialog(true)}>
-                <ShieldCheckIcon className="size-4" />
-                Aktivieren
-              </Button>
-            )}
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium">Passkeys</p>
-              <p className="text-muted-foreground text-xs">
-                {isPasskeysPending
-                  ? 'Passkeys werden geladen...'
-                  : passkeyCount > 0
-                    ? `${passkeyCount} Passkey${passkeyCount > 1 ? 's' : ''} hinterlegt.`
-                    : 'Hinterlegen Sie einen Passkey für eine schnellere Anmeldung ohne Passwort.'}
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-1.5"
-              onClick={() =>
-                passkeyCount > 0
-                  ? setShowPasskeyManagementDialog(true)
-                  : handleAddFirstPasskey()
-              }
-              disabled={isPasskeysPending}>
-              <KeyRoundIcon className="size-4" />
-              {passkeyCount > 0 ? 'Verwalten' : 'Hinzufügen'}
-            </Button>
-          </div>
-
-          {twoFactorEnabled && (
+          {(authSettings?.passwordEnabled ?? true) && (
             <>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">Passwort</p>
+                  <p className="text-muted-foreground text-xs">
+                    {hasPassword
+                      ? 'Ändern Sie Ihr Anmelde-Passwort.'
+                      : 'Fügen Sie ein Passwort hinzu, um sich auch per E-Mail anmelden zu können.'}
+                  </p>
+                </div>
+                {hasPassword ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 gap-1.5"
+                    onClick={() => setShowChangePasswordDialog(true)}>
+                    <LockIcon className="size-4" />
+                    Ändern
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 gap-1.5"
+                    onClick={() => setShowAddPasswordDialog(true)}>
+                    <LockIcon className="size-4" />
+                    Hinzufügen
+                  </Button>
+                )}
+              </div>
+
               <Separator />
+            </>
+          )}
+
+          {(authSettings?.passwordEnabled ?? true) && hasPassword && (
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">
+                    Zwei-Faktor-Authentifizierung
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {twoFactorEnabled
+                      ? 'Aktiviert — Ihr Konto ist zusätzlich geschützt.'
+                      : 'Deaktiviert — Aktivieren Sie 2FA für mehr Sicherheit.'}
+                  </p>
+                </div>
+                {twoFactorEnabled ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive shrink-0 gap-1.5"
+                    onClick={() => setShowDisablePasswordDialog(true)}>
+                    <ShieldOffIcon className="size-4" />
+                    Deaktivieren
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 gap-1.5"
+                    onClick={() => setShowEnablePasswordDialog(true)}>
+                    <ShieldCheckIcon className="size-4" />
+                    Aktivieren
+                  </Button>
+                )}
+              </div>
+
+              <Separator />
+            </>
+          )}
+
+          {(authSettings?.passkeyEnabled ?? true) && (
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">Passkeys</p>
+                  <p className="text-muted-foreground text-xs">
+                    {isPasskeysPending
+                      ? 'Passkeys werden geladen...'
+                      : passkeyCount > 0
+                        ? `${passkeyCount} Passkey${passkeyCount > 1 ? 's' : ''} hinterlegt.`
+                        : 'Hinterlegen Sie einen Passkey für eine schnellere Anmeldung ohne Passwort.'}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 gap-1.5"
+                  onClick={() =>
+                    passkeyCount > 0
+                      ? setShowPasskeyManagementDialog(true)
+                      : handleAddFirstPasskey()
+                  }
+                  disabled={isPasskeysPending}>
+                  <KeyRoundIcon className="size-4" />
+                  {passkeyCount > 0 ? 'Verwalten' : 'Hinzufügen'}
+                </Button>
+              </div>
+
+              <Separator />
+            </>
+          )}
+
+          {(authSettings?.passwordEnabled ?? true) && twoFactorEnabled && (
+            <>
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
                   <p className="flex items-center gap-1.5 text-sm font-medium">
@@ -543,10 +647,10 @@ export function AccountSettings({
                   Neu erstellen
                 </Button>
               </div>
+
+              <Separator />
             </>
           )}
-
-          <Separator />
 
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
@@ -612,6 +716,16 @@ export function AccountSettings({
       />
 
       <PasswordDialog
+        open={showAddPasswordDialog}
+        onOpenChange={setShowAddPasswordDialog}
+        title="Passwort hinzufügen"
+        description="Legen Sie ein Passwort fest, um sich auch per E-Mail und Passwort anmelden zu können."
+        confirmLabel="Passwort setzen"
+        isLoading={isAddingPassword}
+        onConfirm={handleAddPassword}
+      />
+
+      <PasswordDialog
         open={showEnablePasswordDialog}
         onOpenChange={setShowEnablePasswordDialog}
         title="2FA aktivieren"
@@ -634,6 +748,11 @@ export function AccountSettings({
           setTwoFactorEnabled(true)
           setShowSetupDialog(false)
           onUserChange?.({ ...saved, twoFactorEnabled: true })
+          void invalidateUsersCache()
+          emitUserProfileUpdated({
+            twoFactorEnabled: true,
+            backupCodeCount: nextBackupCodeCount,
+          })
           refreshBackupCodeCount()
           toast.success('2FA wurde aktiviert.')
         }}
@@ -676,20 +795,53 @@ export function AccountSettings({
         }}
       />
 
-      <PasswordDialog
-        open={showDeleteAccountDialog}
-        onOpenChange={setShowDeleteAccountDialog}
-        title="Konto löschen"
-        description="Bestätigen Sie Ihr Passwort, um Ihr Konto unwiderruflich zu löschen."
-        confirmLabel="Konto löschen"
-        confirmVariant="destructive"
-        isLoading={isDeleting}
-        onConfirm={handleDeleteAccount}
-      />
+      {hasPassword ? (
+        <PasswordDialog
+          open={showDeleteAccountDialog}
+          onOpenChange={setShowDeleteAccountDialog}
+          title="Konto löschen"
+          description="Bestätigen Sie Ihr Passwort, um Ihr Konto unwiderruflich zu löschen."
+          confirmLabel="Konto löschen"
+          confirmVariant="destructive"
+          isLoading={isDeleting}
+          onConfirm={handleDeleteAccount}
+        />
+      ) : (
+        <Dialog
+          open={showDeleteAccountDialog}
+          onOpenChange={setShowDeleteAccountDialog}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Konto löschen</DialogTitle>
+              <DialogDescription>
+                Möchten Sie Ihr Konto wirklich unwiderruflich löschen? Diese
+                Aktion kann nicht rückgängig gemacht werden.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                disabled={isDeleting}
+                onClick={() => setShowDeleteAccountDialog(false)}>
+                Abbrechen
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={isDeleting}
+                onClick={() => handleDeleteAccount()}>
+                Konto löschen
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <PasskeyManagementDialog
         open={showPasskeyManagementDialog}
         onOpenChangeAction={setShowPasskeyManagementDialog}
+        onPasskeyCountChangeAction={(count) => {
+          emitUserProfileUpdated({ hasPasskey: count > 0 })
+        }}
       />
     </>
   )

@@ -8,6 +8,8 @@ export function formatRoute(route: string) {
       return 'Vorlesungen'
     case '/access-control':
       return 'Zugriffsverwaltung'
+    case '/settings':
+      return 'Einstellungen'
     case '/reports':
       return 'Berichte'
   }
