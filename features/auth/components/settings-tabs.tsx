@@ -312,7 +312,7 @@ export function SettingsTabs({
         <TabsList className={'w-full'}>
           <TabsTrigger value={'password'}>
             <div className={'flex items-center justify-center gap-1 px-2'}>
-              <SquareAsterisk />
+              <SquareAsterisk className={'hidden sm:block'} />
               <span>Passwort</span>
             </div>
           </TabsTrigger>
@@ -324,20 +324,20 @@ export function SettingsTabs({
                 alt={'Microsoft Logo'}
                 width={16}
                 height={16}
-                className="size-4"
+                className="hidden size-4 sm:block"
               />
               <span>Microsoft</span>
             </div>
           </TabsTrigger>
           <TabsTrigger value={'github'}>
             <div className={'flex items-center justify-center gap-1 px-2'}>
-              <GithubIcon className="size-4" />
+              <GithubIcon className="hidden sm:block" />
               <span>GitHub</span>
             </div>
           </TabsTrigger>
           <TabsTrigger value={'oauth'}>
             <div className={'flex items-center justify-center gap-1 px-2'}>
-              <Fingerprint />
+              <Fingerprint className="hidden sm:block" />
               <span>OAuth</span>
             </div>
           </TabsTrigger>
