@@ -52,7 +52,10 @@ function buildSocialProviders(
           : 'common',
       }
     } catch {
-      // skip if decryption fails
+      console.warn(
+        '[auth] Failed to decrypt Microsoft OAuth credentials – provider will be disabled. ' +
+          'Check AUTH_SETTINGS_ENCRYPTION_KEY and the stored DB values.'
+      )
     }
   }
 
@@ -64,7 +67,10 @@ function buildSocialProviders(
         disableSignUp: true,
       }
     } catch {
-      // skip if decryption fails
+      console.warn(
+        '[auth] Failed to decrypt GitHub OAuth credentials – provider will be disabled. ' +
+          'Check AUTH_SETTINGS_ENCRYPTION_KEY and the stored DB values.'
+      )
     }
   }
 
@@ -120,7 +126,10 @@ function buildPlugins(
         }) as never
       )
     } catch {
-      // skip if decryption fails
+      console.warn(
+        '[auth] Failed to decrypt generic OAuth credentials – provider will be disabled. ' +
+          'Check AUTH_SETTINGS_ENCRYPTION_KEY and the stored DB values.'
+      )
     }
   }
 
