@@ -104,7 +104,7 @@ describe('ReportCardCoursesWithoutProvadisExperience', () => {
     fireEvent.click(screen.getByText('JSON'))
 
     expect(utils.downloadJSON).toHaveBeenCalledWith(
-      { vorlesungenOhneProvadisErfahrung: mockCourses },
+      mockCourses,
       'vorlesungen-ohne-provadis-erfahrung'
     )
   })

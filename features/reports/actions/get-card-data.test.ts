@@ -220,15 +220,24 @@ describe('getCardData', () => {
   })
 
   describe('full card data', () => {
-    it('should return all three data sets combined', async () => {
-      vi.mocked(prisma.lecturer.findMany).mockResolvedValue([
-        {
-          title: null,
-          firstName: 'Max',
-          lastName: 'Meier',
-          qualifications: [{ course: { name: 'Mathe' } }],
-        },
-      ] as never)
+    it('should return all four data sets combined', async () => {
+      vi.mocked(prisma.lecturer.findMany)
+        .mockResolvedValueOnce([
+          {
+            title: null,
+            firstName: 'Max',
+            lastName: 'Meier',
+            qualifications: [{ course: { name: 'Mathe' } }],
+          },
+        ] as never)
+        .mockResolvedValueOnce([
+          {
+            title: null,
+            firstName: 'Max',
+            lastName: 'Meier',
+            qualifications: [{ course: { name: 'Mathe' } }],
+          },
+        ] as never)
       vi.mocked(prisma.course.findMany)
         .mockResolvedValueOnce([{ name: 'Bio' }] as never)
         .mockResolvedValueOnce([{ name: 'Kunst' }] as never)
@@ -237,6 +246,9 @@ describe('getCardData', () => {
 
       expect(result).toEqual({
         coursesAtProvadis: {
+          'Max Meier': ['Mathe'],
+        },
+        coursesAtOtherUni: {
           'Max Meier': ['Mathe'],
         },
         coursesWithoutProvadisExperience: ['Bio'],

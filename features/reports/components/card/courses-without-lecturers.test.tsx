@@ -101,7 +101,7 @@ describe('ReportCardCoursesWithoutLecturers', () => {
     fireEvent.click(screen.getByText('JSON'))
 
     expect(utils.downloadJSON).toHaveBeenCalledWith(
-      { vorlesungenOhneDozenten: mockCourses },
+      mockCourses,
       'vorlesungen-ohne-dozenten'
     )
   })

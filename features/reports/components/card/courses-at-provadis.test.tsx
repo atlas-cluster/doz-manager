@@ -113,7 +113,7 @@ describe('ReportCardCoursesAtProvadis', () => {
     fireEvent.click(screen.getByText('JSON'))
 
     expect(utils.downloadJSON).toHaveBeenCalledWith(
-      { vorlesungenAnDerProvadis: mockQualifications },
+      mockQualifications,
       'vorlesungen-an-der-provadis'
     )
   })
