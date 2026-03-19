@@ -161,7 +161,11 @@ export function CourseAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      {trigger && (
+        <DialogTrigger asChild suppressHydrationWarning>
+          {trigger}
+        </DialogTrigger>
+      )}
       <DialogContent
         className={
           'flex h-[90vh] max-h-[90vh] min-w-[60vw] flex-col overflow-hidden'

@@ -40,6 +40,18 @@ async function getCoursesInternal({
       skip: pageIndex * pageSize,
       take: pageSize,
       orderBy,
+      include: {
+        assignments: {
+          select: {
+            lecturer: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
     }),
   ])
 

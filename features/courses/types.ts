@@ -8,7 +8,14 @@ import type {
   CourseQualification as PrismaCourseQualification,
 } from '@/features/shared/lib/generated/prisma/client'
 
-export type Course = PrismaCourse
+export type Course = PrismaCourse & {
+  assignments?: {
+    lecturer: {
+      firstName: string
+      lastName: string
+    }
+  }[]
+}
 export type CourseLevel = PrismaCourseLevel
 export type CourseAssignment = PrismaCourseAssignment
 export type CourseQualification = PrismaCourseQualification

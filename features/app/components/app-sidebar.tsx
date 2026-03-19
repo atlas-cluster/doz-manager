@@ -3,6 +3,8 @@
 import {
   LibraryBigIcon,
   SettingsIcon,
+  ChartNoAxesCombinedIcon,
+  LibraryBigIcon,
   ShieldUserIcon,
   UsersIcon,
 } from 'lucide-react'
@@ -30,6 +32,7 @@ import {
 const navItems = [
   { url: '/lecturers', icon: UsersIcon, adminOnly: false },
   { url: '/courses', icon: LibraryBigIcon, adminOnly: false },
+  { url: '/reports', icon: ChartNoAxesCombinedIcon, adminOnly: false },
   { url: '/access-control', icon: ShieldUserIcon, adminOnly: true },
   { url: '/settings', icon: SettingsIcon, adminOnly: true },
 ]

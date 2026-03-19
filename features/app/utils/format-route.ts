@@ -10,5 +10,7 @@ export function formatRoute(route: string) {
       return 'Zugriffsverwaltung'
     case '/settings':
       return 'Einstellungen'
+    case '/reports':
+      return 'Berichte'
   }
 }

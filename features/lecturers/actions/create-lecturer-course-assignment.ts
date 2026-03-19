@@ -16,5 +16,7 @@ export async function createLecturerCourseAssignment(
   })
 
   updateTag('lecturers')
+  updateTag('courses')
   updateTag(`lecturer-${lecturerId}-courses`)
+  updateTag(`course-${courseId}-lecturers`)
 }
