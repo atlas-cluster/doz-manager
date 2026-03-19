@@ -35,7 +35,7 @@ export function ReportCardCoursesAtProvadis({
   qualifications: GetCoursesAtProvadisResponse
 }) {
   const lecturerCount = Object.keys(qualifications).length
-  const courseCount = Object.values(qualifications).flat().length
+  const courseCount = new Set(Object.values(qualifications).flat()).size
 
   const handleExportAsPDF = async () => {
     const { doc, contentStartY } = await generatePDF(
