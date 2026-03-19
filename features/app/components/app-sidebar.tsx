@@ -4,7 +4,6 @@ import {
   LibraryBigIcon,
   SettingsIcon,
   ChartNoAxesCombinedIcon,
-  LibraryBigIcon,
   ShieldUserIcon,
   UsersIcon,
 } from 'lucide-react'
