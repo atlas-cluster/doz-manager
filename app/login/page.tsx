@@ -18,7 +18,7 @@ export default async function LoginPage() {
   const authSettings = await getPublicAuthSettings()
 
   return (
-    <Suspense>
+    <Suspense fallback={null}>
       <LoginForm enabledMethods={authSettings} />
     </Suspense>
   )
