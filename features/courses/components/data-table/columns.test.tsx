@@ -120,6 +120,7 @@ describe('Course columns', () => {
         'semester',
         'isOpen',
         'courseLevel',
+        'assignments',
         'actions',
       ])
     })
@@ -129,11 +130,16 @@ describe('Course columns', () => {
       expect(sortable).toEqual(['name'])
     })
 
-    it('should allow hiding semester, isOpen, and courseLevel', () => {
+    it('should allow hiding semester, isOpen, courseLevel, and assignments', () => {
       const hideable = columns
         .filter((c) => c.enableHiding)
         .map((c) => c.id ?? (c as { accessorKey?: string }).accessorKey)
-      expect(hideable).toEqual(['semester', 'isOpen', 'courseLevel'])
+      expect(hideable).toEqual([
+        'semester',
+        'isOpen',
+        'courseLevel',
+        'assignments',
+      ])
     })
 
     it('should enable global filter only on name', () => {

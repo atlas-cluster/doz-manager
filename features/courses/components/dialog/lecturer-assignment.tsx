@@ -319,7 +319,15 @@ export function LecturerAssignmentDialog({
                       }
 
                       return (
-                        <Item key={lecturer.id} variant="outline" size="sm">
+                        <Item
+                          key={lecturer.id}
+                          variant="outline"
+                          size="sm"
+                          className={
+                            isAssigned
+                              ? 'border-primary bg-sidebar-accent/30'
+                              : null
+                          }>
                           <ItemMedia>
                             <Avatar>
                               <AvatarFallback>
@@ -330,8 +338,7 @@ export function LecturerAssignmentDialog({
                             </Avatar>
                           </ItemMedia>
                           <ItemContent>
-                            <ItemTitle
-                              className={isAssigned ? 'text-blue-900' : ''}>
+                            <ItemTitle>
                               {lecturerDisplayName(lecturer)}
                             </ItemTitle>
                             <ItemDescription>
