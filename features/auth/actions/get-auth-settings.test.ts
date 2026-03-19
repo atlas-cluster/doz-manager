@@ -1,12 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getAuthSettings } from '@/features/auth/actions/get-auth-settings'
+import { auth } from '@/features/auth/lib/auth'
 import { prisma } from '@/features/shared/lib/prisma'
 
 vi.mock('@/features/shared/lib/prisma', () => ({
   prisma: {
+    user: { findUnique: vi.fn() },
     authSettings: {
       findUnique: vi.fn(),
+    },
+  },
+}))
+vi.mock('next/headers', () => ({
+  headers: vi.fn().mockResolvedValue(new Headers()),
+}))
+vi.mock('@/features/auth/lib/auth', () => ({
+  auth: {
+    api: {
+      getSession: vi.fn(),
     },
   },
 }))
@@ -15,8 +27,26 @@ vi.mock('@/features/auth/lib/encrypt', () => ({
 }))
 
 describe('getAuthSettings', () => {
+  const adminSession = { user: { id: 'admin-1' } }
+
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(auth.api.getSession).mockResolvedValue(adminSession as never)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      isAdmin: true,
+    } as never)
+  })
+
+  it('should throw if not authenticated', async () => {
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce(null as never)
+    await expect(getAuthSettings()).rejects.toThrow('Nicht authentifiziert')
+  })
+
+  it('should throw if caller is not admin', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      isAdmin: false,
+    } as never)
+    await expect(getAuthSettings()).rejects.toThrow('Keine Berechtigung')
   })
 
   it('should return default settings when no row exists', async () => {
