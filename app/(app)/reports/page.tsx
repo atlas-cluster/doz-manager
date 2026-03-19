@@ -1,0 +1,29 @@
+import {
+  ReportCardCoursesAtOtherUni,
+  ReportCardCoursesAtProvadis,
+  ReportCardCoursesWithoutLecturers,
+  ReportCardCoursesWithoutProvadisExperience,
+  getCardData,
+} from '@/features/reports'
+
+export default async function ReportsPage() {
+  const reports = await getCardData()
+  return (
+    <div className="flex h-[calc(100vh-5rem)] flex-col gap-6">
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-2">
+        <ReportCardCoursesAtProvadis
+          qualifications={reports.coursesAtProvadis}
+        />
+        <ReportCardCoursesAtOtherUni
+          qualifications={reports.coursesAtOtherUni}
+        />
+        <ReportCardCoursesWithoutLecturers
+          courses={reports.coursesWithoutLecturer}
+        />
+        <ReportCardCoursesWithoutProvadisExperience
+          courses={reports.coursesWithoutProvadisExperience}
+        />
+      </div>
+    </div>
+  )
+}
