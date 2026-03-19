@@ -78,7 +78,6 @@ function getAuthBadges(
     'microsoft',
     'github',
     'oauth',
-    'custom-oauth', // legacy compat
   ])
 
   if (
@@ -88,7 +87,7 @@ function getAuthBadges(
     badges.push({
       key: 'credential',
       label: 'Passwort',
-      icon: <KeyRound className="size-3" />,
+      icon: <KeyRound className="size-4!" />,
     })
   }
 
@@ -96,7 +95,7 @@ function getAuthBadges(
     badges.push({
       key: 'passkey',
       label: 'Passkey',
-      icon: <KeyIcon className="size-3" />,
+      icon: <KeyIcon className="size-4!" />,
     })
   }
 
@@ -110,7 +109,7 @@ function getAuthBadges(
           alt="Microsoft Logo"
           width={16}
           height={16}
-          className="size-3"
+          className="size-4!"
         />
       ),
     })
@@ -120,7 +119,7 @@ function getAuthBadges(
     badges.push({
       key: 'github',
       label: 'GitHub',
-      icon: <GithubIcon className="size-3" />,
+      icon: <GithubIcon className="size-4!" />,
     })
   }
 
@@ -131,7 +130,7 @@ function getAuthBadges(
     badges.push({
       key: 'oauth',
       label: 'OAuth',
-      icon: <LogIn className="size-3" />,
+      icon: <LogIn className="size-4!" />,
     })
   }
 
@@ -139,7 +138,7 @@ function getAuthBadges(
     badges.push({
       key: '2fa',
       label: '2FA',
-      icon: <ShieldCheck className="size-3" />,
+      icon: <ShieldCheck className="size-4!" />,
     })
   }
 
@@ -148,7 +147,7 @@ function getAuthBadges(
     badges.push({
       key: provider,
       label: provider.toUpperCase(),
-      icon: <KeyIcon className="size-3" />,
+      icon: <KeyIcon className="size-4!" />,
     })
   })
 
