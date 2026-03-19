@@ -73,6 +73,7 @@ function buildSocialProviders(
 
 function buildPlugins(
   row: {
+    passkeyEnabled: boolean
     oauthEnabled: boolean
     oauthClientId: string | null
     oauthClientSecret: string | null
@@ -80,11 +81,15 @@ function buildPlugins(
   } | null
 ) {
   const plugins = [
-    passkey({
-      rpID: resolvePasskeyRpId(betterAuthUrl),
-      rpName: appName,
-      origin: betterAuthUrl,
-    }),
+    ...(row === null || row.passkeyEnabled
+      ? [
+          passkey({
+            rpID: resolvePasskeyRpId(betterAuthUrl),
+            rpName: appName,
+            origin: betterAuthUrl,
+          }),
+        ]
+      : []),
     twoFactor({
       backupCodeOptions: {
         customBackupCodesGenerate: generateBackupCodes,
@@ -125,6 +130,7 @@ function buildPlugins(
 function createAuthInstance(
   row: {
     passwordEnabled: boolean
+    passkeyEnabled: boolean
     microsoftEnabled: boolean
     microsoftClientId: string | null
     microsoftClientSecret: string | null
