@@ -326,7 +326,7 @@ export function LecturerAssignmentDialog({
                           className={
                             isAssigned
                               ? 'border-primary bg-sidebar-accent/30'
-                              : null
+                              : ''
                           }>
                           <ItemMedia>
                             <Avatar>
