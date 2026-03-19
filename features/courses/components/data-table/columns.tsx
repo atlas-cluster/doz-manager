@@ -2,6 +2,7 @@
 
 import {
   ArrowDown,
+  ArrowLeftRight,
   ArrowUp,
   ArrowUpDown,
   BadgeCheck,
@@ -15,9 +16,16 @@ import {
 } from 'lucide-react'
 import React, { useState } from 'react'
 
-import { CourseDialog } from '@/features/courses/components//dialog/course'
+import { CourseDialog } from '@/features/courses/components/dialog/course'
+import { LecturerAssignmentDialog } from '@/features/courses/components/dialog/lecturer-assignment'
 import { LecturerQualificationDialog } from '@/features/courses/components/dialog/lecturer-qualification'
 import { Course, CourseTableMeta } from '@/features/courses/types'
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+} from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
 import {
@@ -27,6 +35,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/features/shared/components/ui/dropdown-menu'
+import { initialsFromName } from '@/features/shared/lib/utils'
 import { ColumnDef, Row, Table } from '@tanstack/table-core'
 
 function ActionsCell({
@@ -39,6 +48,8 @@ function ActionsCell({
   const meta = table.options.meta as CourseTableMeta | undefined
   const course = row.original
   const [open, setOpen] = useState(false)
+  const [lecturerAssignmentDialogOpen, setLecturerAssignmentDialogOpen] =
+    useState(false)
   const [lecturerQualificationDialogOpen, setLecturerQualificationDialogOpen] =
     useState(false)
 
@@ -50,6 +61,12 @@ function ActionsCell({
         open={open}
         onOpenChange={setOpen}
         onSubmit={(payload) => meta?.updateCourse?.(course.id, payload)}
+      />
+      <LecturerAssignmentDialog
+        course={course}
+        open={lecturerAssignmentDialogOpen}
+        onOpenChange={setLecturerAssignmentDialogOpen}
+        onSubmit={() => meta?.refreshCourses()}
       />
       <LecturerQualificationDialog
         course={course}
@@ -71,11 +88,19 @@ function ActionsCell({
                 <PencilIcon />
                 Bearbeiten
               </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onSelect={() => setLecturerAssignmentDialogOpen(true)}>
+                <ArrowLeftRight />
+                Dozenten zuordnen
+              </DropdownMenuItem>
+
               <DropdownMenuItem
                 onSelect={() => setLecturerQualificationDialogOpen(true)}>
                 <BadgeCheck />
                 Qualifikationen bearbeiten
               </DropdownMenuItem>
+
               <DropdownMenuItem
                 variant={'destructive'}
                 onSelect={() => meta?.deleteCourse?.(course.id)}>
@@ -98,6 +123,57 @@ function ActionsCell({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+  )
+}
+
+function LecturerAssignmentsCell({
+  row,
+  table,
+}: {
+  row: Row<Course>
+  table: Table<Course>
+}) {
+  const assignments = row.original.assignments
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  if (!assignments || assignments.length === 0) {
+    return null
+  }
+
+  const displayAssignments = assignments.slice(0, 3)
+  const remainingCount = assignments.length - 3
+
+  if (displayAssignments.length === 0) {
+    return null
+  }
+
+  return (
+    <LecturerAssignmentDialog
+      course={row.original}
+      open={dialogOpen}
+      onOpenChange={setDialogOpen}
+      onSubmit={() =>
+        (table.options.meta as CourseTableMeta | undefined)?.refreshCourses()
+      }
+      trigger={
+        <AvatarGroup className="cursor-pointer grayscale">
+          {displayAssignments.map((assignment, index) => (
+            <Avatar key={index}>
+              <AvatarFallback>
+                {initialsFromName(
+                  assignment.lecturer.firstName +
+                    ' ' +
+                    assignment.lecturer.lastName
+                )}
+              </AvatarFallback>
+            </Avatar>
+          ))}
+          {remainingCount > 0 && (
+            <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+          )}
+        </AvatarGroup>
+      }
+    />
   )
 }
 
@@ -202,6 +278,17 @@ export const columns: ColumnDef<Course>[] = [
       )
     },
     header: 'Vorlesungsstufe',
+    enableSorting: false,
+    enableHiding: true,
+    enableGlobalFilter: false,
+  },
+  {
+    id: 'assignments',
+    header: 'Dozenten',
+    accessorKey: 'assignments',
+    cell: ({ row, table }) => (
+      <LecturerAssignmentsCell row={row} table={table} />
+    ),
     enableSorting: false,
     enableHiding: true,
     enableGlobalFilter: false,
