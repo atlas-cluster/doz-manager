@@ -26,7 +26,7 @@ import { TwoFactorDisableDialog } from '@/features/auth/components/dialogs/two-f
 import { TwoFactorSetupDialog } from '@/features/auth/components/dialogs/two-factor-setup-dialog'
 import { formatBackupCodes } from '@/features/auth/lib/backup-code-format'
 import { authClient } from '@/features/auth/lib/client'
-import { AccountUser } from '@/features/auth/types'
+import { AccountUser, PublicAuthSettings } from '@/features/auth/types'
 import {
   Avatar,
   AvatarFallback,
@@ -57,6 +57,7 @@ import { initialsFromName } from '@/features/shared/lib/utils'
 type AccountSettingsProps = {
   initialUser: AccountUser
   hasPassword: boolean
+  authSettings?: PublicAuthSettings
   onUserChange?: (user: AccountUser) => void
 }
 
@@ -67,6 +68,7 @@ type PasskeyListItem = {
 export function AccountSettings({
   initialUser,
   hasPassword: initialHasPassword,
+  authSettings,
   onUserChange,
 }: AccountSettingsProps) {
   const [saved, setSaved] = useState<AccountUser>(initialUser)
@@ -501,39 +503,43 @@ export function AccountSettings({
         </TabsContent>
 
         <TabsContent value="security" className="mt-6 flex flex-col gap-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium">Passwort</p>
-              <p className="text-muted-foreground text-xs">
-                {hasPassword
-                  ? 'Ändern Sie Ihr Anmelde-Passwort.'
-                  : 'Fügen Sie ein Passwort hinzu, um sich auch per E-Mail anmelden zu können.'}
-              </p>
-            </div>
-            {hasPassword ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 gap-1.5"
-                onClick={() => setShowChangePasswordDialog(true)}>
-                <LockIcon className="size-4" />
-                Ändern
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 gap-1.5"
-                onClick={() => setShowAddPasswordDialog(true)}>
-                <LockIcon className="size-4" />
-                Hinzufügen
-              </Button>
-            )}
-          </div>
+          {(authSettings?.passwordEnabled ?? true) && (
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">Passwort</p>
+                  <p className="text-muted-foreground text-xs">
+                    {hasPassword
+                      ? 'Ändern Sie Ihr Anmelde-Passwort.'
+                      : 'Fügen Sie ein Passwort hinzu, um sich auch per E-Mail anmelden zu können.'}
+                  </p>
+                </div>
+                {hasPassword ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 gap-1.5"
+                    onClick={() => setShowChangePasswordDialog(true)}>
+                    <LockIcon className="size-4" />
+                    Ändern
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 gap-1.5"
+                    onClick={() => setShowAddPasswordDialog(true)}>
+                    <LockIcon className="size-4" />
+                    Hinzufügen
+                  </Button>
+                )}
+              </div>
 
-          <Separator />
+              <Separator />
+            </>
+          )}
 
-          {hasPassword && (
+          {(authSettings?.passwordEnabled ?? true) && hasPassword && (
             <>
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
@@ -571,35 +577,40 @@ export function AccountSettings({
             </>
           )}
 
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium">Passkeys</p>
-              <p className="text-muted-foreground text-xs">
-                {isPasskeysPending
-                  ? 'Passkeys werden geladen...'
-                  : passkeyCount > 0
-                    ? `${passkeyCount} Passkey${passkeyCount > 1 ? 's' : ''} hinterlegt.`
-                    : 'Hinterlegen Sie einen Passkey für eine schnellere Anmeldung ohne Passwort.'}
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-1.5"
-              onClick={() =>
-                passkeyCount > 0
-                  ? setShowPasskeyManagementDialog(true)
-                  : handleAddFirstPasskey()
-              }
-              disabled={isPasskeysPending}>
-              <KeyRoundIcon className="size-4" />
-              {passkeyCount > 0 ? 'Verwalten' : 'Hinzufügen'}
-            </Button>
-          </div>
-
-          {twoFactorEnabled && (
+          {(authSettings?.passkeyEnabled ?? true) && (
             <>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">Passkeys</p>
+                  <p className="text-muted-foreground text-xs">
+                    {isPasskeysPending
+                      ? 'Passkeys werden geladen...'
+                      : passkeyCount > 0
+                        ? `${passkeyCount} Passkey${passkeyCount > 1 ? 's' : ''} hinterlegt.`
+                        : 'Hinterlegen Sie einen Passkey für eine schnellere Anmeldung ohne Passwort.'}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 gap-1.5"
+                  onClick={() =>
+                    passkeyCount > 0
+                      ? setShowPasskeyManagementDialog(true)
+                      : handleAddFirstPasskey()
+                  }
+                  disabled={isPasskeysPending}>
+                  <KeyRoundIcon className="size-4" />
+                  {passkeyCount > 0 ? 'Verwalten' : 'Hinzufügen'}
+                </Button>
+              </div>
+
               <Separator />
+            </>
+          )}
+
+          {(authSettings?.passwordEnabled ?? true) && twoFactorEnabled && (
+            <>
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
                   <p className="flex items-center gap-1.5 text-sm font-medium">
@@ -629,10 +640,10 @@ export function AccountSettings({
                   Neu erstellen
                 </Button>
               </div>
+
+              <Separator />
             </>
           )}
-
-          <Separator />
 
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">

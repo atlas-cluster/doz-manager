@@ -369,4 +369,96 @@ describe('AccountSettings', () => {
       'test@example.com'
     )
   })
+
+  it('should hide password section when passwordEnabled is false', async () => {
+    const user = userEvent.setup()
+    render(
+      <AccountSettings
+        hasPassword={true}
+        initialUser={mockUser}
+        authSettings={{
+          passwordEnabled: false,
+          passkeyEnabled: true,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
+    )
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(screen.queryByText('Passwort')).not.toBeInTheDocument()
+  })
+
+  it('should hide 2FA section when passwordEnabled is false', async () => {
+    const user = userEvent.setup()
+    render(
+      <AccountSettings
+        hasPassword={true}
+        initialUser={mockUser}
+        authSettings={{
+          passwordEnabled: false,
+          passkeyEnabled: true,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
+    )
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(
+      screen.queryByText(/Zwei-Faktor-Authentifizierung/)
+    ).not.toBeInTheDocument()
+  })
+
+  it('should hide passkey section when passkeyEnabled is false', async () => {
+    const user = userEvent.setup()
+    render(
+      <AccountSettings
+        hasPassword={true}
+        initialUser={mockUser}
+        authSettings={{
+          passwordEnabled: true,
+          passkeyEnabled: false,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
+    )
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(screen.queryByText('Passkeys')).not.toBeInTheDocument()
+  })
+
+  it('should hide backup codes when passwordEnabled is false even if 2FA was enabled', async () => {
+    const user = userEvent.setup()
+    const user2FA = { ...mockUser, twoFactorEnabled: true }
+    render(
+      <AccountSettings
+        hasPassword={true}
+        initialUser={user2FA}
+        authSettings={{
+          passwordEnabled: false,
+          passkeyEnabled: true,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
+    )
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(screen.queryByText('Backup-Codes')).not.toBeInTheDocument()
+  })
+
+  it('should show all sections when authSettings is not provided (defaults)', async () => {
+    const user = userEvent.setup()
+    render(<AccountSettings hasPassword={true} initialUser={mockUser} />)
+    const tabs = screen.getAllByText('Sicherheit')
+    await user.click(tabs[0])
+    expect(screen.getByText('Passwort')).toBeInTheDocument()
+    expect(screen.getByText('Passkeys')).toBeInTheDocument()
+  })
 })

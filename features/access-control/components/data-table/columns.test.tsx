@@ -5,6 +5,7 @@ import type {
   AccessControlTableMeta,
   AccessControlUser,
 } from '@/features/access-control/types'
+import type { PublicAuthSettings } from '@/features/auth/types'
 import {
   flexRender,
   getCoreRowModel,
@@ -38,7 +39,13 @@ function makeUser(
   }
 }
 
-function TestTable({ data }: { data: AccessControlUser[] }) {
+function TestTable({
+  data,
+  enabledMethods,
+}: {
+  data: AccessControlUser[]
+  enabledMethods?: PublicAuthSettings
+}) {
   const table = useReactTable({
     data,
     columns,
@@ -56,7 +63,7 @@ function TestTable({ data }: { data: AccessControlUser[] }) {
       removePassword: vi.fn(),
       removePasskeys: vi.fn(),
       refreshUsers: vi.fn(),
-      enabledMethods: {
+      enabledMethods: enabledMethods ?? {
         passwordEnabled: true,
         passkeyEnabled: true,
         microsoftEnabled: true,
@@ -212,5 +219,76 @@ describe('Access Control columns', () => {
     expect(screen.getByText('Bearbeiten')).toBeInTheDocument()
     expect(screen.getByText('Passwort ändern')).toBeInTheDocument()
     expect(screen.queryByRole('separator')).not.toBeInTheDocument()
+  })
+
+  it('should hide password actions when passwordEnabled is false', async () => {
+    const user = userEvent.setup()
+    render(
+      <TestTable
+        data={[makeUser({ id: 'current-user', authProviders: ['credential'] })]}
+        enabledMethods={{
+          passwordEnabled: false,
+          passkeyEnabled: true,
+          microsoftEnabled: true,
+          githubEnabled: true,
+          oauthEnabled: true,
+        }}
+      />
+    )
+    await user.click(screen.getByRole('button', { name: /Menü/ }))
+
+    expect(screen.getByText('Bearbeiten')).toBeInTheDocument()
+    expect(screen.queryByText('Passwort ändern')).not.toBeInTheDocument()
+    expect(screen.queryByText('Passwort hinzufügen')).not.toBeInTheDocument()
+    expect(screen.queryByText('Passwort entfernen')).not.toBeInTheDocument()
+  })
+
+  it('should hide passkey remove action when passkeyEnabled is false', async () => {
+    const user = userEvent.setup()
+    render(
+      <TestTable
+        data={[
+          makeUser({
+            id: 'current-user',
+            authProviders: ['credential', 'passkey'],
+          }),
+        ]}
+        enabledMethods={{
+          passwordEnabled: true,
+          passkeyEnabled: false,
+          microsoftEnabled: true,
+          githubEnabled: true,
+          oauthEnabled: true,
+        }}
+      />
+    )
+    await user.click(screen.getByRole('button', { name: /Menü/ }))
+
+    expect(screen.getByText('Passwort ändern')).toBeInTheDocument()
+    expect(screen.queryByText('Passkeys entfernen')).not.toBeInTheDocument()
+  })
+
+  it('should hide 2FA disable action when passwordEnabled is false', async () => {
+    const user = userEvent.setup()
+    render(
+      <TestTable
+        data={[
+          makeUser({
+            authProviders: ['credential'],
+            twoFactorEnabled: true,
+          }),
+        ]}
+        enabledMethods={{
+          passwordEnabled: false,
+          passkeyEnabled: true,
+          microsoftEnabled: true,
+          githubEnabled: true,
+          oauthEnabled: true,
+        }}
+      />
+    )
+    await user.click(screen.getByRole('button', { name: /Menü/ }))
+
+    expect(screen.queryByText('2FA deaktivieren')).not.toBeInTheDocument()
   })
 })

@@ -34,7 +34,16 @@ const testUser: SidebarUser = {
 function renderWithSidebar(user: SidebarUser = testUser) {
   return render(
     <SidebarProvider>
-      <SidebarUserMenu user={user} />
+      <SidebarUserMenu
+        user={user}
+        authSettings={{
+          passwordEnabled: true,
+          passkeyEnabled: true,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
+      />
     </SidebarProvider>
   )
 }

@@ -16,6 +16,7 @@ import {
   SidebarUserMenu,
 } from '@/features/app/components/sidebar-user-menu'
 import { formatRoute } from '@/features/app/utils/format-route'
+import type { PublicAuthSettings } from '@/features/auth/types'
 import {
   Sidebar,
   SidebarContent,
@@ -39,9 +40,10 @@ const navItems = [
 type AppSidebarProps = {
   user: SidebarUser
   isAdmin: boolean
+  authSettings: PublicAuthSettings
 }
 
-export function AppSidebar({ user, isAdmin }: AppSidebarProps) {
+export function AppSidebar({ user, isAdmin, authSettings }: AppSidebarProps) {
   const pathname = usePathname()
 
   const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin)
@@ -82,7 +84,7 @@ export function AppSidebar({ user, isAdmin }: AppSidebarProps) {
       </SidebarContent>
       <SidebarSeparator className={'m-0'} />
       <SidebarFooter>
-        <SidebarUserMenu user={user} />
+        <SidebarUserMenu user={user} authSettings={authSettings} />
       </SidebarFooter>
     </Sidebar>
   )

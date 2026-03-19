@@ -177,6 +177,10 @@ function ActionsCell({
     .map((p) => p.toLowerCase())
     .includes('passkey')
 
+  const enabledMethods = meta?.enabledMethods
+  const passwordMethodEnabled = enabledMethods?.passwordEnabled ?? true
+  const passkeyMethodEnabled = enabledMethods?.passkeyEnabled ?? true
+
   const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
     <div className="flex justify-end">
@@ -215,25 +219,29 @@ function ActionsCell({
                 <PencilIcon />
                 Bearbeiten
               </DropdownMenuItem>
-              {hasPassword ? (
-                <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
-                  <KeyIcon />
-                  Passwort ändern
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onSelect={() => setAddPasswordOpen(true)}>
-                  <KeyRound />
-                  Passwort hinzufügen
-                </DropdownMenuItem>
+              {passwordMethodEnabled && (
+                <>
+                  {hasPassword ? (
+                    <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
+                      <KeyIcon />
+                      Passwort ändern
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onSelect={() => setAddPasswordOpen(true)}>
+                      <KeyRound />
+                      Passwort hinzufügen
+                    </DropdownMenuItem>
+                  )}
+                  {hasPassword && (
+                    <DropdownMenuItem
+                      onSelect={() => meta?.removePassword?.(user.id)}>
+                      <XCircle />
+                      Passwort entfernen
+                    </DropdownMenuItem>
+                  )}
+                </>
               )}
-              {hasPassword && (
-                <DropdownMenuItem
-                  onSelect={() => meta?.removePassword?.(user.id)}>
-                  <XCircle />
-                  Passwort entfernen
-                </DropdownMenuItem>
-              )}
-              {hasPasskey && (
+              {passkeyMethodEnabled && hasPasskey && (
                 <DropdownMenuItem
                   onSelect={() => meta?.removePasskeys?.(user.id)}>
                   <Fingerprint />
@@ -261,7 +269,7 @@ function ActionsCell({
                   </DropdownMenuItem>
                 </>
               )}
-              {user.twoFactorEnabled && (
+              {passwordMethodEnabled && user.twoFactorEnabled && (
                 <DropdownMenuItem onSelect={() => meta?.disable2FA?.(user.id)}>
                   <ShieldOff />
                   2FA deaktivieren

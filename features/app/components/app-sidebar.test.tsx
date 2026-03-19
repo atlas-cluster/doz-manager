@@ -42,6 +42,13 @@ function renderWithSidebar(isAdmin = true) {
           hasPassword: true,
         }}
         isAdmin={isAdmin}
+        authSettings={{
+          passwordEnabled: true,
+          passkeyEnabled: true,
+          microsoftEnabled: false,
+          githubEnabled: false,
+          oauthEnabled: false,
+        }}
       />
     </SidebarProvider>
   )
