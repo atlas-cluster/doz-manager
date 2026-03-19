@@ -33,6 +33,14 @@ import {
   AvatarImage,
 } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/features/shared/components/ui/dialog'
 import { Separator } from '@/features/shared/components/ui/separator'
 import {
   Tabs,
@@ -48,6 +56,7 @@ import { initialsFromName } from '@/features/shared/lib/utils'
 
 type AccountSettingsProps = {
   initialUser: AccountUser
+  hasPassword: boolean
   onUserChange?: (user: AccountUser) => void
 }
 
@@ -57,14 +66,18 @@ type PasskeyListItem = {
 
 export function AccountSettings({
   initialUser,
+  hasPassword: initialHasPassword,
   onUserChange,
 }: AccountSettingsProps) {
   const [saved, setSaved] = useState<AccountUser>(initialUser)
   const [isSaving, setIsSaving] = useState(false)
+  const [hasPassword, setHasPassword] = useState(initialHasPassword)
 
   const [showNameDialog, setShowNameDialog] = useState(false)
   const [showEmailDialog, setShowEmailDialog] = useState(false)
   const [showImageDialog, setShowImageDialog] = useState(false)
+  const [showAddPasswordDialog, setShowAddPasswordDialog] = useState(false)
+  const [isAddingPassword, setIsAddingPassword] = useState(false)
   const [fieldInput, setFieldInput] = useState('')
 
   const twoFactorEnabledRef = useRef(initialUser.twoFactorEnabled)
@@ -150,7 +163,7 @@ export function AccountSettings({
     toast.success('Passkey wurde hinzugefügt.')
   }
 
-  const handleDeleteAccount = async (password: string) => {
+  const handleDeleteAccount = async (password?: string) => {
     setIsDeleting(true)
     try {
       const promise = deleteAccount(password).then(() => {
@@ -276,6 +289,28 @@ export function AccountSettings({
     )
     if (didSave) {
       setShowImageDialog(false)
+    }
+  }
+
+  const handleAddPassword = async (password: string) => {
+    setIsAddingPassword(true)
+    try {
+      const { error } = await authClient.changePassword({
+        newPassword: password,
+        currentPassword: '',
+        revokeOtherSessions: false,
+      })
+      if (error) {
+        toast.error('Passwort konnte nicht gesetzt werden.')
+        return
+      }
+      setHasPassword(true)
+      setShowAddPasswordDialog(false)
+      toast.success('Passwort wurde hinzugefügt.')
+    } catch {
+      toast.error('Passwort konnte nicht gesetzt werden.')
+    } finally {
+      setIsAddingPassword(false)
     }
   }
 
@@ -470,54 +505,71 @@ export function AccountSettings({
             <div className="space-y-0.5">
               <p className="text-sm font-medium">Passwort</p>
               <p className="text-muted-foreground text-xs">
-                Ändern Sie Ihr Anmelde-Passwort.
+                {hasPassword
+                  ? 'Ändern Sie Ihr Anmelde-Passwort.'
+                  : 'Fügen Sie ein Passwort hinzu, um sich auch per E-Mail anmelden zu können.'}
               </p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-1.5"
-              onClick={() => setShowChangePasswordDialog(true)}>
-              <LockIcon className="size-4" />
-              Ändern
-            </Button>
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium">
-                Zwei-Faktor-Authentifizierung
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {twoFactorEnabled
-                  ? 'Aktiviert — Ihr Konto ist zusätzlich geschützt.'
-                  : 'Deaktiviert — Aktivieren Sie 2FA für mehr Sicherheit.'}
-              </p>
-            </div>
-            {twoFactorEnabled ? (
+            {hasPassword ? (
               <Button
                 size="sm"
                 variant="outline"
-                className="text-destructive hover:text-destructive shrink-0 gap-1.5"
-                onClick={() => setShowDisablePasswordDialog(true)}>
-                <ShieldOffIcon className="size-4" />
-                Deaktivieren
+                className="shrink-0 gap-1.5"
+                onClick={() => setShowChangePasswordDialog(true)}>
+                <LockIcon className="size-4" />
+                Ändern
               </Button>
             ) : (
               <Button
                 size="sm"
                 variant="outline"
                 className="shrink-0 gap-1.5"
-                onClick={() => setShowEnablePasswordDialog(true)}>
-                <ShieldCheckIcon className="size-4" />
-                Aktivieren
+                onClick={() => setShowAddPasswordDialog(true)}>
+                <LockIcon className="size-4" />
+                Hinzufügen
               </Button>
             )}
           </div>
 
           <Separator />
+
+          {hasPassword && (
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">
+                    Zwei-Faktor-Authentifizierung
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {twoFactorEnabled
+                      ? 'Aktiviert — Ihr Konto ist zusätzlich geschützt.'
+                      : 'Deaktiviert — Aktivieren Sie 2FA für mehr Sicherheit.'}
+                  </p>
+                </div>
+                {twoFactorEnabled ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive shrink-0 gap-1.5"
+                    onClick={() => setShowDisablePasswordDialog(true)}>
+                    <ShieldOffIcon className="size-4" />
+                    Deaktivieren
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 gap-1.5"
+                    onClick={() => setShowEnablePasswordDialog(true)}>
+                    <ShieldCheckIcon className="size-4" />
+                    Aktivieren
+                  </Button>
+                )}
+              </div>
+
+              <Separator />
+            </>
+          )}
 
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
@@ -646,6 +698,16 @@ export function AccountSettings({
       />
 
       <PasswordDialog
+        open={showAddPasswordDialog}
+        onOpenChange={setShowAddPasswordDialog}
+        title="Passwort hinzufügen"
+        description="Legen Sie ein Passwort fest, um sich auch per E-Mail und Passwort anmelden zu können."
+        confirmLabel="Passwort setzen"
+        isLoading={isAddingPassword}
+        onConfirm={handleAddPassword}
+      />
+
+      <PasswordDialog
         open={showEnablePasswordDialog}
         onOpenChange={setShowEnablePasswordDialog}
         title="2FA aktivieren"
@@ -715,16 +777,46 @@ export function AccountSettings({
         }}
       />
 
-      <PasswordDialog
-        open={showDeleteAccountDialog}
-        onOpenChange={setShowDeleteAccountDialog}
-        title="Konto löschen"
-        description="Bestätigen Sie Ihr Passwort, um Ihr Konto unwiderruflich zu löschen."
-        confirmLabel="Konto löschen"
-        confirmVariant="destructive"
-        isLoading={isDeleting}
-        onConfirm={handleDeleteAccount}
-      />
+      {hasPassword ? (
+        <PasswordDialog
+          open={showDeleteAccountDialog}
+          onOpenChange={setShowDeleteAccountDialog}
+          title="Konto löschen"
+          description="Bestätigen Sie Ihr Passwort, um Ihr Konto unwiderruflich zu löschen."
+          confirmLabel="Konto löschen"
+          confirmVariant="destructive"
+          isLoading={isDeleting}
+          onConfirm={handleDeleteAccount}
+        />
+      ) : (
+        <Dialog
+          open={showDeleteAccountDialog}
+          onOpenChange={setShowDeleteAccountDialog}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Konto löschen</DialogTitle>
+              <DialogDescription>
+                Möchten Sie Ihr Konto wirklich unwiderruflich löschen? Diese
+                Aktion kann nicht rückgängig gemacht werden.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                disabled={isDeleting}
+                onClick={() => setShowDeleteAccountDialog(false)}>
+                Abbrechen
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={isDeleting}
+                onClick={() => handleDeleteAccount()}>
+                Konto löschen
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <PasskeyManagementDialog
         open={showPasskeyManagementDialog}

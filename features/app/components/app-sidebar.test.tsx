@@ -39,6 +39,7 @@ function renderWithSidebar(isAdmin = true) {
           email: 'max.mustermann@example.com',
           image: null,
           twoFactorEnabled: false,
+          hasPassword: true,
         }}
         isAdmin={isAdmin}
       />
@@ -98,6 +99,21 @@ describe('AppSidebar', () => {
     renderWithSidebar(false)
 
     expect(screen.queryByText('Zugriffsverwaltung')).not.toBeInTheDocument()
+  })
+
+  it('should show settings link for admins', () => {
+    renderWithSidebar(true)
+
+    expect(screen.getByText('Einstellungen')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /Einstellungen/i })
+    ).toHaveAttribute('href', '/settings')
+  })
+
+  it('should hide settings link for non-admins', () => {
+    renderWithSidebar(false)
+
+    expect(screen.queryByText('Einstellungen')).not.toBeInTheDocument()
   })
 
   it('should render user information in the sidebar footer', () => {

@@ -11,6 +11,14 @@ describe('formatRoute', () => {
     expect(formatRoute('/courses')).toBe('Vorlesungen')
   })
 
+  it('should return "Zugriffsverwaltung" for /access-control', () => {
+    expect(formatRoute('/access-control')).toBe('Zugriffsverwaltung')
+  })
+
+  it('should return "Einstellungen" for /settings', () => {
+    expect(formatRoute('/settings')).toBe('Einstellungen')
+  })
+
   it('should return "Dashboard" for unknown routes', () => {
     expect(formatRoute('/')).toBe('Dashboard')
     expect(formatRoute('/unknown')).toBe('Dashboard')

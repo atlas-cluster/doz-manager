@@ -52,7 +52,17 @@ function TestTable({ data }: { data: AccessControlUser[] }) {
       toggleAdmin: vi.fn(),
       changePassword: vi.fn(),
       disable2FA: vi.fn(),
+      addPassword: vi.fn(),
+      removePassword: vi.fn(),
+      removePasskeys: vi.fn(),
       refreshUsers: vi.fn(),
+      enabledMethods: {
+        passwordEnabled: true,
+        passkeyEnabled: true,
+        microsoftEnabled: true,
+        githubEnabled: true,
+        oauthEnabled: true,
+      },
     } satisfies AccessControlTableMeta,
   })
 
@@ -156,9 +166,14 @@ describe('Access Control columns', () => {
     expect(screen.getByText('Microsoft')).toBeInTheDocument()
   })
 
-  it('should render unknown providers as uppercase badges', () => {
+  it('should render github as a known provider badge', () => {
     render(<TestTable data={[makeUser({ authProviders: ['github'] })]} />)
-    expect(screen.getByText('GITHUB')).toBeInTheDocument()
+    expect(screen.getByText('GitHub')).toBeInTheDocument()
+  })
+
+  it('should render unknown providers as uppercase badges', () => {
+    render(<TestTable data={[makeUser({ authProviders: ['okta'] })]} />)
+    expect(screen.getByText('OKTA')).toBeInTheDocument()
   })
 
   it('should render multiple users', () => {

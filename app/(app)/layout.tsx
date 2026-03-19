@@ -29,12 +29,18 @@ export default async function AppLayout({
     select: { isAdmin: true, twoFactorEnabled: true },
   })
 
+  const credentialAccount = await prisma.account.findFirst({
+    where: { userId: session.user.id, providerId: 'credential' },
+    select: { id: true },
+  })
+
   const sidebarUser = {
     id: session.user.id,
     name: session.user.name || 'Benutzer',
     email: session.user.email,
     image: session.user.image,
     twoFactorEnabled: Boolean(dbUser?.twoFactorEnabled),
+    hasPassword: !!credentialAccount,
   }
 
   return (

@@ -1,5 +1,6 @@
 'use server'
 
+import { createId } from '@paralleldrive/cuid2'
 import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 import { z } from 'zod'
@@ -26,17 +27,37 @@ export async function createUser(data: z.infer<typeof userSchema>) {
     throw new Error('Keine Berechtigung')
   }
 
-  if (!data.password) {
-    throw new Error('Passwort ist beim Erstellen erforderlich')
+  // Check if user already exists
+  const existing = await prisma.user.findUnique({
+    where: { email: data.email },
+  })
+
+  if (existing) {
+    throw new Error('Ein Benutzer mit dieser E-Mail existiert bereits.')
   }
 
-  await auth.api.signUpEmail({
-    body: {
-      email: data.email,
-      password: data.password,
-      name: data.name,
-    },
-  })
+  if (data.password) {
+    // Create user with credential (password) via BetterAuth
+    await auth.api.signUpEmail({
+      body: {
+        email: data.email,
+        password: data.password,
+        name: data.name,
+      },
+    })
+  } else {
+    // Create user record without password — social providers will
+    // link automatically when the user logs in (matched by email).
+    await prisma.user.create({
+      data: {
+        id: createId(),
+        name: data.name,
+        email: data.email,
+        emailVerified: true,
+        image: data.image || null,
+      },
+    })
+  }
 
   updateTag('users')
 }

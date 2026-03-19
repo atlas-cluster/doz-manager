@@ -12,8 +12,12 @@ export const userSchema = z.object({
     .nullable()
     .optional(),
   password: z
-    .string()
-    .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.')
-    .max(128, 'Das Passwort darf maximal 128 Zeichen lang sein.')
+    .union([
+      z
+        .string()
+        .min(8, 'Das Passwort muss mindestens 8 Zeichen lang sein.')
+        .max(128, 'Das Passwort darf maximal 128 Zeichen lang sein.'),
+      z.literal(''),
+    ])
     .optional(),
 })

@@ -32,5 +32,8 @@ describe('deleteLecturerCourseAssignment', () => {
 
     expect(updateTag).toHaveBeenCalledWith('lecturers')
     expect(updateTag).toHaveBeenCalledWith('lecturer-lecturer-1-courses')
+    expect(updateTag).not.toHaveBeenCalledWith('courses')
+    expect(updateTag).not.toHaveBeenCalledWith('course-course-1-lecturers')
+    expect(updateTag).toHaveBeenCalledTimes(2)
   })
 })

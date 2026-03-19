@@ -13,8 +13,15 @@ const createDeferred = <T,>() => {
 
 const mockPush = vi.fn()
 const mockRefresh = vi.fn()
+const mockReplace = vi.fn()
+const mockSearchParams = new URLSearchParams()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
+  useRouter: () => ({
+    push: mockPush,
+    refresh: mockRefresh,
+    replace: mockReplace,
+  }),
+  useSearchParams: () => mockSearchParams,
 }))
 
 vi.mock('next/image', () => ({
@@ -32,6 +39,7 @@ vi.mock('next/image', () => ({
 
 const mockSignInEmail = vi.fn()
 const mockSignInPasskey = vi.fn()
+const mockSignInSocial = vi.fn()
 const mockVerifyTotp = vi.fn()
 const mockVerifyBackupCode = vi.fn()
 vi.mock('@/features/auth/lib/client', () => ({
@@ -39,6 +47,7 @@ vi.mock('@/features/auth/lib/client', () => ({
     signIn: {
       email: (...args: unknown[]) => mockSignInEmail(...args),
       passkey: (...args: unknown[]) => mockSignInPasskey(...args),
+      social: (...args: unknown[]) => mockSignInSocial(...args),
     },
     twoFactor: {
       verifyTotp: (...args: unknown[]) => mockVerifyTotp(...args),
@@ -59,6 +68,14 @@ vi.mock('@/features/app', () => ({
   ThemeToggle: () => <button data-testid="theme-toggle">Theme</button>,
 }))
 
+const allEnabled = {
+  passwordEnabled: true,
+  passkeyEnabled: true,
+  microsoftEnabled: true,
+  githubEnabled: false,
+  oauthEnabled: false,
+}
+
 describe('LoginForm', () => {
   afterEach(() => {
     cleanup()
@@ -66,24 +83,24 @@ describe('LoginForm', () => {
   })
 
   it('should render the login card', () => {
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     expect(screen.getByText(/Willkommen/)).toBeInTheDocument()
   })
 
   it('should render email and password fields', () => {
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     expect(document.getElementById('email')).toBeInTheDocument()
     expect(document.getElementById('password')).toBeInTheDocument()
   })
 
   it('should render the Anmelden button', () => {
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     const buttons = screen.getAllByRole('button', { name: /Anmelden/ })
     expect(buttons.length).toBeGreaterThanOrEqual(1)
   })
 
   it('should render the Microsoft login button', () => {
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     expect(
       screen.getByRole('button', { name: /Microsoft/ })
     ).toBeInTheDocument()
@@ -95,7 +112,7 @@ describe('LoginForm', () => {
       configurable: true,
     })
     mockSignInPasskey.mockResolvedValue({ error: null })
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     fireEvent.click(screen.getByRole('button', { name: /Passkey anmelden/i }))
     await vi.waitFor(() => {
       expect(mockSignInPasskey).toHaveBeenCalled()
@@ -109,7 +126,7 @@ describe('LoginForm', () => {
       configurable: true,
     })
 
-    let resolvePasskeySignIn: ((value: { error: null }) => void) | null = null
+    let resolvePasskeySignIn: ((value: unknown) => void) | null = null
     mockSignInPasskey.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -117,21 +134,22 @@ describe('LoginForm', () => {
         })
     )
 
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     fireEvent.click(screen.getByRole('button', { name: /Passkey anmelden/i }))
 
     await vi.waitFor(() => {
       expect(screen.getAllByRole('status')).toHaveLength(1)
     })
 
-    resolvePasskeySignIn?.({ error: null })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(resolvePasskeySignIn as any)?.({ error: null })
   })
 
   it('should disable all credential controls while email sign-in is loading and show only email spinner', async () => {
     const deferred = createDeferred<{ data: null; error: null }>()
     mockSignInEmail.mockImplementation(() => deferred.promise)
 
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     fireEvent.change(document.getElementById('email')!, {
       target: { value: 'u@e.com' },
     })
@@ -167,7 +185,7 @@ describe('LoginForm', () => {
     const deferred = createDeferred<{ error: null }>()
     mockSignInPasskey.mockImplementation(() => deferred.promise)
 
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     fireEvent.click(screen.getByRole('button', { name: /Passkey anmelden/i }))
 
     await vi.waitFor(() => {
@@ -192,7 +210,7 @@ describe('LoginForm', () => {
     const deferred = createDeferred<{ error: null }>()
     mockVerifyBackupCode.mockImplementation(() => deferred.promise)
 
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     fireEvent.change(document.getElementById('email')!, {
       target: { value: 'u@e.com' },
     })
@@ -227,13 +245,13 @@ describe('LoginForm', () => {
   })
 
   it('should render the credentials step subtitle', () => {
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     expect(screen.getByText(/Melden Sie sich/)).toBeInTheDocument()
   })
 
   it('should show toast error when submitting empty fields', async () => {
     const { toast } = await import('sonner')
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     const form = document.getElementById('email')!.closest('form')!
     fireEvent.submit(form)
     expect(toast.error).toHaveBeenCalled()
@@ -242,7 +260,7 @@ describe('LoginForm', () => {
 
   it('should call signIn.email with entered credentials', async () => {
     mockSignInEmail.mockResolvedValue({ data: null, error: null })
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     fireEvent.change(document.getElementById('email')!, {
       target: { value: 'u@e.com' },
     })
@@ -262,7 +280,7 @@ describe('LoginForm', () => {
       data: null,
       error: { message: 'fail' },
     })
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     fireEvent.change(document.getElementById('email')!, {
       target: { value: 'u@e.com' },
     })
@@ -277,7 +295,7 @@ describe('LoginForm', () => {
 
   it('should navigate on successful sign-in without 2FA', async () => {
     mockSignInEmail.mockResolvedValue({ data: {}, error: null })
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     fireEvent.change(document.getElementById('email')!, {
       target: { value: 'u@e.com' },
     })
@@ -292,7 +310,7 @@ describe('LoginForm', () => {
   })
 
   it('should toggle password visibility', () => {
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     const pw = document.getElementById('password')!
     expect(pw).toHaveAttribute('type', 'password')
     const toggle = pw
@@ -303,7 +321,7 @@ describe('LoginForm', () => {
   })
 
   it('should not render 2FA and backup inputs before the 2FA step', () => {
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     expect(document.getElementById('backup-code')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /Backup-Code verwenden/i })
@@ -315,7 +333,7 @@ describe('LoginForm', () => {
       data: { twoFactorRedirect: true },
       error: null,
     })
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     fireEvent.change(document.getElementById('email')!, {
       target: { value: 'u@e.com' },
     })
@@ -332,12 +350,12 @@ describe('LoginForm', () => {
   })
 
   it('should render admin contact link', () => {
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     expect(screen.getByText(/Administrator/)).toBeInTheDocument()
   })
 
   it('should render the theme toggle', () => {
-    render(<LoginForm />)
+    render(<LoginForm enabledMethods={allEnabled} />)
     expect(screen.getByTestId('theme-toggle')).toBeInTheDocument()
   })
 })

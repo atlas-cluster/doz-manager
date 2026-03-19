@@ -5,8 +5,11 @@ import {
   ArrowUp,
   ArrowUpDown,
   Crown,
+  Fingerprint,
+  GithubIcon,
   KeyIcon,
   KeyRound,
+  LogIn,
   MoreHorizontalIcon,
   PencilIcon,
   ShieldCheck,
@@ -15,6 +18,7 @@ import {
   ShieldPlus,
   TrashIcon,
   UserRound,
+  XCircle,
 } from 'lucide-react'
 import Image from 'next/image'
 import React, { useState } from 'react'
@@ -25,6 +29,7 @@ import {
   AccessControlTableMeta,
   AccessControlUser,
 } from '@/features/access-control/types'
+import type { PublicAuthSettings } from '@/features/auth/types'
 import {
   Avatar,
   AvatarFallback,
@@ -58,15 +63,28 @@ type AuthBadge = {
   icon: React.ReactNode
 }
 
-function getAuthBadges(user: AccessControlUser): AuthBadge[] {
+function getAuthBadges(
+  user: AccessControlUser,
+  enabledMethods?: PublicAuthSettings
+): AuthBadge[] {
   const providers = new Set(
     (user.authProviders ?? []).map((provider) => provider.toLowerCase())
   )
 
   const badges: AuthBadge[] = []
-  const knownProviders = new Set(['credential', 'passkey', 'microsoft'])
+  const knownProviders = new Set([
+    'credential',
+    'passkey',
+    'microsoft',
+    'github',
+    'oauth',
+    'custom-oauth', // legacy compat
+  ])
 
-  if (providers.has('credential')) {
+  if (
+    providers.has('credential') &&
+    (enabledMethods?.passwordEnabled ?? true)
+  ) {
     badges.push({
       key: 'credential',
       label: 'Passwort',
@@ -74,7 +92,7 @@ function getAuthBadges(user: AccessControlUser): AuthBadge[] {
     })
   }
 
-  if (providers.has('passkey')) {
+  if (providers.has('passkey') && (enabledMethods?.passkeyEnabled ?? true)) {
     badges.push({
       key: 'passkey',
       label: 'Passkey',
@@ -82,7 +100,7 @@ function getAuthBadges(user: AccessControlUser): AuthBadge[] {
     })
   }
 
-  if (providers.has('microsoft')) {
+  if (providers.has('microsoft') && enabledMethods?.microsoftEnabled) {
     badges.push({
       key: 'microsoft',
       label: 'Microsoft',
@@ -95,6 +113,25 @@ function getAuthBadges(user: AccessControlUser): AuthBadge[] {
           className="size-3"
         />
       ),
+    })
+  }
+
+  if (providers.has('github') && enabledMethods?.githubEnabled) {
+    badges.push({
+      key: 'github',
+      label: 'GitHub',
+      icon: <GithubIcon className="size-3" />,
+    })
+  }
+
+  if (
+    (providers.has('oauth') || providers.has('custom-oauth')) &&
+    enabledMethods?.oauthEnabled
+  ) {
+    badges.push({
+      key: 'oauth',
+      label: 'OAuth',
+      icon: <LogIn className="size-3" />,
     })
   }
 
@@ -129,7 +166,16 @@ function ActionsCell({
   const user = row.original
   const [editOpen, setEditOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const [addPasswordOpen, setAddPasswordOpen] = useState(false)
   const isSelf = user.id === meta?.currentUserId
+
+  const hasPassword = (user.authProviders ?? [])
+    .map((p) => p.toLowerCase())
+    .includes('credential')
+
+  const hasPasskey = (user.authProviders ?? [])
+    .map((p) => p.toLowerCase())
+    .includes('passkey')
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
@@ -146,6 +192,14 @@ function ActionsCell({
         onOpenChange={setPasswordOpen}
         onSubmit={(newPassword) => meta?.changePassword?.(user.id, newPassword)}
       />
+      <ChangePasswordDialog
+        userName={user.name}
+        open={addPasswordOpen}
+        onOpenChange={setAddPasswordOpen}
+        title="Passwort hinzufügen"
+        description={`Passwort für ${user.name} festlegen, um die Anmeldung per E-Mail und Passwort zu ermöglichen.`}
+        onSubmit={(newPassword) => meta?.addPassword?.(user.id, newPassword)}
+      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
@@ -161,10 +215,31 @@ function ActionsCell({
                 <PencilIcon />
                 Bearbeiten
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
-                <KeyIcon />
-                Passwort ändern
-              </DropdownMenuItem>
+              {hasPassword ? (
+                <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
+                  <KeyIcon />
+                  Passwort ändern
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onSelect={() => setAddPasswordOpen(true)}>
+                  <KeyRound />
+                  Passwort hinzufügen
+                </DropdownMenuItem>
+              )}
+              {hasPassword && (
+                <DropdownMenuItem
+                  onSelect={() => meta?.removePassword?.(user.id)}>
+                  <XCircle />
+                  Passwort entfernen
+                </DropdownMenuItem>
+              )}
+              {hasPasskey && (
+                <DropdownMenuItem
+                  onSelect={() => meta?.removePasskeys?.(user.id)}>
+                  <Fingerprint />
+                  Passkeys entfernen
+                </DropdownMenuItem>
+              )}
               {!isSelf && (
                 <>
                   <DropdownMenuSeparator />
@@ -330,8 +405,9 @@ export const columns: ColumnDef<AccessControlUser>[] = [
     accessorKey: 'authProviders',
     id: 'authProviders',
     header: 'Anmeldung',
-    cell: ({ row }) => {
-      const badges = getAuthBadges(row.original)
+    cell: ({ row, table }) => {
+      const meta = table.options.meta as AccessControlTableMeta | undefined
+      const badges = getAuthBadges(row.original, meta?.enabledMethods)
 
       if (!badges.length) {
         return <span className="text-muted-foreground">—</span>

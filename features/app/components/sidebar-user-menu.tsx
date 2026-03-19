@@ -44,6 +44,7 @@ export type SidebarUser = {
   email: string
   image?: string | null
   twoFactorEnabled: boolean
+  hasPassword: boolean
 }
 
 const getInitials = (name: string) => {
@@ -173,6 +174,7 @@ export function SidebarUserMenu({ user: initialUser }: SidebarUserMenuProps) {
               image: user.image ?? null,
               twoFactorEnabled: user.twoFactorEnabled,
             }}
+            hasPassword={user.hasPassword}
             onUserChange={(updated) =>
               setUser((prev) => ({
                 ...prev,

@@ -25,10 +25,17 @@ describe('createUser', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(auth.api.getSession).mockResolvedValue(adminSession as never)
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      isAdmin: true,
-    } as never)
   })
+
+  /**
+   * Helper: set up findUnique to pass the admin check and the email-exists
+   * check (returns null = no existing user).
+   */
+  function mockAdminAndNoExistingUser() {
+    vi.mocked(prisma.user.findUnique)
+      .mockResolvedValueOnce({ isAdmin: true } as never) // admin check
+      .mockResolvedValueOnce(null as never) // email-exists check
+  }
 
   const userData = {
     name: 'Test User',
@@ -43,22 +50,31 @@ describe('createUser', () => {
   })
 
   it('should throw if caller is not admin', async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
       isAdmin: false,
     } as never)
 
     await expect(createUser(userData)).rejects.toThrow('Keine Berechtigung')
   })
 
-  it('should throw if password is missing', async () => {
+  it('should create user without password via prisma when no password provided', async () => {
+    mockAdminAndNoExistingUser()
     const noPasswordData = { name: 'Test', email: 'test@example.com' }
 
-    await expect(createUser(noPasswordData)).rejects.toThrow(
-      'Passwort ist beim Erstellen erforderlich'
-    )
+    await createUser(noPasswordData)
+
+    expect(auth.api.signUpEmail).not.toHaveBeenCalled()
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        name: 'Test',
+        email: 'test@example.com',
+        emailVerified: true,
+      }),
+    })
   })
 
   it('should call auth.api.signUpEmail with correct data', async () => {
+    mockAdminAndNoExistingUser()
     await createUser(userData)
 
     expect(auth.api.signUpEmail).toHaveBeenCalledWith({
@@ -71,6 +87,7 @@ describe('createUser', () => {
   })
 
   it('should invalidate the users cache tag', async () => {
+    mockAdminAndNoExistingUser()
     await createUser(userData)
 
     expect(updateTag).toHaveBeenCalledWith('users')
