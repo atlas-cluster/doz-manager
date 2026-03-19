@@ -6,6 +6,40 @@ import { passkey } from '@better-auth/passkey'
 
 import { decrypt } from '@/features/auth/lib/encrypt'
 import { generateBackupCodes } from '@/features/auth/lib/backup-code-generate'
+
+type SettingsRow = Parameters<typeof createAuthInstance>[0]
+
+/**
+ * Pre-decrypt all encrypted fields in the settings row.
+ * Individual field failures are caught so one broken value
+ * doesn't prevent the rest from loading.
+ */
+async function decryptSettingsRow(
+  row: NonNullable<SettingsRow>
+): Promise<NonNullable<SettingsRow>> {
+  const d = async (v: string | null): Promise<string | null> => {
+    if (!v) return null
+    try {
+      return await decrypt(v)
+    } catch {
+      console.warn(
+        '[auth] Failed to decrypt a settings value — check BETTER_AUTH_SECRET.'
+      )
+      return null
+    }
+  }
+  return {
+    ...row,
+    microsoftClientId: await d(row.microsoftClientId),
+    microsoftClientSecret: await d(row.microsoftClientSecret),
+    microsoftTenantId: await d(row.microsoftTenantId),
+    githubClientId: await d(row.githubClientId),
+    githubClientSecret: await d(row.githubClientSecret),
+    oauthClientId: await d(row.oauthClientId),
+    oauthClientSecret: await d(row.oauthClientSecret),
+    oauthIssuerUrl: await d(row.oauthIssuerUrl),
+  }
+}
 import { prisma } from '@/features/shared/lib/prisma'
 
 const appName = 'Provadis Dozentenmanagement'
@@ -43,34 +77,18 @@ function buildSocialProviders(
     row.microsoftClientId &&
     row.microsoftClientSecret
   ) {
-    try {
-      providers.microsoft = {
-        clientId: decrypt(row.microsoftClientId),
-        clientSecret: decrypt(row.microsoftClientSecret),
-        tenantId: row.microsoftTenantId
-          ? decrypt(row.microsoftTenantId)
-          : 'common',
-      }
-    } catch {
-      console.warn(
-        '[auth] Failed to decrypt Microsoft OAuth credentials – provider will be disabled. ' +
-          'Check AUTH_SETTINGS_ENCRYPTION_KEY and the stored DB values.'
-      )
+    providers.microsoft = {
+      clientId: row.microsoftClientId,
+      clientSecret: row.microsoftClientSecret,
+      tenantId: row.microsoftTenantId ?? 'common',
     }
   }
 
   if (row.githubEnabled && row.githubClientId && row.githubClientSecret) {
-    try {
-      providers.github = {
-        clientId: decrypt(row.githubClientId),
-        clientSecret: decrypt(row.githubClientSecret),
-        disableSignUp: true,
-      }
-    } catch {
-      console.warn(
-        '[auth] Failed to decrypt GitHub OAuth credentials – provider will be disabled. ' +
-          'Check AUTH_SETTINGS_ENCRYPTION_KEY and the stored DB values.'
-      )
+    providers.github = {
+      clientId: row.githubClientId,
+      clientSecret: row.githubClientSecret,
+      disableSignUp: true,
     }
   }
 
@@ -109,28 +127,20 @@ function buildPlugins(
     row.oauthClientSecret &&
     row.oauthIssuerUrl
   ) {
-    try {
-      plugins.push(
-        genericOAuth({
-          config: [
-            {
-              providerId: 'oauth',
-              discoveryUrl:
-                decrypt(row.oauthIssuerUrl) +
-                '/.well-known/openid-configuration',
-              clientId: decrypt(row.oauthClientId),
-              clientSecret: decrypt(row.oauthClientSecret),
-              disableSignUp: true,
-            },
-          ],
-        }) as never
-      )
-    } catch {
-      console.warn(
-        '[auth] Failed to decrypt generic OAuth credentials – provider will be disabled. ' +
-          'Check AUTH_SETTINGS_ENCRYPTION_KEY and the stored DB values.'
-      )
-    }
+    plugins.push(
+      genericOAuth({
+        config: [
+          {
+            providerId: 'oauth',
+            discoveryUrl:
+              row.oauthIssuerUrl + '/.well-known/openid-configuration',
+            clientId: row.oauthClientId,
+            clientSecret: row.oauthClientSecret,
+            disableSignUp: true,
+          },
+        ],
+      }) as never
+    )
   }
 
   return plugins
@@ -235,7 +245,7 @@ export async function reinitializeAuth() {
   const row = await prisma.authSettings.findUnique({
     where: { id: 'singleton' },
   })
-  auth = createAuthInstance(row)
+  auth = createAuthInstance(row ? await decryptSettingsRow(row) : null)
   cachedSettingsUpdatedAt = row?.updatedAt ?? null
 }
 
@@ -264,6 +274,6 @@ export async function ensureAuthInitialized() {
   const row = await prisma.authSettings.findUnique({
     where: { id: 'singleton' },
   })
-  auth = createAuthInstance(row)
+  auth = createAuthInstance(row ? await decryptSettingsRow(row) : null)
   cachedSettingsUpdatedAt = newUpdatedAt
 }

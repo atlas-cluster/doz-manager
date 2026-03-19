@@ -57,20 +57,20 @@ export async function getAuthSettings(): Promise<AuthSettingsData> {
 
     microsoftEnabled: row.microsoftEnabled,
     microsoftClientId: row.microsoftClientId
-      ? decrypt(row.microsoftClientId)
+      ? await decrypt(row.microsoftClientId)
       : '',
     microsoftTenantId: row.microsoftTenantId
-      ? decrypt(row.microsoftTenantId)
+      ? await decrypt(row.microsoftTenantId)
       : '',
     microsoftHasSecret: !!row.microsoftClientSecret,
 
     githubEnabled: row.githubEnabled,
-    githubClientId: row.githubClientId ? decrypt(row.githubClientId) : '',
+    githubClientId: row.githubClientId ? await decrypt(row.githubClientId) : '',
     githubHasSecret: !!row.githubClientSecret,
 
     oauthEnabled: row.oauthEnabled,
-    oauthClientId: row.oauthClientId ? decrypt(row.oauthClientId) : '',
-    oauthIssuerUrl: row.oauthIssuerUrl ? decrypt(row.oauthIssuerUrl) : '',
+    oauthClientId: row.oauthClientId ? await decrypt(row.oauthClientId) : '',
+    oauthIssuerUrl: row.oauthIssuerUrl ? await decrypt(row.oauthIssuerUrl) : '',
     oauthHasSecret: !!row.oauthClientSecret,
   }
 }

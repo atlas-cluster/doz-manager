@@ -63,12 +63,12 @@ export async function saveAuthSettings(data: SaveAuthSettingsInput) {
   })
 
   // Encrypt non-empty strings, keep existing encrypted value, or null
-  const encryptOrKeep = (
+  const encryptOrKeep = async (
     newValue: string | undefined,
     existingValue: string | null | undefined
-  ): string | null => {
+  ): Promise<string | null> => {
     if (newValue !== undefined && newValue !== '') {
-      return encrypt(newValue)
+      return await encrypt(newValue)
     }
     return existingValue ?? null
   }
@@ -81,54 +81,60 @@ export async function saveAuthSettings(data: SaveAuthSettingsInput) {
       passkeyEnabled: data.passkeyEnabled,
 
       microsoftEnabled: data.microsoftEnabled,
-      microsoftClientId: encryptOrKeep(data.microsoftClientId, null),
-      microsoftClientSecret: encryptOrKeep(data.microsoftClientSecret, null),
-      microsoftTenantId: encryptOrKeep(data.microsoftTenantId, null),
+      microsoftClientId: await encryptOrKeep(data.microsoftClientId, null),
+      microsoftClientSecret: await encryptOrKeep(
+        data.microsoftClientSecret,
+        null
+      ),
+      microsoftTenantId: await encryptOrKeep(data.microsoftTenantId, null),
 
       githubEnabled: data.githubEnabled,
-      githubClientId: encryptOrKeep(data.githubClientId, null),
-      githubClientSecret: encryptOrKeep(data.githubClientSecret, null),
+      githubClientId: await encryptOrKeep(data.githubClientId, null),
+      githubClientSecret: await encryptOrKeep(data.githubClientSecret, null),
 
       oauthEnabled: data.oauthEnabled,
-      oauthClientId: encryptOrKeep(data.oauthClientId, null),
-      oauthClientSecret: encryptOrKeep(data.oauthClientSecret, null),
-      oauthIssuerUrl: encryptOrKeep(data.oauthIssuerUrl, null),
+      oauthClientId: await encryptOrKeep(data.oauthClientId, null),
+      oauthClientSecret: await encryptOrKeep(data.oauthClientSecret, null),
+      oauthIssuerUrl: await encryptOrKeep(data.oauthIssuerUrl, null),
     },
     update: {
       passwordEnabled: data.passwordEnabled,
       passkeyEnabled: data.passkeyEnabled,
 
       microsoftEnabled: data.microsoftEnabled,
-      microsoftClientId: encryptOrKeep(
+      microsoftClientId: await encryptOrKeep(
         data.microsoftClientId,
         existing?.microsoftClientId
       ),
-      microsoftClientSecret: encryptOrKeep(
+      microsoftClientSecret: await encryptOrKeep(
         data.microsoftClientSecret,
         existing?.microsoftClientSecret
       ),
-      microsoftTenantId: encryptOrKeep(
+      microsoftTenantId: await encryptOrKeep(
         data.microsoftTenantId,
         existing?.microsoftTenantId
       ),
 
       githubEnabled: data.githubEnabled,
-      githubClientId: encryptOrKeep(
+      githubClientId: await encryptOrKeep(
         data.githubClientId,
         existing?.githubClientId
       ),
-      githubClientSecret: encryptOrKeep(
+      githubClientSecret: await encryptOrKeep(
         data.githubClientSecret,
         existing?.githubClientSecret
       ),
 
       oauthEnabled: data.oauthEnabled,
-      oauthClientId: encryptOrKeep(data.oauthClientId, existing?.oauthClientId),
-      oauthClientSecret: encryptOrKeep(
+      oauthClientId: await encryptOrKeep(
+        data.oauthClientId,
+        existing?.oauthClientId
+      ),
+      oauthClientSecret: await encryptOrKeep(
         data.oauthClientSecret,
         existing?.oauthClientSecret
       ),
-      oauthIssuerUrl: encryptOrKeep(
+      oauthIssuerUrl: await encryptOrKeep(
         data.oauthIssuerUrl,
         existing?.oauthIssuerUrl
       ),
