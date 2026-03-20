@@ -7,7 +7,7 @@ export function formatRoute(route: string) {
     case '/courses':
       return 'Vorlesungen'
     case '/access-control':
-      return 'Zugriffsverwaltung'
+      return 'Benutzerverwaltung'
     case '/settings':
       return 'Einstellungen'
     case '/reports':

@@ -84,7 +84,11 @@ export function AppSidebar({ user, isAdmin, authSettings }: AppSidebarProps) {
       </SidebarContent>
       <SidebarSeparator className={'m-0'} />
       <SidebarFooter>
-        <SidebarUserMenu user={user} authSettings={authSettings} />
+        <SidebarUserMenu
+          user={user}
+          authSettings={authSettings}
+          isAdmin={isAdmin}
+        />
       </SidebarFooter>
     </Sidebar>
   )

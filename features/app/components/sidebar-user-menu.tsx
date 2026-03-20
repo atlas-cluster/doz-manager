@@ -1,6 +1,6 @@
 'use client'
 
-import { LogOutIcon, SettingsIcon } from 'lucide-react'
+import { BathIcon, LogOutIcon, SettingsIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -38,6 +38,7 @@ import {
   USER_PROFILE_UPDATED_EVENT,
   type UserProfileUpdatedDetail,
 } from '@/features/shared/lib/user-profile-sync'
+import { Badge } from '@/features/shared/components/ui/badge'
 
 export type SidebarUser = {
   id: string
@@ -67,6 +68,7 @@ type SidebarUserMenuProps = {
 export function SidebarUserMenu({
   user: initialUser,
   authSettings,
+  isAdmin,
 }: SidebarUserMenuProps) {
   const router = useRouter()
   const { isMobile } = useSidebar()
@@ -119,7 +121,9 @@ export function SidebarUserMenu({
                   </Avatar>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">
+                    {user.name} {isAdmin && <Badge>Admin</Badge>}
+                  </span>
                   <span className="text-muted-foreground truncate text-xs">
                     {user.email}
                   </span>
