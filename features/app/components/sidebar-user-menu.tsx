@@ -1,6 +1,6 @@
 'use client'
 
-import { BathIcon, LogOutIcon, SettingsIcon } from 'lucide-react'
+import { BathIcon, LogOutIcon, SettingsIcon, ShieldAlert } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -63,6 +63,7 @@ const getInitials = (name: string) => {
 type SidebarUserMenuProps = {
   user: SidebarUser
   authSettings: PublicAuthSettings
+  isAdmin: boolean
 }
 
 export function SidebarUserMenu({
@@ -121,9 +122,15 @@ export function SidebarUserMenu({
                   </Avatar>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                  <span className="truncate font-medium">
-                    {user.name} {isAdmin && <Badge>Admin</Badge>}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{user.name}</span>
+                    {isAdmin && (
+                      <Badge className="flex w-fit items-center gap-1">
+                        <ShieldAlert className="size-3" />
+                        Admin
+                      </Badge>
+                    )}
+                  </div>
                   <span className="text-muted-foreground truncate text-xs">
                     {user.email}
                   </span>
