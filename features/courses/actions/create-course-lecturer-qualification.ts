@@ -5,6 +5,7 @@ import z from 'zod'
 
 import { qualificationSchema } from '@/features/lecturers'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function createCourseLecturerQualification(
   courseId: string,
@@ -21,5 +22,6 @@ export async function createCourseLecturerQualification(
   })
 
   updateTag('courses')
+  publishScopeUpdate('courses')
   updateTag(`course-${courseId}-lecturers`)
 }

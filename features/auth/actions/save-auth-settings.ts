@@ -6,6 +6,7 @@ import { headers } from 'next/headers'
 import { encrypt } from '@/features/auth/lib/encrypt'
 import { auth, reinitializeAuth } from '@/features/auth/lib/auth'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 type SaveAuthSettingsInput = {
   passwordEnabled: boolean
@@ -146,4 +147,5 @@ export async function saveAuthSettings(data: SaveAuthSettingsInput) {
 
   updateTag('auth-settings')
   updateTag('users')
+  publishScopeUpdate('users')
 }

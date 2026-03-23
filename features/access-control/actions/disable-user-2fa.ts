@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function disableUser2FA(userId: string) {
   const session = await auth.api.getSession({
@@ -34,4 +35,5 @@ export async function disableUser2FA(userId: string) {
   })
 
   updateTag('users')
+  publishScopeUpdate('users')
 }

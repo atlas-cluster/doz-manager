@@ -7,6 +7,7 @@ import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 /**
  * Add a credential (password) auth method to an existing user.
@@ -64,4 +65,5 @@ export async function addAuthMethod(userId: string, password: string) {
   })
 
   updateTag('users')
+  publishScopeUpdate('users')
 }

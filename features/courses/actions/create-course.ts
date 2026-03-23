@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { courseSchema } from '@/features/courses/schemas/course'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function createCourse(data: z.infer<typeof courseSchema>) {
   await prisma.course.create({
@@ -17,4 +18,5 @@ export async function createCourse(data: z.infer<typeof courseSchema>) {
   })
 
   updateTag('courses')
+  publishScopeUpdate('courses')
 }
