@@ -50,6 +50,9 @@ export function ReportCardCoursesAtOtherUni({
         lecturer,
         courses.join(', '),
       ]),
+      columnStyles: {
+        0: { minCellWidth: 40 },
+      },
     })
 
     doc.save('vorlesungen-an-anderen-universitaeten.pdf')
