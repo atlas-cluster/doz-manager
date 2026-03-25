@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { courseSchema } from '@/features/courses/schemas/course'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function updateCourse(
   id: string,
@@ -21,4 +22,5 @@ export async function updateCourse(
   })
 
   updateTag('courses')
+  publishScopeUpdate('courses')
 }

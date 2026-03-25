@@ -6,6 +6,7 @@ import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function deleteAccount(password?: string) {
   const session = await auth.api.getSession({
@@ -47,6 +48,7 @@ export async function deleteAccount(password?: string) {
   })
 
   updateTag('users')
+  publishScopeUpdate('users')
 
   return { success: true }
 }

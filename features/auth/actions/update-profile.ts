@@ -6,6 +6,7 @@ import { headers } from 'next/headers'
 import { auth } from '@/features/auth/lib/auth'
 import type { ProfileActionResult } from '@/features/auth/types'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function updateProfile(data: {
   name?: string
@@ -57,6 +58,7 @@ export async function updateProfile(data: {
     })
 
     updateTag('users')
+    publishScopeUpdate('users')
 
     return {
       user: {

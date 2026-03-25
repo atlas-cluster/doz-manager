@@ -3,6 +3,7 @@
 import { updateTag } from 'next/cache'
 
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function createCourseLecturerAssignment(
   courseId: string,
@@ -16,5 +17,6 @@ export async function createCourseLecturerAssignment(
   })
 
   updateTag('courses')
+  publishScopeUpdate('courses')
   updateTag(`course-${courseId}-lecturers`)
 }

@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 /**
  * Remove all passkeys for a user (admin action).
@@ -51,4 +52,5 @@ export async function removePasskeys(userId: string) {
   await prisma.passkey.deleteMany({ where: { userId } })
 
   updateTag('users')
+  publishScopeUpdate('users')
 }

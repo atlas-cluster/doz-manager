@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { userSchema } from '@/features/access-control/schemas/user'
 import { auth } from '@/features/auth/lib/auth'
 import { prisma } from '@/features/shared/lib/prisma'
+import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function updateUser(id: string, data: z.infer<typeof userSchema>) {
   const session = await auth.api.getSession({
@@ -36,4 +37,5 @@ export async function updateUser(id: string, data: z.infer<typeof userSchema>) {
   })
 
   updateTag('users')
+  publishScopeUpdate('users')
 }
