@@ -1,7 +1,9 @@
 export type Scope = 'lecturers' | 'courses' | 'users'
 
+export const UPDATE_CONNECTION_HEADER = 'x-doz-client-connection-id'
+
 export type ListenerPayload = {
-  actorUserId?: string
+  actorConnectionId?: string
 }
 
 type Listener = (payload: ListenerPayload) => void
@@ -45,22 +47,18 @@ export function publishScopeUpdate(scope: Scope) {
 }
 
 async function publishScopeUpdateAsync(scope: Scope) {
-  let actorUserId: string | undefined
+  let actorConnectionId: string | undefined
 
   try {
-    const [{ headers }, { auth }] = await Promise.all([
-      import('next/headers'),
-      import('@/features/auth/lib/auth'),
-    ])
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    })
-    actorUserId = session?.user?.id
+    const { headers } = await import('next/headers')
+    const requestHeaders = await headers()
+    actorConnectionId =
+      requestHeaders.get(UPDATE_CONNECTION_HEADER) ?? undefined
   } catch {
-    actorUserId = undefined
+    actorConnectionId = undefined
   }
 
-  const payload: ListenerPayload = { actorUserId }
+  const payload: ListenerPayload = { actorConnectionId }
 
   for (const listener of listenersByScope[scope]) {
     try {

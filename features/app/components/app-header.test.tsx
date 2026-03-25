@@ -64,9 +64,11 @@ class TrackedMockEventSource extends MockEventSource {
 
 describe('AppHeader', () => {
   beforeEach(() => {
+    window.sessionStorage.clear()
     mockPathname = '/lecturers'
     refreshMock.mockReset()
     reloadMock.mockReset()
+    vi.spyOn(window.crypto, 'randomUUID').mockReturnValue('tab-connection-1')
     vi.stubGlobal('location', {
       ...window.location,
       reload: reloadMock,
@@ -102,6 +104,10 @@ describe('AppHeader', () => {
     const user = userEvent.setup()
     renderWithProviders()
 
+    await waitFor(() => {
+      expect(eventSourceInstance).not.toBeNull()
+    })
+
     eventSourceInstance?.dispatch('update')
 
     const refreshButton = await screen.findByRole('button', {
@@ -128,6 +134,10 @@ describe('AppHeader', () => {
     const user = userEvent.setup()
     renderWithProviders()
 
+    await waitFor(() => {
+      expect(eventSourceInstance).not.toBeNull()
+    })
+
     eventSourceInstance?.dispatch('update')
 
     const refreshButton = await screen.findByRole('button', {
@@ -143,6 +153,10 @@ describe('AppHeader', () => {
 
   it('should render refresh button on the left title section', async () => {
     renderWithProviders()
+
+    await waitFor(() => {
+      expect(eventSourceInstance).not.toBeNull()
+    })
 
     eventSourceInstance?.dispatch('update')
 
@@ -170,10 +184,12 @@ describe('AppHeader', () => {
 
     renderWithProviders()
 
-    expect(eventSourceSpy).toHaveBeenCalledTimes(1)
-    expect(eventSourceSpy).toHaveBeenCalledWith(
-      '/api/updates/stream?scope=users'
-    )
+    return waitFor(() => {
+      expect(eventSourceSpy).toHaveBeenCalledTimes(1)
+      expect(eventSourceSpy).toHaveBeenCalledWith(
+        '/api/updates/stream?scope=users&connectionId=tab-connection-1'
+      )
+    })
   })
 
   it('should connect to lecturers and courses scopes on reports page', () => {
@@ -185,14 +201,16 @@ describe('AppHeader', () => {
 
     renderWithProviders()
 
-    expect(eventSourceSpy).toHaveBeenCalledTimes(2)
-    expect(eventSourceSpy).toHaveBeenNthCalledWith(
-      1,
-      '/api/updates/stream?scope=lecturers'
-    )
-    expect(eventSourceSpy).toHaveBeenNthCalledWith(
-      2,
-      '/api/updates/stream?scope=courses'
-    )
+    return waitFor(() => {
+      expect(eventSourceSpy).toHaveBeenCalledTimes(2)
+      expect(eventSourceSpy).toHaveBeenNthCalledWith(
+        1,
+        '/api/updates/stream?scope=lecturers&connectionId=tab-connection-1'
+      )
+      expect(eventSourceSpy).toHaveBeenNthCalledWith(
+        2,
+        '/api/updates/stream?scope=courses&connectionId=tab-connection-1'
+      )
+    })
   })
 })

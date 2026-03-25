@@ -6,28 +6,20 @@ import {
   subscribeToScopeUpdates,
 } from '@/features/shared/lib/update-stream'
 
-const getSessionMock = vi.fn()
 const headersMock = vi.fn()
 
 vi.mock('next/headers', () => ({
   headers: headersMock,
 }))
 
-vi.mock('@/features/auth/lib/auth', () => ({
-  auth: {
-    api: {
-      getSession: getSessionMock,
-    },
-  },
-}))
-
 describe('update-stream', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    headersMock.mockResolvedValue(new Headers())
-    getSessionMock.mockResolvedValue({
-      user: { id: 'user-1' },
-    })
+    headersMock.mockResolvedValue(
+      new Headers({
+        'x-doz-client-connection-id': 'tab-1',
+      })
+    )
   })
 
   afterEach(() => {
@@ -42,7 +34,7 @@ describe('update-stream', () => {
     expect(isSupportedUpdateScope('settings')).toBe(false)
   })
 
-  it('should notify listeners with actor user id payload', async () => {
+  it('should notify listeners with actor connection id payload', async () => {
     const listener = vi.fn()
     const unsubscribe = subscribeToScopeUpdates('users', listener)
 
@@ -50,7 +42,7 @@ describe('update-stream', () => {
 
     await vi.waitFor(() => {
       expect(listener).toHaveBeenCalledTimes(1)
-      expect(listener).toHaveBeenCalledWith({ actorUserId: 'user-1' })
+      expect(listener).toHaveBeenCalledWith({ actorConnectionId: 'tab-1' })
     })
 
     unsubscribe()

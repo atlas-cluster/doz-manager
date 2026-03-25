@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   }
 
   const scope = req.nextUrl.searchParams.get('scope')
+  const connectionId = req.nextUrl.searchParams.get('connectionId') ?? ''
   if (!scope || !isSupportedUpdateScope(scope)) {
     return new Response('Invalid scope', { status: 400 })
   }
@@ -32,11 +33,14 @@ export async function GET(req: NextRequest) {
         controller.enqueue(encoder.encode(chunk))
       }
 
-      const unsubscribe = subscribeToScopeUpdates(scope, ({ actorUserId }) => {
-        if (done) return
-        if (actorUserId && actorUserId === session.user.id) return
-        send('event: update\ndata: {}\n\n')
-      })
+      const unsubscribe = subscribeToScopeUpdates(
+        scope,
+        ({ actorConnectionId }) => {
+          if (done) return
+          if (connectionId && actorConnectionId === connectionId) return
+          send('event: update\ndata: {}\n\n')
+        }
+      )
 
       const keepAlive = setInterval(() => {
         if (done) return

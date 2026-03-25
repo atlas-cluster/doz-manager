@@ -9,11 +9,36 @@ import { formatRoute } from '@/features/app/utils/format-route'
 import { Button } from '@/features/shared/components/ui/button'
 import { Separator } from '@/features/shared/components/ui/separator'
 import type { Scope } from '@/features/shared/lib/update-stream'
+import { UPDATE_CONNECTION_HEADER } from '@/features/shared/lib/update-stream'
 import { cn } from '@/features/shared/lib/utils'
 import { SidebarTrigger } from '@/features/shared/components/ui/sidebar'
 
 const REFRESH_FEEDBACK_DELAY_MS = 380
 const EXIT_ANIMATION_DELAY_MS = 180
+const CLIENT_CONNECTION_ID_STORAGE_KEY = 'doz-client-connection-id'
+
+function getClientConnectionId() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const existingConnectionId = window.sessionStorage.getItem(
+    CLIENT_CONNECTION_ID_STORAGE_KEY
+  )
+  if (existingConnectionId) {
+    return existingConnectionId
+  }
+
+  const createdConnectionId =
+    window.crypto.randomUUID?.() ??
+    `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  window.sessionStorage.setItem(
+    CLIENT_CONNECTION_ID_STORAGE_KEY,
+    createdConnectionId
+  )
+
+  return createdConnectionId
+}
 
 export function AppHeader() {
   const pathname = usePathname()
@@ -21,6 +46,7 @@ export function AppHeader() {
   const [hasUpdates, setHasUpdates] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
+  const [connectionId, setConnectionId] = useState<string | null>(null)
   const refreshFeedbackTimerRef = useRef<number | null>(null)
   const exitTimerRef = useRef<number | null>(null)
   const scopes = useMemo<Array<Scope>>(() => {
@@ -33,6 +59,62 @@ export function AppHeader() {
   }, [pathname])
 
   useEffect(() => {
+    setConnectionId(getClientConnectionId())
+  }, [])
+
+  useEffect(() => {
+    if (!connectionId) return
+
+    const originalFetch = window.fetch.bind(window)
+
+    window.fetch = ((input, init) => {
+      const request = input instanceof Request ? input : null
+      const requestMethod = (
+        init?.method ??
+        request?.method ??
+        'GET'
+      ).toUpperCase()
+
+      if (requestMethod === 'GET' || requestMethod === 'HEAD') {
+        return originalFetch(input, init)
+      }
+
+      const target =
+        typeof input === 'string' || input instanceof URL ? input : input.url
+      let targetUrl: URL
+      try {
+        targetUrl = new URL(target, window.location.origin)
+      } catch {
+        return originalFetch(input, init)
+      }
+
+      if (targetUrl.origin !== window.location.origin) {
+        return originalFetch(input, init)
+      }
+
+      const headers = new Headers(request?.headers)
+      new Headers(init?.headers).forEach((value, key) => {
+        headers.set(key, value)
+      })
+      headers.set(UPDATE_CONNECTION_HEADER, connectionId)
+
+      return originalFetch(input, {
+        ...init,
+        headers,
+      })
+    }) as typeof window.fetch
+
+    return () => {
+      window.fetch = originalFetch
+    }
+  }, [connectionId])
+
+  useEffect(() => {
+    if (!connectionId) {
+      setHasUpdates(false)
+      return
+    }
+
     if (scopes.length === 0) {
       setHasUpdates(false)
       setIsRefreshing(false)
@@ -43,12 +125,13 @@ export function AppHeader() {
     setHasUpdates(false)
 
     const onUpdate = () => setHasUpdates(true)
-    const sources = scopes.map(
-      (scope) =>
-        new EventSource(
-          `/api/updates/stream?scope=${encodeURIComponent(scope)}`
-        )
-    )
+    const sources = scopes.map((scope) => {
+      const searchParams = new URLSearchParams({
+        scope,
+        connectionId,
+      })
+      return new EventSource(`/api/updates/stream?${searchParams.toString()}`)
+    })
 
     for (const source of sources) {
       source.addEventListener('update', onUpdate)
@@ -60,7 +143,7 @@ export function AppHeader() {
         source.close()
       }
     }
-  }, [scopes])
+  }, [connectionId, scopes])
 
   useEffect(() => {
     return () => {
@@ -92,12 +175,11 @@ export function AppHeader() {
         </h1>
         {showRefreshButton ? (
           <Button
-            variant="outline"
             size="xs"
             type="button"
             disabled={isRefreshing}
             className={cn(
-              'border-orange-400 bg-orange-100 text-orange-900 transition-all duration-200 hover:bg-orange-200 dark:border-orange-500 dark:bg-orange-950 dark:text-orange-100 dark:hover:bg-orange-900',
+              'transition-all duration-200',
               isExiting ? 'animate-out fade-out-0 zoom-out-95' : '',
               isRefreshing
                 ? 'scale-95 opacity-90'
