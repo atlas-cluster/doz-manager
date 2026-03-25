@@ -21,13 +21,21 @@ Set these environment variables for the chat integration:
 
 - `OLLAMA_URL` (optional, default: `http://localhost:11434`)
 - `OLLAMA_MODEL` (optional, default: `llama3.1:8b`)
+- `AI_SERVER_BEARER_TOKEN` (optional, for authentication with the AI server)
 
 Example:
 
 ```env
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.1:8b
+AI_SERVER_BEARER_TOKEN=your-api-token-here
 ```
+
+**Authentication Priority:**
+
+1. Bearer token from request header (if provided)
+2. Bearer token from `AI_SERVER_BEARER_TOKEN` environment variable (fallback)
+3. No authentication (if neither is provided)
 
 ### Reporting Features:
 
