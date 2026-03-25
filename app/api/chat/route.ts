@@ -5,6 +5,11 @@ import {
   executeChatTool,
   getChatToolDefinitions,
 } from '@/features/chat/lib/chat-tools'
+import {
+  buildAIServerHeaders,
+  extractBearerToken,
+  getBearerToken,
+} from '@/features/chat/lib/auth'
 
 export const runtime = 'nodejs'
 
@@ -90,15 +95,13 @@ function normalizeToolArguments(value: unknown): Record<string, unknown> {
     : {}
 }
 
-async function callOllama(messages: OllamaMessage[]) {
+async function callOllama(messages: OllamaMessage[], bearerToken?: string) {
   const ollamaUrl = process.env.OLLAMA_URL ?? DEFAULT_OLLAMA_URL
   const model = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL
 
   const response = await fetch(`${ollamaUrl}/api/chat`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: buildAIServerHeaders(bearerToken),
     body: JSON.stringify({
       model,
       stream: false,
@@ -108,20 +111,33 @@ async function callOllama(messages: OllamaMessage[]) {
         temperature: 0.2,
       },
     }),
+    // Increase timeout for remote servers (default is 10s)
+    signal: AbortSignal.timeout(30000),
   })
 
   if (!response.ok) {
-    throw new Error(`Ollama error: ${response.status}`)
+    const errorDetails = await response.text().catch(() => 'Unknown error')
+    throw new Error(
+      `Ollama error: ${response.status} ${response.statusText}. Details: ${errorDetails}`
+    )
   }
 
-  return (await response.json()) as {
-    message?: OllamaMessage
+  try {
+    return (await response.json()) as {
+      message?: OllamaMessage
+    }
+  } catch (error) {
+    throw new Error(
+      `Failed to parse Ollama response: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
   }
 }
 
 export async function POST(req: Request) {
+  const requestHeaders = await headers()
+
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: requestHeaders,
   })
 
   if (!session?.user?.id) {
@@ -147,6 +163,10 @@ export async function POST(req: Request) {
     )
   }
 
+  // Extract optional bearer token: from request headers first, then fall back to environment variable
+  const headerToken = extractBearerToken(requestHeaders)
+  const bearerToken = getBearerToken(headerToken)
+
   const conversation: OllamaMessage[] = [
     {
       role: 'system',
@@ -157,7 +177,7 @@ export async function POST(req: Request) {
 
   try {
     for (let i = 0; i < MAX_TOOL_LOOPS; i++) {
-      const ollamaResponse = await callOllama(conversation)
+      const ollamaResponse = await callOllama(conversation, bearerToken)
       const assistantMessage = ollamaResponse.message
 
       if (!assistantMessage) {
@@ -200,6 +220,7 @@ export async function POST(req: Request) {
         })
       }
     }
+    console.warn('[chat] Max tool loops reached without response completion')
 
     return Response.json({
       message:
