@@ -13,6 +13,21 @@ The goal of this software is to optimize the assignment of lecturers to lectures
 
 - **Web Application**: Desktop-based, accessible via browsers
 - **Database Integration**: Stores and manages data for lecturers and lectures.
+- **AI Chat Assistant**: Optional in-app chat (bottom-right) via Ollama with DB read tools.
+
+### AI Chat (Ollama)
+
+Set these environment variables for the chat integration:
+
+- `OLLAMA_URL` (optional, default: `http://localhost:11434`)
+- `OLLAMA_MODEL` (optional, default: `llama3.1:8b`)
+
+Example:
+
+```env
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.1:8b
+```
 
 ### Reporting Features:
 
