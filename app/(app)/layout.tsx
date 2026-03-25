@@ -6,6 +6,7 @@ import { AppHeader } from '@/features/app'
 import { AppSidebar } from '@/features/app'
 import { getPublicAuthSettings } from '@/features/auth/actions/get-public-auth-settings'
 import { auth } from '@/features/auth/lib/auth'
+import { FloatingChat } from '@/features/chat'
 import {
   SidebarInset,
   SidebarProvider,
@@ -56,6 +57,7 @@ export default async function AppLayout({
       <SidebarInset>
         <AppHeader />
         <div className={'p-3'}>{children}</div>
+        <FloatingChat />
       </SidebarInset>
     </SidebarProvider>
   )
