@@ -56,6 +56,7 @@ import {
 } from '@/features/shared/components/ui/popover'
 import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import { Skeleton } from '@/features/shared/components/ui/skeleton'
+import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
 import { initialsFromName } from '@/features/shared/lib/utils'
 import '@radix-ui/react-avatar'
 
@@ -131,8 +132,39 @@ export function CourseAssignmentDialog({
     if (open) {
       void loadDialogData()
       setReadonlyMode(readonly)
+      setHasLocalExternalUpdate(false)
     }
   }, [lecturer.id, open, readonly])
+
+  // Auto-update the dialog when external changes arrive.
+  // In readonly mode: silently reload the data.
+  // In edit mode: flag the conflict so the ExternalUpdateAlert appears.
+  const [hasLocalExternalUpdate, setHasLocalExternalUpdate] = useState(false)
+
+  useLiveChanges({
+    tags: open ? ['lecturers', 'courses'] : [],
+    onChangeAction: (event) => {
+      if (!open) return
+
+      const isRelevant =
+        !event.entities?.length ||
+        event.entities.some(
+          (e) =>
+            (e.entityType === 'lecturer' && e.entityId === lecturer.id) ||
+            e.entityType === 'course'
+        )
+
+      if (!isRelevant) return
+
+      if (readonlyMode) {
+        void loadDialogData()
+      } else {
+        setHasLocalExternalUpdate(true)
+      }
+    },
+  })
+
+  const effectiveHasExternalUpdate = hasExternalUpdate || hasLocalExternalUpdate
 
   const toggleCourse = (courseId: string) => {
     if (selectedCourses.some((c) => c.id === courseId)) {
@@ -217,9 +249,10 @@ export function CourseAssignmentDialog({
           </DialogDescription>
         </DialogHeader>
         <div className={'flex min-h-0 flex-1 flex-col gap-3'}>
-          {hasExternalUpdate && !readonlyMode && (
+          {effectiveHasExternalUpdate && !readonlyMode && (
             <ExternalUpdateAlert
               onReload={async () => {
+                setHasLocalExternalUpdate(false)
                 await onReloadFromServer?.()
                 await loadDialogData()
               }}
@@ -248,7 +281,10 @@ export function CourseAssignmentDialog({
             <>
               {readonlyMode && (
                 <Button
-                  onClick={() => setReadonlyMode(!readonlyMode)}
+                  onClick={() => {
+                    setReadonlyMode(false)
+                    setHasLocalExternalUpdate(false)
+                  }}
                   variant={'outline'}
                   className="w-fit">
                   <PencilRuler />
@@ -365,7 +401,7 @@ export function CourseAssignmentDialog({
           {!readonlyMode && (
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || hasExternalUpdate}>
+              disabled={isSubmitting || effectiveHasExternalUpdate}>
               Speichern
             </Button>
           )}
