@@ -145,7 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH (through Jump Host)
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         env:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ github.repository }}
