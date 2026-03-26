@@ -27,6 +27,7 @@ import { Spinner } from '@/features/shared/components/ui/spinner'
 type PasskeyManagementDialogProps = {
   open: boolean
   onOpenChangeAction: (open: boolean) => void
+  currentUserId: string
   onPasskeyCountChangeAction?: (count: number) => void
 }
 
@@ -39,6 +40,7 @@ type PasskeyListItem = {
 export function PasskeyManagementDialog({
   open,
   onOpenChangeAction,
+  currentUserId,
   onPasskeyCountChangeAction,
 }: PasskeyManagementDialogProps) {
   const [isAddingPasskey, setIsAddingPasskey] = useState(false)
@@ -93,7 +95,7 @@ export function PasskeyManagementDialog({
       }
 
       const refetchResult = await refetchPasskeys()
-      await invalidateUsersCache()
+      await invalidateUsersCache(currentUserId)
       onPasskeyCountChangeAction?.(
         getRefetchedPasskeyCount(refetchResult, passkeyItems.length + 1)
       )
@@ -126,7 +128,7 @@ export function PasskeyManagementDialog({
       }
 
       const refetchResult = await refetchPasskeys()
-      await invalidateUsersCache()
+      await invalidateUsersCache(currentUserId)
       onPasskeyCountChangeAction?.(
         getRefetchedPasskeyCount(
           refetchResult,

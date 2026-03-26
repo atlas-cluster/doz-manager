@@ -1,12 +1,11 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
 import type { ProfileActionResult } from '@/features/auth/types'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function updateProfile(data: {
   name?: string
@@ -57,8 +56,9 @@ export async function updateProfile(data: {
       },
     })
 
-    updateTag('users')
-    publishScopeUpdate('users')
+    await notifyTagsUpdated(['users'], 'auth:update-profile', [
+      { entityType: 'user', entityId: user.id },
+    ])
 
     return {
       user: {

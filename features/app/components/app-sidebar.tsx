@@ -9,7 +9,8 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 
 import {
   type SidebarUser,
@@ -28,6 +29,8 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '@/features/shared/components/ui/sidebar'
+import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
+import { USER_PROFILE_UPDATED_EVENT } from '@/features/shared/lib/user-profile-sync'
 
 const navItems = [
   { url: '/lecturers', icon: UsersIcon, adminOnly: false },
@@ -45,6 +48,32 @@ type AppSidebarProps = {
 
 export function AppSidebar({ user, isAdmin, authSettings }: AppSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const suppressUsersRefreshUntilRef = useRef(0)
+
+  useEffect(() => {
+    const onOwnProfileMutation = () => {
+      suppressUsersRefreshUntilRef.current = Date.now() + 2500
+    }
+
+    window.addEventListener(USER_PROFILE_UPDATED_EVENT, onOwnProfileMutation)
+    return () => {
+      window.removeEventListener(
+        USER_PROFILE_UPDATED_EVENT,
+        onOwnProfileMutation
+      )
+    }
+  }, [])
+
+  useLiveChanges({
+    tags: ['users'],
+    onChangeAction: () => {
+      if (Date.now() < suppressUsersRefreshUntilRef.current) {
+        return
+      }
+      router.refresh()
+    },
+  })
 
   const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin)
 

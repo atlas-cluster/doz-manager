@@ -1,12 +1,11 @@
 'use server'
 
 import { verifyPassword } from 'better-auth/crypto'
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function deleteAccount(password?: string) {
   const session = await auth.api.getSession({
@@ -47,8 +46,9 @@ export async function deleteAccount(password?: string) {
     where: { id: session.user.id },
   })
 
-  updateTag('users')
-  publishScopeUpdate('users')
+  await notifyTagsUpdated(['users'], 'auth:delete-account', [
+    { entityType: 'user', entityId: session.user.id },
+  ])
 
   return { success: true }
 }

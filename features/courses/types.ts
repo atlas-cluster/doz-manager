@@ -26,6 +26,12 @@ export interface CourseTableMeta {
   deleteCourse: (id: string) => void
   deleteCourses: (ids: string[]) => void
   refreshCourses: () => void
+  beginEditingCourse?: (id: string) => void
+  stopEditingCourse?: (id: string) => void
+  reloadEditingCourse?: () => void
+  dismissEditingConflict?: () => void
+  editingCourseId?: string | null
+  hasExternalUpdateForEditing?: boolean
 }
 
 export interface GetCoursesParams {

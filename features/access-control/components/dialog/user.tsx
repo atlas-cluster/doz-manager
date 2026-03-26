@@ -1,12 +1,13 @@
 'use client'
 
 import { EyeIcon, EyeOffIcon } from 'lucide-react'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { userSchema } from '@/features/access-control/schemas/user'
 import { AccessControlUser } from '@/features/access-control/types'
+import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,
@@ -31,6 +32,9 @@ interface UserDialogProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
   onSubmit?: (data: z.infer<typeof userSchema>) => Promise<unknown> | unknown
+  hasExternalUpdate?: boolean
+  onReloadFromServer?: () => Promise<unknown> | unknown
+  onEditingChange?: (editing: boolean) => void
 }
 
 export function UserDialog({
@@ -39,6 +43,9 @@ export function UserDialog({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   onSubmit,
+  hasExternalUpdate = false,
+  onReloadFromServer,
+  onEditingChange,
 }: UserDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -46,6 +53,21 @@ export function UserDialog({
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
   const isEditing = !!user
+  const wasEditingRef = useRef(false)
+
+  useEffect(() => {
+    if (!isEditing) return
+    if (open && !wasEditingRef.current) {
+      onEditingChange?.(true)
+      wasEditingRef.current = true
+      return
+    }
+
+    if (!open && wasEditingRef.current) {
+      onEditingChange?.(false)
+      wasEditingRef.current = false
+    }
+  }, [isEditing, onEditingChange, open])
 
   const form = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
@@ -60,6 +82,9 @@ export function UserDialog({
   useEffect(() => {
     if (open) {
       if (user) {
+        if (form.formState.isDirty) {
+          return
+        }
         form.reset({
           name: user.name,
           email: user.email,
@@ -100,6 +125,14 @@ export function UserDialog({
           id="user-form"
           onSubmit={form.handleSubmit(handleSubmit)}
           className={'space-y-4'}>
+          {isEditing && hasExternalUpdate && (
+            <ExternalUpdateAlert
+              onReload={async () => {
+                form.reset()
+                await onReloadFromServer?.()
+              }}
+            />
+          )}
           <FieldGroup>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
@@ -195,7 +228,7 @@ export function UserDialog({
                           autoComplete={'new-password'}
                         />
                         <Button
-                          className="absolute top-0 right-0 h-full px-3 hover:!bg-transparent"
+                          className="absolute top-0 right-0 h-full px-3 hover:bg-transparent!"
                           onClick={() => setShowPassword(!showPassword)}
                           size="icon"
                           type="button"
@@ -217,7 +250,7 @@ export function UserDialog({
             </div>
 
             <div className="mt-4 flex justify-end">
-              <Button type="submit">
+              <Button type="submit" disabled={isEditing && hasExternalUpdate}>
                 {isEditing ? 'Speichern' : 'Erstellen'}
               </Button>
             </div>

@@ -2,12 +2,11 @@
 
 import { createId } from '@paralleldrive/cuid2'
 import { hashPassword } from 'better-auth/crypto'
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 /**
  * Add a credential (password) auth method to an existing user.
@@ -64,6 +63,7 @@ export async function addAuthMethod(userId: string, password: string) {
     },
   })
 
-  updateTag('users')
-  publishScopeUpdate('users')
+  await notifyTagsUpdated(['users'], 'access-control:add-auth-method', [
+    { entityType: 'user', entityId: userId },
+  ])
 }

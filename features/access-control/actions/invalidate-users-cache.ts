@@ -1,9 +1,11 @@
 'use server'
 
-import { updateTag } from 'next/cache'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 
-export async function invalidateUsersCache() {
-  updateTag('users')
-  publishScopeUpdate('users')
+export async function invalidateUsersCache(userId?: string) {
+  await notifyTagsUpdated(
+    ['users'],
+    'access-control:invalidate-users-cache',
+    userId ? [{ entityType: 'user', entityId: userId }] : undefined
+  )
 }

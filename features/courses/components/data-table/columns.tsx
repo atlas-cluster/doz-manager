@@ -61,17 +61,49 @@ function ActionsCell({
         open={open}
         onOpenChange={setOpen}
         onSubmit={(payload) => meta?.updateCourse?.(course.id, payload)}
+        onEditingChange={(editing) =>
+          editing
+            ? meta?.beginEditingCourse?.(course.id)
+            : meta?.stopEditingCourse?.(course.id)
+        }
+        hasExternalUpdate={
+          meta?.editingCourseId === course.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        }
+        onReloadFromServer={() => meta?.reloadEditingCourse?.()}
       />
       <LecturerAssignmentDialog
         course={course}
         open={lecturerAssignmentDialogOpen}
-        onOpenChange={setLecturerAssignmentDialogOpen}
+        onOpenChange={(nextOpen) => {
+          setLecturerAssignmentDialogOpen(nextOpen)
+        }}
         onSubmit={() => meta?.refreshCourses()}
+        onEditingChange={(editing) =>
+          editing
+            ? meta?.beginEditingCourse?.(course.id)
+            : meta?.stopEditingCourse?.(course.id)
+        }
+        hasExternalUpdate={
+          meta?.editingCourseId === course.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        }
+        onReloadFromServer={() => meta?.reloadEditingCourse?.()}
       />
       <LecturerQualificationDialog
         course={course}
         open={lecturerQualificationDialogOpen}
         onOpenChange={setLecturerQualificationDialogOpen}
+        onEditingChange={(editing) =>
+          editing
+            ? meta?.beginEditingCourse?.(course.id)
+            : meta?.stopEditingCourse?.(course.id)
+        }
+        hasExternalUpdate={
+          meta?.editingCourseId === course.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        }
+        onReloadFromServer={() => meta?.reloadEditingCourse?.()}
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -154,6 +186,26 @@ function LecturerAssignmentsCell({
       onOpenChange={setDialogOpen}
       onSubmit={() =>
         (table.options.meta as CourseTableMeta | undefined)?.refreshCourses()
+      }
+      onEditingChange={(editing) => {
+        const meta = table.options.meta as CourseTableMeta | undefined
+        if (editing) {
+          meta?.beginEditingCourse?.(row.original.id)
+          return
+        }
+        meta?.stopEditingCourse?.(row.original.id)
+      }}
+      hasExternalUpdate={(() => {
+        const meta = table.options.meta as CourseTableMeta | undefined
+        return (
+          meta?.editingCourseId === row.original.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        )
+      })()}
+      onReloadFromServer={() =>
+        (
+          table.options.meta as CourseTableMeta | undefined
+        )?.reloadEditingCourse?.()
       }
       trigger={
         <AvatarGroup className="cursor-pointer grayscale">

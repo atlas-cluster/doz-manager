@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
+import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
 import {
   ColumnFiltersState,
   OnChangeFn,
@@ -79,6 +80,10 @@ export function DataTable({
   const [data, setData] = useState<Course[]>(initialData.data)
   const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
   const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null)
+  const [hasExternalUpdateForEditing, setHasExternalUpdateForEditing] =
+    useState(false)
+  const editingCourseIdRef = useRef<string | null>(null)
 
   const fetchData = (
     currentPagination = pagination,
@@ -114,6 +119,54 @@ export function DataTable({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination, sorting, globalFilter])
+
+  useLiveChanges({
+    tags: ['courses'],
+    onChangeAction: (event) => {
+      const hasEditingConflict = Boolean(
+        editingCourseId &&
+        event.entities?.some(
+          (entity) =>
+            entity.entityType === 'course' &&
+            entity.entityId === editingCourseId
+        )
+      )
+
+      if (hasEditingConflict) {
+        setHasExternalUpdateForEditing(true)
+        return
+      }
+
+      fetchData()
+    },
+  })
+
+  const beginEditingCourse = (id: string) => {
+    if (editingCourseIdRef.current === id) {
+      return
+    }
+    editingCourseIdRef.current = id
+    setEditingCourseId(id)
+    setHasExternalUpdateForEditing(false)
+  }
+
+  const stopEditingCourse = (id: string) => {
+    if (editingCourseIdRef.current !== id) {
+      return
+    }
+    editingCourseIdRef.current = null
+    setEditingCourseId(null)
+    setHasExternalUpdateForEditing(false)
+  }
+
+  const reloadEditingCourse = async () => {
+    fetchData()
+    setHasExternalUpdateForEditing(false)
+  }
+
+  const dismissEditingConflict = () => {
+    setHasExternalUpdateForEditing(false)
+  }
 
   const handleCreate = (data: z.infer<typeof courseSchema>) => {
     const promise = createCourse(data).then(() => fetchData())
@@ -199,6 +252,12 @@ export function DataTable({
       deleteCourse: handleDelete,
       deleteCourses: handleDeleteMany,
       refreshCourses: handleRefresh,
+      beginEditingCourse,
+      stopEditingCourse,
+      reloadEditingCourse,
+      dismissEditingConflict,
+      editingCourseId,
+      hasExternalUpdateForEditing,
     },
 
     enableRowSelection: true,

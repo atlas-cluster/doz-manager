@@ -1,14 +1,13 @@
 'use server'
 
 import { createId } from '@paralleldrive/cuid2'
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 import { z } from 'zod'
 
 import { userSchema } from '@/features/access-control/schemas/user'
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function createUser(data: z.infer<typeof userSchema>) {
   const session = await auth.api.getSession({
@@ -60,6 +59,5 @@ export async function createUser(data: z.infer<typeof userSchema>) {
     })
   }
 
-  updateTag('users')
-  publishScopeUpdate('users')
+  await notifyTagsUpdated(['users'], 'access-control:create-user')
 }

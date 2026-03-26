@@ -1,11 +1,10 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import z from 'zod'
 
 import { qualificationSchema } from '@/features/lecturers'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function updateCourseLecturerQualification(
   courseId: string,
@@ -25,7 +24,17 @@ export async function updateCourseLecturerQualification(
     },
   })
 
-  updateTag('courses')
-  publishScopeUpdate('courses')
-  updateTag(`course-${courseId}-lecturers`)
+  await notifyTagsUpdated(
+    [
+      'courses',
+      'lecturers',
+      `course-${courseId}-lecturers`,
+      `lecturer-${lecturerId}-courses`,
+    ],
+    'courses:update-course-lecturer-qualification',
+    [
+      { entityType: 'course', entityId: courseId },
+      { entityType: 'lecturer', entityId: lecturerId },
+    ]
+  )
 }

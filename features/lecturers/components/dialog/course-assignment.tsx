@@ -4,7 +4,7 @@ import {
   PencilRuler,
   Trash2,
 } from 'lucide-react'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Course, getCourses } from '@/features/courses'
@@ -12,6 +12,7 @@ import { Lecturer } from '@/features/lecturers'
 import { createLecturerCourseAssignment } from '@/features/lecturers/actions/create-lecturer-course-assignment'
 import { deleteLecturerCourseAssignment } from '@/features/lecturers/actions/delete-lecturer-course-assignment'
 import { getLecturerCourseAssignments } from '@/features/lecturers/actions/get-lecturer-course-assignments'
+import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
@@ -65,6 +66,9 @@ interface CourseAssignmentProps {
   onOpenChange?: (open: boolean) => void
   onSubmit?: () => void
   readonly?: boolean
+  hasExternalUpdate?: boolean
+  onReloadFromServer?: () => Promise<unknown> | unknown
+  onEditingChange?: (editing: boolean) => void
 }
 
 export function CourseAssignmentDialog({
@@ -74,6 +78,9 @@ export function CourseAssignmentDialog({
   onOpenChange: setControlledOpen,
   onSubmit,
   readonly = false,
+  hasExternalUpdate = false,
+  onReloadFromServer,
+  onEditingChange,
 }: CourseAssignmentProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -86,25 +93,43 @@ export function CourseAssignmentDialog({
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const [coursesResponse, assignmentsResponse] = await Promise.all([
-          getCourses({ pageIndex: 0, pageSize: 999999999 }),
-          getLecturerCourseAssignments(lecturer.id),
-        ])
-        setCourses(coursesResponse.data)
-        setSelectedCourses(assignmentsResponse)
-      } catch (error) {
-        console.error('Failed to fetch data', error)
-        toast.error('Daten konnten nicht geladen werden')
-      } finally {
-        setLoading(false)
-      }
+  const loadDialogData = async () => {
+    setLoading(true)
+    try {
+      const [coursesResponse, assignmentsResponse] = await Promise.all([
+        getCourses({ pageIndex: 0, pageSize: 999999999 }),
+        getLecturerCourseAssignments(lecturer.id),
+      ])
+      setCourses(coursesResponse.data)
+      setSelectedCourses(assignmentsResponse)
+    } catch (error) {
+      console.error('Failed to fetch data', error)
+      toast.error('Daten konnten nicht geladen werden')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  const wasEditingRef = useRef(false)
+
+  useEffect(() => {
+    const isEditingSession = open && !readonlyMode
+
+    if (isEditingSession && !wasEditingRef.current) {
+      onEditingChange?.(true)
+      wasEditingRef.current = true
+      return
+    }
+
+    if (!isEditingSession && wasEditingRef.current) {
+      onEditingChange?.(false)
+      wasEditingRef.current = false
+    }
+  }, [onEditingChange, open, readonlyMode])
+
+  useEffect(() => {
     if (open) {
-      fetchData()
+      void loadDialogData()
       setReadonlyMode(readonly)
     }
   }, [lecturer.id, open, readonly])
@@ -122,6 +147,8 @@ export function CourseAssignmentDialog({
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
+    onEditingChange?.(false)
+    let shouldRestoreEditingContext = true
     const currentCourseIds = selectedCourses.map((c) => c.id)
     const originalCourseIds = (
       await getLecturerCourseAssignments(lecturer.id)
@@ -143,19 +170,22 @@ export function CourseAssignmentDialog({
       ),
     ])
 
-    setIsSubmitting(false)
-    onSubmit?.()
-    setOpen(false)
     try {
-      toast.promise(promise, {
+      await toast.promise(promise, {
         loading: 'Zuweisungen werden gespeichert...',
         success: 'Zuweisungen wurden gespeichert',
         error: 'Zuweisungen konnten nicht gespeichert werden',
       })
+      onSubmit?.()
+      setOpen(false)
+      shouldRestoreEditingContext = false
     } catch (error) {
       console.error('Failed to save assignments', error)
-      toast.error('Zuweisungen konnten nicht gespeichert werden')
     } finally {
+      setIsSubmitting(false)
+      if (shouldRestoreEditingContext) {
+        onEditingChange?.(true)
+      }
     }
   }
 
@@ -187,6 +217,14 @@ export function CourseAssignmentDialog({
           </DialogDescription>
         </DialogHeader>
         <div className={'flex min-h-0 flex-1 flex-col gap-3'}>
+          {hasExternalUpdate && !readonlyMode && (
+            <ExternalUpdateAlert
+              onReload={async () => {
+                await onReloadFromServer?.()
+                await loadDialogData()
+              }}
+            />
+          )}
           {loading ? (
             <>
               <Skeleton className="h-9 w-48" />
@@ -325,7 +363,9 @@ export function CourseAssignmentDialog({
             </Button>
           </DialogClose>
           {!readonlyMode && (
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || hasExternalUpdate}>
               Speichern
             </Button>
           )}

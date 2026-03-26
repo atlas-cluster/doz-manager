@@ -1,13 +1,12 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 import { z } from 'zod'
 
 import { userSchema } from '@/features/access-control/schemas/user'
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function updateUser(id: string, data: z.infer<typeof userSchema>) {
   const session = await auth.api.getSession({
@@ -36,6 +35,7 @@ export async function updateUser(id: string, data: z.infer<typeof userSchema>) {
     },
   })
 
-  updateTag('users')
-  publishScopeUpdate('users')
+  await notifyTagsUpdated(['users'], 'access-control:update-user', [
+    { entityType: 'user', entityId: id },
+  ])
 }
