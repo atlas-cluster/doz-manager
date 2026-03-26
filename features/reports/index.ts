@@ -3,6 +3,7 @@ import { ReportCardCoursesAtOtherUni } from './components/card/courses-at-other-
 import { ReportCardCoursesAtProvadis } from './components/card/courses-at-provadis'
 import { ReportCardCoursesWithoutLecturers } from './components/card/courses-without-lecturers'
 import { ReportCardCoursesWithoutProvadisExperience } from './components/card/courses-without-provadis-experience'
+import { ReportsLiveRefresh } from './components/reports-live-refresh'
 
 export {
   ReportCardCoursesWithoutLecturers,
@@ -10,4 +11,5 @@ export {
   ReportCardCoursesAtOtherUni,
   ReportCardCoursesWithoutProvadisExperience,
   getCardData,
+  ReportsLiveRefresh,
 }
