@@ -29,7 +29,6 @@ export interface CourseTableMeta {
   beginEditingCourse?: (id: string) => void
   stopEditingCourse?: (id: string) => void
   reloadEditingCourse?: () => void
-  dismissEditingConflict?: () => void
   editingCourseId?: string | null
   hasExternalUpdateForEditing?: boolean
 }

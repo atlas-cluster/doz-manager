@@ -25,7 +25,6 @@ export interface LecturerTableMeta {
   beginEditingLecturer?: (id: string) => void
   stopEditingLecturer?: (id: string) => void
   reloadEditingLecturer?: () => void
-  dismissEditingConflict?: () => void
   editingLecturerId?: string | null
   hasExternalUpdateForEditing?: boolean
 }

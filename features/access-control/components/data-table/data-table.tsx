@@ -208,6 +208,7 @@ export function DataTable({
 
       fetchData()
     },
+    ignoreOwnChanges: true,
   })
 
   const beginEditingUser = (id: string) => {
@@ -230,10 +231,6 @@ export function DataTable({
 
   const reloadEditingUser = async () => {
     await fetchData()
-    setHasExternalUpdateForEditing(false)
-  }
-
-  const dismissEditingConflict = () => {
     setHasExternalUpdateForEditing(false)
   }
 
@@ -409,7 +406,6 @@ export function DataTable({
       beginEditingUser,
       stopEditingUser,
       reloadEditingUser,
-      dismissEditingConflict,
       editingUserId,
       hasExternalUpdateForEditing,
     },

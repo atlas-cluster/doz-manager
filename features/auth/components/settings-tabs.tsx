@@ -134,19 +134,10 @@ export function SettingsTabs({
     github: false,
     oauth: false,
   })
-  const suppressOwnUpdatesUntilRef = useRef(0)
-
-  const suppressOwnUpdates = (durationMs = 2500) => {
-    suppressOwnUpdatesUntilRef.current = Date.now() + durationMs
-  }
 
   useLiveChanges({
     tags: ['auth-settings'],
     onChangeAction: (event) => {
-      if (Date.now() < suppressOwnUpdatesUntilRef.current) {
-        return
-      }
-
       const sourceTab = (() => {
         const source = event.source ?? ''
         if (!source.startsWith('auth:save-auth-settings:')) {
@@ -176,6 +167,7 @@ export function SettingsTabs({
         oauth: true,
       })
     },
+    ignoreOwnChanges: true,
   })
 
   // --- Password tab state ---
@@ -318,7 +310,6 @@ export function SettingsTabs({
   async function handlePasswordSave() {
     setIsSavingPassword(true)
     try {
-      suppressOwnUpdates()
       await saveAuthSettings({
         passwordEnabled: passwordLoginEnabled,
         passkeyEnabled: passkeyLoginEnabled,
@@ -345,7 +336,6 @@ export function SettingsTabs({
   async function handleMicrosoftSubmit(data: z.infer<typeof microsoftSchema>) {
     setIsSavingMicrosoft(true)
     try {
-      suppressOwnUpdates()
       await saveAuthSettings({
         passwordEnabled: passwordLoginEnabled,
         passkeyEnabled: passkeyLoginEnabled,
@@ -376,7 +366,6 @@ export function SettingsTabs({
   async function handleGithubSubmit(data: z.infer<typeof githubSchema>) {
     setIsSavingGithub(true)
     try {
-      suppressOwnUpdates()
       await saveAuthSettings({
         passwordEnabled: passwordLoginEnabled,
         passkeyEnabled: passkeyLoginEnabled,
@@ -406,7 +395,6 @@ export function SettingsTabs({
   async function handleOauthSubmit(data: z.infer<typeof oauthSchema>) {
     setIsSavingOauth(true)
     try {
-      suppressOwnUpdates()
       await saveAuthSettings({
         passwordEnabled: passwordLoginEnabled,
         passkeyEnabled: passkeyLoginEnabled,
@@ -484,7 +472,6 @@ export function SettingsTabs({
               <div className="pointer-events-auto mb-4 opacity-100">
                 <ExternalUpdateAlert
                   onReload={async () => {
-                    suppressOwnUpdates(1200)
                     await reloadTabFromServer('password')
                     setExternalUpdatesByTab((prev) => ({
                       ...prev,
@@ -570,7 +557,6 @@ export function SettingsTabs({
               <div className="pointer-events-auto mb-4 opacity-100">
                 <ExternalUpdateAlert
                   onReload={async () => {
-                    suppressOwnUpdates(1200)
                     await reloadTabFromServer('microsoft')
                     setExternalUpdatesByTab((prev) => ({
                       ...prev,
@@ -739,7 +725,6 @@ export function SettingsTabs({
               <div className="pointer-events-auto mb-4 opacity-100">
                 <ExternalUpdateAlert
                   onReload={async () => {
-                    suppressOwnUpdates(1200)
                     await reloadTabFromServer('github')
                     setExternalUpdatesByTab((prev) => ({
                       ...prev,
@@ -887,7 +872,6 @@ export function SettingsTabs({
               <div className="pointer-events-auto mb-4 opacity-100">
                 <ExternalUpdateAlert
                   onReload={async () => {
-                    suppressOwnUpdates(1200)
                     await reloadTabFromServer('oauth')
                     setExternalUpdatesByTab((prev) => ({
                       ...prev,

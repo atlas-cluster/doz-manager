@@ -113,7 +113,6 @@ export function AccountSettings({
   const [showPasskeyManagementDialog, setShowPasskeyManagementDialog] =
     useState(false)
   const [hasExternalUpdate, setHasExternalUpdate] = useState(false)
-  const suppressOwnUpdatesUntilRef = useRef(0)
   const {
     data: passkeys,
     isPending: isPasskeysPending,
@@ -135,10 +134,6 @@ export function AccountSettings({
       hasPasskey: passkeyCount > 0,
       ...overrides,
     })
-  }
-
-  const suppressOwnUpdates = (durationMs = 2500) => {
-    suppressOwnUpdatesUntilRef.current = Date.now() + durationMs
   }
 
   const reloadCurrentUserData = async () => {
@@ -175,10 +170,6 @@ export function AccountSettings({
   useLiveChanges({
     tags: ['users'],
     onChangeAction: (event) => {
-      if (Date.now() < suppressOwnUpdatesUntilRef.current) {
-        return
-      }
-
       const isOwnUserChanged = event.entities?.some(
         (entity) => entity.entityType === 'user' && entity.entityId === saved.id
       )
@@ -187,6 +178,7 @@ export function AccountSettings({
         setHasExternalUpdate(true)
       }
     },
+    ignoreOwnChanges: true,
   })
 
   // Refetch passkeys on mount so the dialog always shows fresh data
@@ -223,7 +215,6 @@ export function AccountSettings({
       return
     }
 
-    suppressOwnUpdates()
     await refetchPasskeys()
     await invalidateUsersCache()
     emitUserProfileUpdated({ hasPasskey: true })
@@ -273,8 +264,6 @@ export function AccountSettings({
         }
         return result.user
       })
-
-      suppressOwnUpdates()
 
       toast.promise(updatePromise, {
         loading: messages.loading,
@@ -467,7 +456,6 @@ export function AccountSettings({
       })
 
       await disablePromise
-      suppressOwnUpdates()
       await invalidateUsersCache()
       twoFactorEnabledRef.current = false
       setTwoFactorEnabled(false)
@@ -815,7 +803,6 @@ export function AccountSettings({
         backupCodes={setupBackupCodes}
         onVerify={handleVerifySetup}
         onDone={() => {
-          suppressOwnUpdates()
           twoFactorEnabledRef.current = true
           const nextBackupCodeCount = setupBackupCodes.length
           setBackupCodeCount(nextBackupCodeCount)
@@ -915,7 +902,6 @@ export function AccountSettings({
         onOpenChangeAction={setShowPasskeyManagementDialog}
         currentUserId={saved.id}
         onPasskeyCountChangeAction={(count) => {
-          suppressOwnUpdates()
           emitUserProfileUpdated({ hasPasskey: count > 0 })
         }}
       />

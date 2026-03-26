@@ -33,7 +33,6 @@ export interface AccessControlTableMeta {
   beginEditingUser?: (id: string) => void
   stopEditingUser?: (id: string) => void
   reloadEditingUser?: () => void
-  dismissEditingConflict?: () => void
   editingUserId?: string | null
   hasExternalUpdateForEditing?: boolean
 }
