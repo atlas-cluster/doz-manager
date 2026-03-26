@@ -104,19 +104,25 @@ export function DataTable({
     currentFilters = columnFilters,
     currentGlobal = globalFilter
   ) => {
-    startTransition(async () => {
-      const result = await getLecturers({
-        pageIndex: currentPagination.pageIndex,
-        pageSize: currentPagination.pageSize,
-        sorting: currentSorting as { id: string; desc: boolean }[],
-        columnFilters: currentFilters as { id: string; value: unknown }[],
-        globalFilter: currentGlobal,
+    return new Promise<void>((resolve) => {
+      startTransition(async () => {
+        try {
+          const result = await getLecturers({
+            pageIndex: currentPagination.pageIndex,
+            pageSize: currentPagination.pageSize,
+            sorting: currentSorting as { id: string; desc: boolean }[],
+            columnFilters: currentFilters as { id: string; value: unknown }[],
+            globalFilter: currentGlobal,
+          })
+          setRowSelection({})
+          setData(result.data)
+          setPageCount(result.pageCount)
+          setRowCount(result.rowCount)
+          setFacets(result.facets)
+        } finally {
+          resolve()
+        }
       })
-      setRowSelection({})
-      setData(result.data)
-      setPageCount(result.pageCount)
-      setRowCount(result.rowCount)
-      setFacets(result.facets)
     })
   }
 
@@ -176,7 +182,7 @@ export function DataTable({
   }
 
   const reloadEditingLecturer = async () => {
-    fetchData()
+    await fetchData()
     setHasExternalUpdateForEditing(false)
   }
 

@@ -90,17 +90,23 @@ export function DataTable({
     currentSorting = sorting,
     currentGlobal = globalFilter
   ) => {
-    startTransition(async () => {
-      const result = await getCourses({
-        pageIndex: currentPagination.pageIndex,
-        pageSize: currentPagination.pageSize,
-        sorting: currentSorting as { id: string; desc: boolean }[],
-        globalFilter: currentGlobal,
+    return new Promise<void>((resolve) => {
+      startTransition(async () => {
+        try {
+          const result = await getCourses({
+            pageIndex: currentPagination.pageIndex,
+            pageSize: currentPagination.pageSize,
+            sorting: currentSorting as { id: string; desc: boolean }[],
+            globalFilter: currentGlobal,
+          })
+          setRowSelection({})
+          setData(result.data)
+          setPageCount(result.pageCount)
+          setRowCount(result.rowCount)
+        } finally {
+          resolve()
+        }
       })
-      setRowSelection({})
-      setData(result.data)
-      setPageCount(result.pageCount)
-      setRowCount(result.rowCount)
     })
   }
 
@@ -160,7 +166,7 @@ export function DataTable({
   }
 
   const reloadEditingCourse = async () => {
-    fetchData()
+    await fetchData()
     setHasExternalUpdateForEditing(false)
   }
 

@@ -3,6 +3,7 @@ export type ChangeEvent = {
   tags: string[]
   timestamp: number
   source?: string
+  actorConnectionId?: string
   entities?: Array<{
     entityType: 'course' | 'lecturer' | 'user'
     entityId: string
