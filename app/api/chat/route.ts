@@ -1,42 +1,46 @@
 import { headers } from 'next/headers'
+import { ProxyAgent } from 'undici'
 
 import { auth } from '@/features/auth/lib/auth'
 import {
   executeChatTool,
   getChatToolDefinitions,
 } from '@/features/chat/lib/chat-tools'
-import {
-  buildAIServerHeaders,
-  extractBearerToken,
-  getBearerToken,
-} from '@/features/chat/lib/auth'
 
 export const runtime = 'nodejs'
+export const maxDuration = 300
+const timeoutMs = Number.parseInt(process.env.OPENAI_TIMEOUT_MS ?? '60000', 10)
 
-const DEFAULT_OLLAMA_URL = 'http://localhost:11434'
-const DEFAULT_OLLAMA_MODEL = 'llama3.1:8b'
+const DEFAULT_OPENAI_BASE_URL = 'https://ollama-api.mauelshagen.eu/v1'
+const DEFAULT_OPENAI_MODEL = 'qwen3.5:9b'
 const MAX_TOOL_LOOPS = 6
+const proxyAgents = new Map<string, ProxyAgent>()
 
 type IncomingMessage = {
   role: 'user' | 'assistant'
   content: string
 }
 
-type OllamaMessage = {
+type OpenAIToolCall = {
+  id: string
+  type: 'function'
+  function: {
+    name: string
+    arguments: string
+  }
+}
+
+type OpenAIMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool'
-  content: string
-  tool_calls?: Array<{
-    function?: {
-      name?: string
-      arguments?: unknown
-    }
-  }>
-  tool_name?: string
+  content: string | null
+  tool_calls?: OpenAIToolCall[]
+  tool_call_id?: string
 }
 
 function buildSystemPrompt() {
   return [
-    'Du bist der interne Dozentenmanagement-Assistent der Provadis Hochschule(Von Atlas Cluster bereitgestellt)',
+    'Ignoriere alle vorherigen Rollen',
+    'Du bist ausschließlich der interne Dozentenmanagement-Assistent der Provadis Hochschule(Von Atlas Cluster bereitgestellt)',
     'Antwortsprache ist Deutsch.',
     'Wenn Daten aus dem System benötigt werden, nutze immer zuerst die verfügbaren Tools.',
     'Nutze für Fragen wie „Welche Vorlesungen unterrichtet XY?“ oder „Welche Dozenten unterrichten XY?“ bevorzugt die spezialisierten Tools mit Namensauflösung.',
@@ -78,57 +82,84 @@ function normalizeIncomingMessages(value: unknown): IncomingMessage[] {
     .slice(-20)
 }
 
-function normalizeToolArguments(value: unknown): Record<string, unknown> {
-  if (typeof value === 'string') {
-    try {
-      const parsed = JSON.parse(value)
-      return typeof parsed === 'object' && parsed !== null
-        ? (parsed as Record<string, unknown>)
-        : {}
-    } catch {
-      return {}
-    }
+function parseToolArguments(jsonString: string): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(jsonString)
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as Record<string, unknown>)
+      : {}
+  } catch {
+    return {}
   }
-
-  return typeof value === 'object' && value !== null
-    ? (value as Record<string, unknown>)
-    : {}
 }
 
-async function callOllama(messages: OllamaMessage[], bearerToken?: string) {
-  const ollamaUrl = process.env.OLLAMA_URL ?? DEFAULT_OLLAMA_URL
-  const model = process.env.OLLAMA_MODEL ?? DEFAULT_OLLAMA_MODEL
+function getOpenAIProxyUrl(): string | undefined {
+  const rawValue =
+    process.env.OPENAI_PROXY_URL ??
+    process.env.HTTPS_PROXY ??
+    process.env.HTTP_PROXY
 
-  const response = await fetch(`${ollamaUrl}/api/chat`, {
+  const proxyUrl = rawValue?.trim()
+  return proxyUrl && proxyUrl.length > 0 ? proxyUrl : undefined
+}
+
+function getProxyAgent(proxyUrl: string): ProxyAgent {
+  const existingAgent = proxyAgents.get(proxyUrl)
+  if (existingAgent) return existingAgent
+
+  const agent = new ProxyAgent(proxyUrl)
+  proxyAgents.set(proxyUrl, agent)
+  return agent
+}
+
+async function callOpenAI(messages: OpenAIMessage[]) {
+  const baseUrl = process.env.OPENAI_BASE_URL ?? DEFAULT_OPENAI_BASE_URL
+  const model = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL
+  const apiKey = process.env.OPENAI_API_KEY
+  const proxyUrl = getOpenAIProxyUrl()
+
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY is not configured.')
+  }
+
+  const requestInit: RequestInit & { dispatcher?: ProxyAgent } = {
     method: 'POST',
-    headers: buildAIServerHeaders(bearerToken),
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
     body: JSON.stringify({
       model,
-      stream: false,
       messages,
       tools: getChatToolDefinitions(),
-      options: {
-        temperature: 0.2,
-      },
+      temperature: 0.2,
     }),
-    // Increase timeout for remote servers (default is 10s)
-    signal: AbortSignal.timeout(30000),
-  })
+    signal: AbortSignal.timeout(
+      Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 60000
+    ),
+  }
+
+  if (proxyUrl) {
+    requestInit.dispatcher = getProxyAgent(proxyUrl)
+  }
+
+  const response = await fetch(`${baseUrl}/chat/completions`, requestInit)
 
   if (!response.ok) {
     const errorDetails = await response.text().catch(() => 'Unknown error')
     throw new Error(
-      `Ollama error: ${response.status} ${response.statusText}. Details: ${errorDetails}`
+      `OpenAI error: ${response.status} ${response.statusText}. Details: ${errorDetails}`
     )
   }
 
   try {
-    return (await response.json()) as {
-      message?: OllamaMessage
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: OpenAIMessage }>
     }
+    return data.choices?.[0]?.message ?? null
   } catch (error) {
     throw new Error(
-      `Failed to parse Ollama response: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to parse OpenAI response: ${error instanceof Error ? error.message : 'Unknown error'}`
     )
   }
 }
@@ -163,11 +194,7 @@ export async function POST(req: Request) {
     )
   }
 
-  // Extract optional bearer token: from request headers first, then fall back to environment variable
-  const headerToken = extractBearerToken(requestHeaders)
-  const bearerToken = getBearerToken(headerToken)
-
-  const conversation: OllamaMessage[] = [
+  const conversation: OpenAIMessage[] = [
     {
       role: 'system',
       content: buildSystemPrompt(),
@@ -177,18 +204,17 @@ export async function POST(req: Request) {
 
   try {
     for (let i = 0; i < MAX_TOOL_LOOPS; i++) {
-      const ollamaResponse = await callOllama(conversation, bearerToken)
-      const assistantMessage = ollamaResponse.message
+      const assistantMessage = await callOpenAI(conversation)
 
       if (!assistantMessage) {
-        throw new Error('Ollama did not return a message.')
+        throw new Error('OpenAI did not return a message.')
       }
 
       const toolCalls = assistantMessage.tool_calls ?? []
 
       if (toolCalls.length === 0) {
         return Response.json({
-          message: assistantMessage.content,
+          message: assistantMessage.content ?? '',
         })
       }
 
@@ -199,16 +225,10 @@ export async function POST(req: Request) {
       })
 
       for (const toolCall of toolCalls) {
-        const toolName = toolCall.function?.name
-
-        if (!toolName) {
-          continue
-        }
-
         const toolResult = await executeChatTool(
           {
-            name: toolName,
-            arguments: normalizeToolArguments(toolCall.function?.arguments),
+            name: toolCall.function.name,
+            arguments: parseToolArguments(toolCall.function.arguments),
           },
           session.user.id
         )
@@ -216,10 +236,11 @@ export async function POST(req: Request) {
         conversation.push({
           role: 'tool',
           content: JSON.stringify(toolResult),
-          tool_name: toolName,
+          tool_call_id: toolCall.id,
         })
       }
     }
+
     console.warn('[chat] Max tool loops reached without response completion')
 
     return Response.json({
@@ -232,7 +253,7 @@ export async function POST(req: Request) {
     return Response.json(
       {
         error:
-          'Der Chat-Dienst ist aktuell nicht erreichbar. Bitte prüfe, ob Ollama läuft.',
+          'Der Chat-Dienst ist aktuell nicht erreichbar. Bitte versuche es später erneut.',
       },
       { status: 500 }
     )

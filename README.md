@@ -13,29 +13,39 @@ The goal of this software is to optimize the assignment of lecturers to lectures
 
 - **Web Application**: Desktop-based, accessible via browsers
 - **Database Integration**: Stores and manages data for lecturers and lectures.
-- **AI Chat Assistant**: Optional in-app chat (bottom-right) via Ollama with DB read tools.
+- **AI Chat Assistant**: Optional in-app chat (bottom-right) via OpenAI-compatible APIs with DB read tools.
 
-### AI Chat (Ollama)
+### AI Chat (OpenAI-Compatible)
 
 Set these environment variables for the chat integration:
 
-- `OLLAMA_URL` (optional, default: `http://localhost:11434`)
-- `OLLAMA_MODEL` (optional, default: `llama3.1:8b`)
-- `AI_SERVER_BEARER_TOKEN` (optional, for authentication with the AI server)
+- `OPENAI_API_KEY` (required)
+- `OPENAI_MODEL` (optional, default: `gpt-4o-mini`)
+- `OPENAI_BASE_URL` (optional, default: `https://api.openai.com/v1`)
+- `OPENAI_PROXY_URL` (optional, explicit proxy URL for outbound OpenAI requests)
+- `HTTPS_PROXY` / `HTTP_PROXY` (optional fallback proxy if `OPENAI_PROXY_URL` is not set)
+- `maxDuration` for the route is set in `app/api/chat/route.ts` (currently `300` seconds)
 
 Example:
 
 ```env
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.1:8b
-AI_SERVER_BEARER_TOKEN=your-api-token-here
+OPENAI_API_KEY=your-api-key-here
+OPENAI_MODEL=qwen3.5:9b
+OPENAI_BASE_URL=https://ollama-api.mauelshagen.eu/v1
+OPENAI_PROXY_URL=http://sia-lb.telekom.de:8080
 ```
 
-**Authentication Priority:**
+Example (OpenAI-compatible local/server endpoint):
 
-1. Bearer token from request header (if provided)
-2. Bearer token from `AI_SERVER_BEARER_TOKEN` environment variable (fallback)
-3. No authentication (if neither is provided)
+```env
+OPENAI_API_KEY="local"-or-provider-key
+OPENAI_MODEL=llama3.1:8b
+OPENAI_BASE_URL=http://localhost:11434/v1
+# optional if required by your network:
+OPENAI_PROXY_URL=http://sia-lb.telekom.de:8080
+```
+
+Request timeout for upstream AI calls is currently set to `60000ms` in `app/api/chat/route.ts` (`AbortSignal.timeout(60000)`).
 
 ### Reporting Features:
 
