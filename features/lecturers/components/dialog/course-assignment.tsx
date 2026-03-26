@@ -4,7 +4,7 @@ import {
   PencilRuler,
   Trash2,
 } from 'lucide-react'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Course, getCourses } from '@/features/courses'
@@ -12,6 +12,7 @@ import { Lecturer } from '@/features/lecturers'
 import { createLecturerCourseAssignment } from '@/features/lecturers/actions/create-lecturer-course-assignment'
 import { deleteLecturerCourseAssignment } from '@/features/lecturers/actions/delete-lecturer-course-assignment'
 import { getLecturerCourseAssignments } from '@/features/lecturers/actions/get-lecturer-course-assignments'
+import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import { Checkbox } from '@/features/shared/components/ui/checkbox'
@@ -55,6 +56,7 @@ import {
 } from '@/features/shared/components/ui/popover'
 import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import { Skeleton } from '@/features/shared/components/ui/skeleton'
+import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
 import { initialsFromName } from '@/features/shared/lib/utils'
 import '@radix-ui/react-avatar'
 
@@ -65,6 +67,9 @@ interface CourseAssignmentProps {
   onOpenChange?: (open: boolean) => void
   onSubmit?: () => void
   readonly?: boolean
+  hasExternalUpdate?: boolean
+  onReloadFromServer?: () => Promise<unknown> | unknown
+  onEditingChange?: (editing: boolean) => void
 }
 
 export function CourseAssignmentDialog({
@@ -74,6 +79,9 @@ export function CourseAssignmentDialog({
   onOpenChange: setControlledOpen,
   onSubmit,
   readonly = false,
+  hasExternalUpdate = false,
+  onReloadFromServer,
+  onEditingChange,
 }: CourseAssignmentProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -86,28 +94,77 @@ export function CourseAssignmentDialog({
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const [coursesResponse, assignmentsResponse] = await Promise.all([
-          getCourses({ pageIndex: 0, pageSize: 999999999 }),
-          getLecturerCourseAssignments(lecturer.id),
-        ])
-        setCourses(coursesResponse.data)
-        setSelectedCourses(assignmentsResponse)
-      } catch (error) {
-        console.error('Failed to fetch data', error)
-        toast.error('Daten konnten nicht geladen werden')
-      } finally {
-        setLoading(false)
-      }
+  const loadDialogData = async () => {
+    setLoading(true)
+    try {
+      const [coursesResponse, assignmentsResponse] = await Promise.all([
+        getCourses({ pageIndex: 0, pageSize: 999999999 }),
+        getLecturerCourseAssignments(lecturer.id),
+      ])
+      setCourses(coursesResponse.data)
+      setSelectedCourses(assignmentsResponse)
+    } catch (error) {
+      console.error('Failed to fetch data', error)
+      toast.error('Daten konnten nicht geladen werden')
+    } finally {
+      setLoading(false)
     }
+  }
+
+  const wasEditingRef = useRef(false)
+
+  useEffect(() => {
+    const isEditingSession = open && !readonlyMode
+
+    if (isEditingSession && !wasEditingRef.current) {
+      onEditingChange?.(true)
+      wasEditingRef.current = true
+      return
+    }
+
+    if (!isEditingSession && wasEditingRef.current) {
+      onEditingChange?.(false)
+      wasEditingRef.current = false
+    }
+  }, [onEditingChange, open, readonlyMode])
+
+  useEffect(() => {
     if (open) {
-      fetchData()
+      void loadDialogData()
       setReadonlyMode(readonly)
+      setHasLocalExternalUpdate(false)
     }
   }, [lecturer.id, open, readonly])
+
+  // Auto-update the dialog when external changes arrive.
+  // In readonly mode: silently reload the data.
+  // In edit mode: flag the conflict so the ExternalUpdateAlert appears.
+  const [hasLocalExternalUpdate, setHasLocalExternalUpdate] = useState(false)
+
+  useLiveChanges({
+    tags: open ? ['lecturers', 'courses'] : [],
+    onChangeAction: (event) => {
+      if (!open) return
+
+      const isRelevant =
+        !event.entities?.length ||
+        event.entities.some(
+          (e) =>
+            (e.entityType === 'lecturer' && e.entityId === lecturer.id) ||
+            e.entityType === 'course'
+        )
+
+      if (!isRelevant) return
+
+      if (readonlyMode) {
+        void loadDialogData()
+      } else {
+        setHasLocalExternalUpdate(true)
+      }
+    },
+  })
+
+  const effectiveHasExternalUpdate = hasExternalUpdate || hasLocalExternalUpdate
 
   const toggleCourse = (courseId: string) => {
     if (selectedCourses.some((c) => c.id === courseId)) {
@@ -122,6 +179,8 @@ export function CourseAssignmentDialog({
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
+    onEditingChange?.(false)
+    let shouldRestoreEditingContext = true
     const currentCourseIds = selectedCourses.map((c) => c.id)
     const originalCourseIds = (
       await getLecturerCourseAssignments(lecturer.id)
@@ -143,19 +202,22 @@ export function CourseAssignmentDialog({
       ),
     ])
 
-    setIsSubmitting(false)
-    onSubmit?.()
-    setOpen(false)
     try {
-      toast.promise(promise, {
+      await toast.promise(promise, {
         loading: 'Zuweisungen werden gespeichert...',
         success: 'Zuweisungen wurden gespeichert',
         error: 'Zuweisungen konnten nicht gespeichert werden',
       })
+      onSubmit?.()
+      setOpen(false)
+      shouldRestoreEditingContext = false
     } catch (error) {
       console.error('Failed to save assignments', error)
-      toast.error('Zuweisungen konnten nicht gespeichert werden')
     } finally {
+      setIsSubmitting(false)
+      if (shouldRestoreEditingContext) {
+        onEditingChange?.(true)
+      }
     }
   }
 
@@ -187,6 +249,15 @@ export function CourseAssignmentDialog({
           </DialogDescription>
         </DialogHeader>
         <div className={'flex min-h-0 flex-1 flex-col gap-3'}>
+          {effectiveHasExternalUpdate && !readonlyMode && (
+            <ExternalUpdateAlert
+              onReload={async () => {
+                setHasLocalExternalUpdate(false)
+                await onReloadFromServer?.()
+                await loadDialogData()
+              }}
+            />
+          )}
           {loading ? (
             <>
               <Skeleton className="h-9 w-48" />
@@ -210,7 +281,10 @@ export function CourseAssignmentDialog({
             <>
               {readonlyMode && (
                 <Button
-                  onClick={() => setReadonlyMode(!readonlyMode)}
+                  onClick={() => {
+                    setReadonlyMode(false)
+                    setHasLocalExternalUpdate(false)
+                  }}
                   variant={'outline'}
                   className="w-fit">
                   <PencilRuler />
@@ -325,7 +399,9 @@ export function CourseAssignmentDialog({
             </Button>
           </DialogClose>
           {!readonlyMode && (
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting || effectiveHasExternalUpdate}>
               Speichern
             </Button>
           )}

@@ -40,6 +40,7 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
+import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
 import {
   USER_PROFILE_UPDATED_EVENT,
   type UserProfileUpdatedDetail,
@@ -99,6 +100,10 @@ export function DataTable({
   const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
   const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
   const [facets, setFacets] = useState(initialData.facets)
+  const [editingUserId, setEditingUserId] = useState<string | null>(null)
+  const [hasExternalUpdateForEditing, setHasExternalUpdateForEditing] =
+    useState(false)
+  const editingUserIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -147,19 +152,25 @@ export function DataTable({
     currentFilters = columnFilters,
     currentGlobal = globalFilter
   ) => {
-    startTransition(async () => {
-      const result = await getUsers({
-        pageIndex: currentPagination.pageIndex,
-        pageSize: currentPagination.pageSize,
-        sorting: currentSorting as { id: string; desc: boolean }[],
-        columnFilters: currentFilters as { id: string; value: unknown }[],
-        globalFilter: currentGlobal,
+    return new Promise<void>((resolve) => {
+      startTransition(async () => {
+        try {
+          const result = await getUsers({
+            pageIndex: currentPagination.pageIndex,
+            pageSize: currentPagination.pageSize,
+            sorting: currentSorting as { id: string; desc: boolean }[],
+            columnFilters: currentFilters as { id: string; value: unknown }[],
+            globalFilter: currentGlobal,
+          })
+          setRowSelection({})
+          setData(result.data)
+          setPageCount(result.pageCount)
+          setRowCount(result.rowCount)
+          setFacets(result.facets)
+        } finally {
+          resolve()
+        }
       })
-      setRowSelection({})
-      setData(result.data)
-      setPageCount(result.pageCount)
-      setRowCount(result.rowCount)
-      setFacets(result.facets)
     })
   }
 
@@ -178,6 +189,50 @@ export function DataTable({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination, sorting, columnFilters, globalFilter])
+
+  useLiveChanges({
+    tags: ['users'],
+    onChangeAction: (event) => {
+      const hasEditingConflict = Boolean(
+        editingUserId &&
+        event.entities?.some(
+          (entity) =>
+            entity.entityType === 'user' && entity.entityId === editingUserId
+        )
+      )
+
+      if (hasEditingConflict) {
+        setHasExternalUpdateForEditing(true)
+        return
+      }
+
+      fetchData()
+    },
+    ignoreOwnChanges: true,
+  })
+
+  const beginEditingUser = (id: string) => {
+    if (editingUserIdRef.current === id) {
+      return
+    }
+    editingUserIdRef.current = id
+    setEditingUserId(id)
+    setHasExternalUpdateForEditing(false)
+  }
+
+  const stopEditingUser = (id: string) => {
+    if (editingUserIdRef.current !== id) {
+      return
+    }
+    editingUserIdRef.current = null
+    setEditingUserId(null)
+    setHasExternalUpdateForEditing(false)
+  }
+
+  const reloadEditingUser = async () => {
+    await fetchData()
+    setHasExternalUpdateForEditing(false)
+  }
 
   const handleCreate = (data: z.infer<typeof userSchema>) => {
     const promise = createUser(data).then(() => fetchData())
@@ -348,6 +403,11 @@ export function DataTable({
       removePasskeys: handleRemovePasskeys,
       refreshUsers: handleRefresh,
       enabledMethods,
+      beginEditingUser,
+      stopEditingUser,
+      reloadEditingUser,
+      editingUserId,
+      hasExternalUpdateForEditing,
     },
 
     enableRowSelection: true,

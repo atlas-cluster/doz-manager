@@ -3,7 +3,6 @@
 import {
   Building2,
   Calendar,
-  CheckCircle2,
   Clock,
   GraduationCap,
   Plus,
@@ -11,7 +10,7 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react'
-import { ReactNode, useEffect, useMemo, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { getCourseLecturerAssignments } from '@/features/courses/actions/get-course-lecturer-assignments'
@@ -24,6 +23,7 @@ import {
   getLecturers,
 } from '@/features/lecturers'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
+import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import {
@@ -62,6 +62,9 @@ interface LecturerAssignmentDialogProps {
   onOpenChange?: (open: boolean) => void
   onSubmit?: () => void
   readonly?: boolean
+  hasExternalUpdate?: boolean
+  onReloadFromServer?: () => Promise<unknown> | unknown
+  onEditingChange?: (editing: boolean) => void
 }
 
 function lecturerDisplayName(lecturer: Lecturer): string {
@@ -81,6 +84,9 @@ export function LecturerAssignmentDialog({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   onSubmit,
+  hasExternalUpdate = false,
+  onReloadFromServer,
+  onEditingChange,
 }: LecturerAssignmentDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen ?? internalOpen
@@ -103,29 +109,45 @@ export function LecturerAssignmentDialog({
   )
   const [leadTimeFilter, setLeadTimeFilter] = useState<LeadTimeOption[]>([])
 
+  const loadDialogData = async () => {
+    setLoading(true)
+    try {
+      const [lecturersResponse, assignmentResponse, qualificationResponse] =
+        await Promise.all([
+          getLecturers({ pageIndex: 0, pageSize: 999999999 }),
+          getCourseLecturerAssignments(course.id),
+          getCourseLecturerQualifications(course.id),
+        ])
+
+      setLecturers(lecturersResponse.data)
+      setAssignments(assignmentResponse)
+      setQualifications(qualificationResponse)
+      setSearchQuery('')
+    } catch {
+      toast.error('Daten konnten nicht geladen werden')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const wasEditingRef = useRef(false)
+
+  useEffect(() => {
+    if (open && !wasEditingRef.current) {
+      onEditingChange?.(true)
+      wasEditingRef.current = true
+      return
+    }
+
+    if (!open && wasEditingRef.current) {
+      onEditingChange?.(false)
+      wasEditingRef.current = false
+    }
+  }, [onEditingChange, open])
+
   useEffect(() => {
     if (!open) return
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const [lecturersResponse, assignmentResponse, qualificationResponse] =
-          await Promise.all([
-            getLecturers({ pageIndex: 0, pageSize: 999999999 }),
-            getCourseLecturerAssignments(course.id),
-            getCourseLecturerQualifications(course.id),
-          ])
-
-        setLecturers(lecturersResponse.data)
-        setAssignments(assignmentResponse)
-        setQualifications(qualificationResponse)
-        setSearchQuery('')
-      } catch {
-        toast.error('Daten konnten nicht geladen werden')
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
+    void loadDialogData()
   }, [open, course.id])
 
   const experienceCounts = useMemo(() => {
@@ -154,7 +176,6 @@ export function LecturerAssignmentDialog({
         return false
 
       const lq = qualifications.find((q) => q.lecturerId === lecturer.id)
-      const hasQ = !!lq
 
       if (
         experienceFilter.length > 0 &&
@@ -189,6 +210,8 @@ export function LecturerAssignmentDialog({
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
+    onEditingChange?.(false)
+    let shouldRestoreEditingContext = true
 
     const original = await getCourseLecturerAssignments(course.id)
     const originalIds = original.map((l) => l.id)
@@ -202,19 +225,23 @@ export function LecturerAssignmentDialog({
       ...toRemove.map((id) => deleteLecturerCourseAssignment(id, course.id)),
     ])
 
-    toast.promise(promise, {
-      loading: 'Zuweisungen werden gespeichert...',
-      success: () => {
-        setIsSubmitting(false)
-        setOpen(false)
-        onSubmit?.()
-        return 'Zuweisungen gespeichert'
-      },
-      error: () => {
-        setIsSubmitting(false)
-        return 'Zuweisungen konnten nicht gespeichert werden'
-      },
-    })
+    try {
+      await toast.promise(promise, {
+        loading: 'Zuweisungen werden gespeichert...',
+        success: 'Zuweisungen gespeichert',
+        error: 'Zuweisungen konnten nicht gespeichert werden',
+      })
+      setOpen(false)
+      onSubmit?.()
+      shouldRestoreEditingContext = false
+    } catch {
+      // Toast handles user-facing error feedback.
+    } finally {
+      setIsSubmitting(false)
+      if (shouldRestoreEditingContext) {
+        onEditingChange?.(true)
+      }
+    }
   }
 
   return (
@@ -229,6 +256,14 @@ export function LecturerAssignmentDialog({
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-3">
+          {hasExternalUpdate && (
+            <ExternalUpdateAlert
+              onReload={async () => {
+                await onReloadFromServer?.()
+                await loadDialogData()
+              }}
+            />
+          )}
           <>
             <div className="flex w-full flex-wrap items-center gap-2">
               <Input
@@ -381,7 +416,9 @@ export function LecturerAssignmentDialog({
           <DialogClose asChild>
             <Button variant="outline">Abbrechen</Button>
           </DialogClose>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || hasExternalUpdate}>
             Speichern
           </Button>
         </DialogFooter>

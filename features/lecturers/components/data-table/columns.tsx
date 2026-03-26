@@ -63,17 +63,47 @@ function ActionsCell({
         open={lecturerDialogOpen}
         onOpenChange={setLecturerDialogOpen}
         onSubmit={(payload) => meta?.updateLecturer?.(lecturer.id, payload)}
+        onEditingChange={(editing) =>
+          editing
+            ? meta?.beginEditingLecturer?.(lecturer.id)
+            : meta?.stopEditingLecturer?.(lecturer.id)
+        }
+        hasExternalUpdate={
+          meta?.editingLecturerId === lecturer.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        }
+        onReloadFromServer={() => meta?.reloadEditingLecturer?.()}
       />
       <CourseAssignmentDialog
         lecturer={lecturer}
         open={courseAssignmentDialogOpen}
         onOpenChange={setCourseAssignmentDialogOpen}
         onSubmit={() => meta?.refreshLecturers()}
+        onEditingChange={(editing) =>
+          editing
+            ? meta?.beginEditingLecturer?.(lecturer.id)
+            : meta?.stopEditingLecturer?.(lecturer.id)
+        }
+        hasExternalUpdate={
+          meta?.editingLecturerId === lecturer.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        }
+        onReloadFromServer={() => meta?.reloadEditingLecturer?.()}
       />
       <CourseQualificationDialog
         lecturer={lecturer}
         open={CourseQualificationDialogOpen}
         onOpenChange={setCourseQualificationDialogOpen}
+        onEditingChange={(editing) =>
+          editing
+            ? meta?.beginEditingLecturer?.(lecturer.id)
+            : meta?.stopEditingLecturer?.(lecturer.id)
+        }
+        hasExternalUpdate={
+          meta?.editingLecturerId === lecturer.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        }
+        onReloadFromServer={() => meta?.reloadEditingLecturer?.()}
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -290,6 +320,26 @@ export const columns: ColumnDef<Lecturer>[] = [
             (
               table.options.meta as LecturerTableMeta | undefined
             )?.refreshLecturers()
+          }
+          onEditingChange={(editing) => {
+            const meta = table.options.meta as LecturerTableMeta | undefined
+            if (editing) {
+              meta?.beginEditingLecturer?.(row.original.id)
+              return
+            }
+            meta?.stopEditingLecturer?.(row.original.id)
+          }}
+          hasExternalUpdate={(() => {
+            const meta = table.options.meta as LecturerTableMeta | undefined
+            return (
+              meta?.editingLecturerId === row.original.id &&
+              Boolean(meta?.hasExternalUpdateForEditing)
+            )
+          })()}
+          onReloadFromServer={() =>
+            (
+              table.options.meta as LecturerTableMeta | undefined
+            )?.reloadEditingLecturer?.()
           }
           readonly
           trigger={

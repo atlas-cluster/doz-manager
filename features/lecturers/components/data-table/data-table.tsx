@@ -39,6 +39,7 @@ import {
   TableRow,
 } from '@/features/shared/components/ui/table'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
+import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
 import {
   ColumnFiltersState,
   OnChangeFn,
@@ -90,6 +91,12 @@ export function DataTable({
   const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
   const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
   const [facets, setFacets] = useState(initialData.facets)
+  const [editingLecturerId, setEditingLecturerId] = useState<string | null>(
+    null
+  )
+  const [hasExternalUpdateForEditing, setHasExternalUpdateForEditing] =
+    useState(false)
+  const editingLecturerIdRef = useRef<string | null>(null)
 
   const fetchData = (
     currentPagination = pagination,
@@ -97,19 +104,25 @@ export function DataTable({
     currentFilters = columnFilters,
     currentGlobal = globalFilter
   ) => {
-    startTransition(async () => {
-      const result = await getLecturers({
-        pageIndex: currentPagination.pageIndex,
-        pageSize: currentPagination.pageSize,
-        sorting: currentSorting as { id: string; desc: boolean }[],
-        columnFilters: currentFilters as { id: string; value: unknown }[],
-        globalFilter: currentGlobal,
+    return new Promise<void>((resolve) => {
+      startTransition(async () => {
+        try {
+          const result = await getLecturers({
+            pageIndex: currentPagination.pageIndex,
+            pageSize: currentPagination.pageSize,
+            sorting: currentSorting as { id: string; desc: boolean }[],
+            columnFilters: currentFilters as { id: string; value: unknown }[],
+            globalFilter: currentGlobal,
+          })
+          setRowSelection({})
+          setData(result.data)
+          setPageCount(result.pageCount)
+          setRowCount(result.rowCount)
+          setFacets(result.facets)
+        } finally {
+          resolve()
+        }
       })
-      setRowSelection({})
-      setData(result.data)
-      setPageCount(result.pageCount)
-      setRowCount(result.rowCount)
-      setFacets(result.facets)
     })
   }
 
@@ -128,6 +141,51 @@ export function DataTable({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination, sorting, columnFilters, globalFilter])
+
+  useLiveChanges({
+    tags: ['lecturers'],
+    onChangeAction: (event) => {
+      const hasEditingConflict = Boolean(
+        editingLecturerId &&
+        event.entities?.some(
+          (entity) =>
+            entity.entityType === 'lecturer' &&
+            entity.entityId === editingLecturerId
+        )
+      )
+
+      if (hasEditingConflict) {
+        setHasExternalUpdateForEditing(true)
+        return
+      }
+
+      fetchData()
+    },
+    ignoreOwnChanges: true,
+  })
+
+  const beginEditingLecturer = (id: string) => {
+    if (editingLecturerIdRef.current === id) {
+      return
+    }
+    editingLecturerIdRef.current = id
+    setEditingLecturerId(id)
+    setHasExternalUpdateForEditing(false)
+  }
+
+  const stopEditingLecturer = (id: string) => {
+    if (editingLecturerIdRef.current !== id) {
+      return
+    }
+    editingLecturerIdRef.current = null
+    setEditingLecturerId(null)
+    setHasExternalUpdateForEditing(false)
+  }
+
+  const reloadEditingLecturer = async () => {
+    await fetchData()
+    setHasExternalUpdateForEditing(false)
+  }
 
   const handleCreate = (data: z.infer<typeof lecturerSchema>) => {
     const promise = createLecturer(data).then(() => fetchData())
@@ -213,6 +271,11 @@ export function DataTable({
       deleteLecturer: handleDelete,
       deleteLecturers: handleDeleteMany,
       refreshLecturers: handleRefresh,
+      beginEditingLecturer,
+      stopEditingLecturer,
+      reloadEditingLecturer,
+      editingLecturerId,
+      hasExternalUpdateForEditing,
     },
 
     enableRowSelection: true,

@@ -1,9 +1,7 @@
 'use server'
 
-import { updateTag } from 'next/cache'
-
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function createLecturerCourseAssignment(
   lecturerId: string,
@@ -16,10 +14,17 @@ export async function createLecturerCourseAssignment(
     },
   })
 
-  updateTag('lecturers')
-  publishScopeUpdate('lecturers')
-  updateTag('courses')
-  publishScopeUpdate('courses')
-  updateTag(`lecturer-${lecturerId}-courses`)
-  updateTag(`course-${courseId}-lecturers`)
+  await notifyTagsUpdated(
+    [
+      'lecturers',
+      'courses',
+      `lecturer-${lecturerId}-courses`,
+      `course-${courseId}-lecturers`,
+    ],
+    'lecturers:create-lecturer-course-assignment',
+    [
+      { entityType: 'lecturer', entityId: lecturerId },
+      { entityType: 'course', entityId: courseId },
+    ]
+  )
 }

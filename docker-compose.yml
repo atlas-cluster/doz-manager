@@ -21,5 +21,16 @@ services:
       timeout: 5s
       retries: 5
 
+  redis-dev:
+    image: redis:8.6-alpine
+    container_name: doz-manager-redis-dev
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   db_data_dev:

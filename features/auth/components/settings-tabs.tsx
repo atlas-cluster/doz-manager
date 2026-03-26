@@ -15,11 +15,12 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import z from 'zod'
 
+import { getAuthSettings } from '@/features/auth/actions/get-auth-settings'
 import { saveAuthSettings } from '@/features/auth/actions/save-auth-settings'
 import { githubSchema } from '@/features/auth/schemas/github'
 import { microsoftSchema } from '@/features/auth/schemas/microsoft'
@@ -28,6 +29,8 @@ import type {
   AuthSettingsData,
   ProviderUserCounts,
 } from '@/features/auth/types'
+import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
+import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
 import { Badge } from '@/features/shared/components/ui/badge'
 import { Button } from '@/features/shared/components/ui/button'
 import { Card, CardContent } from '@/features/shared/components/ui/card'
@@ -55,6 +58,12 @@ type SettingsTabsProps = {
   userCounts: ProviderUserCounts
   baseUrl: string
 }
+
+type SettingsTab = 'password' | 'microsoft' | 'github' | 'oauth'
+
+const DEFAULT_TAB: SettingsTab = 'password'
+
+const allTabs: SettingsTab[] = ['password', 'microsoft', 'github', 'oauth']
 
 function UserCountBadge({ count }: { count: number }) {
   return (
@@ -116,6 +125,50 @@ export function SettingsTabs({
   baseUrl,
 }: SettingsTabsProps) {
   const router = useRouter()
+  const [settingsBaseline, setSettingsBaseline] = useState(initialSettings)
+  const [externalUpdatesByTab, setExternalUpdatesByTab] = useState<
+    Record<SettingsTab, boolean>
+  >({
+    password: false,
+    microsoft: false,
+    github: false,
+    oauth: false,
+  })
+
+  useLiveChanges({
+    tags: ['auth-settings'],
+    onChangeAction: (event) => {
+      const sourceTab = (() => {
+        const source = event.source ?? ''
+        if (!source.startsWith('auth:save-auth-settings:')) {
+          return null
+        }
+        const tab = source.replace('auth:save-auth-settings:', '')
+        if (
+          tab === 'password' ||
+          tab === 'microsoft' ||
+          tab === 'github' ||
+          tab === 'oauth'
+        ) {
+          return tab as SettingsTab
+        }
+        return null
+      })()
+
+      if (sourceTab) {
+        setExternalUpdatesByTab((prev) => ({ ...prev, [sourceTab]: true }))
+        return
+      }
+
+      setExternalUpdatesByTab({
+        password: true,
+        microsoft: true,
+        github: true,
+        oauth: true,
+      })
+    },
+    ignoreOwnChanges: true,
+  })
 
   // --- Password tab state ---
   const [passwordLoginEnabled, setPasswordLoginEnabled] = useState(
@@ -158,16 +211,16 @@ export function SettingsTabs({
   const microsoftForm = useForm<z.infer<typeof microsoftSchema>>({
     resolver: zodResolver(microsoftSchema),
     defaultValues: {
-      clientId: initialSettings.microsoftClientId,
+      clientId: settingsBaseline.microsoftClientId,
       clientSecret: '',
-      tenantId: initialSettings.microsoftTenantId,
+      tenantId: settingsBaseline.microsoftTenantId,
     },
   })
 
   const githubForm = useForm<z.infer<typeof githubSchema>>({
     resolver: zodResolver(githubSchema),
     defaultValues: {
-      clientId: initialSettings.githubClientId,
+      clientId: settingsBaseline.githubClientId,
       clientSecret: '',
     },
   })
@@ -175,11 +228,61 @@ export function SettingsTabs({
   const oauthForm = useForm<z.infer<typeof oauthSchema>>({
     resolver: zodResolver(oauthSchema),
     defaultValues: {
-      clientId: initialSettings.oauthClientId,
+      clientId: settingsBaseline.oauthClientId,
       clientSecret: '',
-      issuerUrl: initialSettings.oauthIssuerUrl,
+      issuerUrl: settingsBaseline.oauthIssuerUrl,
     },
   })
+
+  const applyTabSnapshot = (tab: SettingsTab, snapshot: AuthSettingsData) => {
+    if (tab === 'password') {
+      setPasswordLoginEnabled(snapshot.passwordEnabled)
+      setPasskeyLoginEnabled(snapshot.passkeyEnabled)
+      return
+    }
+
+    if (tab === 'microsoft') {
+      setMicrosoftEnabled(snapshot.microsoftEnabled)
+      setShowMicrosoftSecret(false)
+      microsoftForm.reset({
+        clientId: snapshot.microsoftClientId,
+        clientSecret: '',
+        tenantId: snapshot.microsoftTenantId,
+      })
+      return
+    }
+
+    if (tab === 'github') {
+      setGithubEnabled(snapshot.githubEnabled)
+      setShowGithubSecret(false)
+      githubForm.reset({
+        clientId: snapshot.githubClientId,
+        clientSecret: '',
+      })
+      return
+    }
+
+    setOauthEnabled(snapshot.oauthEnabled)
+    setShowOauthSecret(false)
+    oauthForm.reset({
+      clientId: snapshot.oauthClientId,
+      clientSecret: '',
+      issuerUrl: snapshot.oauthIssuerUrl,
+    })
+  }
+
+  const reloadTabFromServer = async (tab: SettingsTab) => {
+    try {
+      const latest = await getAuthSettings()
+      setSettingsBaseline(latest)
+      applyTabSnapshot(tab, latest)
+      return true
+    } catch {
+      // Fallback: at least trigger a route refresh if server action fetch fails.
+      router.refresh()
+      return false
+    }
+  }
 
   // --- Helpers ---
   function wouldDisableLast(toggleOff: boolean): boolean {
@@ -188,19 +291,20 @@ export function SettingsTabs({
 
   // --- Dirty checking ---
   const hasPasswordChanges =
-    passwordLoginEnabled !== initialSettings.passwordEnabled ||
-    passkeyLoginEnabled !== initialSettings.passkeyEnabled
+    passwordLoginEnabled !== settingsBaseline.passwordEnabled ||
+    passkeyLoginEnabled !== settingsBaseline.passkeyEnabled
 
   const hasMicrosoftChanges =
-    microsoftEnabled !== initialSettings.microsoftEnabled ||
+    microsoftEnabled !== settingsBaseline.microsoftEnabled ||
     microsoftForm.formState.isDirty
 
   const hasGithubChanges =
-    githubEnabled !== initialSettings.githubEnabled ||
+    githubEnabled !== settingsBaseline.githubEnabled ||
     githubForm.formState.isDirty
 
   const hasOauthChanges =
-    oauthEnabled !== initialSettings.oauthEnabled || oauthForm.formState.isDirty
+    oauthEnabled !== settingsBaseline.oauthEnabled ||
+    oauthForm.formState.isDirty
 
   // --- Handlers ---
   async function handlePasswordSave() {
@@ -212,7 +316,10 @@ export function SettingsTabs({
         microsoftEnabled,
         githubEnabled,
         oauthEnabled,
+        changedTab: 'password',
       })
+      await reloadTabFromServer('password')
+      setExternalUpdatesByTab((prev) => ({ ...prev, password: false }))
       toast.success('Passwort-Einstellungen gespeichert')
       router.refresh()
     } catch (e) {
@@ -238,7 +345,10 @@ export function SettingsTabs({
         microsoftTenantId: data.tenantId,
         githubEnabled,
         oauthEnabled,
+        changedTab: 'microsoft',
       })
+      await reloadTabFromServer('microsoft')
+      setExternalUpdatesByTab((prev) => ({ ...prev, microsoft: false }))
       toast.success('Microsoft-Einstellungen gespeichert')
       microsoftForm.setValue('clientSecret', '')
       router.refresh()
@@ -264,7 +374,10 @@ export function SettingsTabs({
         githubClientId: data.clientId,
         githubClientSecret: data.clientSecret || undefined,
         oauthEnabled,
+        changedTab: 'github',
       })
+      await reloadTabFromServer('github')
+      setExternalUpdatesByTab((prev) => ({ ...prev, github: false }))
       toast.success('GitHub-Einstellungen gespeichert')
       githubForm.setValue('clientSecret', '')
       router.refresh()
@@ -291,7 +404,10 @@ export function SettingsTabs({
         oauthClientId: data.clientId,
         oauthClientSecret: data.clientSecret || undefined,
         oauthIssuerUrl: data.issuerUrl,
+        changedTab: 'oauth',
       })
+      await reloadTabFromServer('oauth')
+      setExternalUpdatesByTab((prev) => ({ ...prev, oauth: false }))
       toast.success('OAuth-Einstellungen gespeichert')
       oauthForm.setValue('clientSecret', '')
       router.refresh()
@@ -308,7 +424,7 @@ export function SettingsTabs({
 
   return (
     <Card className={'pt-0'}>
-      <Tabs className={'max-w-3xl lg:w-3xl'} defaultValue={'password'}>
+      <Tabs className={'max-w-3xl lg:w-3xl'} defaultValue={DEFAULT_TAB}>
         <TabsList className={'w-full'}>
           <TabsTrigger value={'password'}>
             <div className={'flex items-center justify-center gap-1 px-2'}>
@@ -345,7 +461,26 @@ export function SettingsTabs({
 
         <CardContent>
           {/* ===== PASSWORD TAB ===== */}
-          <TabsContent value={'password'}>
+          <TabsContent
+            value={'password'}
+            className={
+              externalUpdatesByTab.password
+                ? 'pointer-events-none opacity-60'
+                : undefined
+            }>
+            {externalUpdatesByTab.password && (
+              <div className="pointer-events-auto mb-4 opacity-100">
+                <ExternalUpdateAlert
+                  onReload={async () => {
+                    await reloadTabFromServer('password')
+                    setExternalUpdatesByTab((prev) => ({
+                      ...prev,
+                      password: false,
+                    }))
+                  }}
+                />
+              </div>
+            )}
             <div className={'flex items-center justify-between'}>
               <div className={'flex items-center gap-2 py-2'}>
                 <div>
@@ -411,7 +546,26 @@ export function SettingsTabs({
           </TabsContent>
 
           {/* ===== MICROSOFT TAB ===== */}
-          <TabsContent value={'microsoft'}>
+          <TabsContent
+            value={'microsoft'}
+            className={
+              externalUpdatesByTab.microsoft
+                ? 'pointer-events-none opacity-60'
+                : undefined
+            }>
+            {externalUpdatesByTab.microsoft && (
+              <div className="pointer-events-auto mb-4 opacity-100">
+                <ExternalUpdateAlert
+                  onReload={async () => {
+                    await reloadTabFromServer('microsoft')
+                    setExternalUpdatesByTab((prev) => ({
+                      ...prev,
+                      microsoft: false,
+                    }))
+                  }}
+                />
+              </div>
+            )}
             <div className={'flex items-center justify-between'}>
               <div className={'flex items-center gap-2 py-2'}>
                 <div>
@@ -560,7 +714,26 @@ export function SettingsTabs({
           </TabsContent>
 
           {/* ===== GITHUB TAB ===== */}
-          <TabsContent value={'github'}>
+          <TabsContent
+            value={'github'}
+            className={
+              externalUpdatesByTab.github
+                ? 'pointer-events-none opacity-60'
+                : undefined
+            }>
+            {externalUpdatesByTab.github && (
+              <div className="pointer-events-auto mb-4 opacity-100">
+                <ExternalUpdateAlert
+                  onReload={async () => {
+                    await reloadTabFromServer('github')
+                    setExternalUpdatesByTab((prev) => ({
+                      ...prev,
+                      github: false,
+                    }))
+                  }}
+                />
+              </div>
+            )}
             <div className={'flex items-center justify-between'}>
               <div className={'flex items-center gap-2 py-2'}>
                 <div>
@@ -688,7 +861,26 @@ export function SettingsTabs({
           </TabsContent>
 
           {/* ===== OAUTH TAB ===== */}
-          <TabsContent value={'oauth'}>
+          <TabsContent
+            value={'oauth'}
+            className={
+              externalUpdatesByTab.oauth
+                ? 'pointer-events-none opacity-60'
+                : undefined
+            }>
+            {externalUpdatesByTab.oauth && (
+              <div className="pointer-events-auto mb-4 opacity-100">
+                <ExternalUpdateAlert
+                  onReload={async () => {
+                    await reloadTabFromServer('oauth')
+                    setExternalUpdatesByTab((prev) => ({
+                      ...prev,
+                      oauth: false,
+                    }))
+                  }}
+                />
+              </div>
+            )}
             <div className={'flex items-center justify-between'}>
               <div className={'flex items-center gap-2 py-2'}>
                 <div>

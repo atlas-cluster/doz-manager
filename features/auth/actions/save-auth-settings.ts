@@ -1,12 +1,11 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { encrypt } from '@/features/auth/lib/encrypt'
 import { auth, reinitializeAuth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 type SaveAuthSettingsInput = {
   passwordEnabled: boolean
@@ -25,6 +24,7 @@ type SaveAuthSettingsInput = {
   oauthClientId?: string
   oauthClientSecret?: string
   oauthIssuerUrl?: string
+  changedTab?: 'password' | 'microsoft' | 'github' | 'oauth'
 }
 
 export async function saveAuthSettings(data: SaveAuthSettingsInput) {
@@ -145,7 +145,8 @@ export async function saveAuthSettings(data: SaveAuthSettingsInput) {
   // Re-create the BetterAuth instance with the new settings
   await reinitializeAuth()
 
-  updateTag('auth-settings')
-  updateTag('users')
-  publishScopeUpdate('users')
+  await notifyTagsUpdated(
+    ['auth-settings', 'users'],
+    `auth:save-auth-settings:${data.changedTab ?? 'unknown'}`
+  )
 }

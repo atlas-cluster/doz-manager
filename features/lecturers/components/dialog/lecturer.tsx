@@ -1,9 +1,10 @@
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import z from 'zod'
 
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
 import { Lecturer } from '@/features/lecturers/types'
+import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,
@@ -41,6 +42,9 @@ interface LecturerDialogProps {
   onSubmit?: (
     data: z.infer<typeof lecturerSchema>
   ) => Promise<unknown> | unknown
+  hasExternalUpdate?: boolean
+  onReloadFromServer?: () => Promise<unknown> | unknown
+  onEditingChange?: (editing: boolean) => void
 }
 
 export function LecturerDialog({
@@ -49,12 +53,30 @@ export function LecturerDialog({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   onSubmit,
+  hasExternalUpdate = false,
+  onReloadFromServer,
+  onEditingChange,
 }: LecturerDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
 
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
   const isEditing = !!lecturer
+  const wasEditingRef = useRef(false)
+
+  useEffect(() => {
+    if (!isEditing) return
+    if (open && !wasEditingRef.current) {
+      onEditingChange?.(true)
+      wasEditingRef.current = true
+      return
+    }
+
+    if (!open && wasEditingRef.current) {
+      onEditingChange?.(false)
+      wasEditingRef.current = false
+    }
+  }, [isEditing, onEditingChange, open])
 
   const form = useForm<z.infer<typeof lecturerSchema>>({
     resolver: zodResolver(lecturerSchema),
@@ -73,6 +95,9 @@ export function LecturerDialog({
   useEffect(() => {
     if (open) {
       if (lecturer) {
+        if (form.formState.isDirty) {
+          return
+        }
         form.reset({
           title: lecturer.title,
           firstName: lecturer.firstName,
@@ -113,6 +138,14 @@ export function LecturerDialog({
           id="lecturer-form"
           onSubmit={form.handleSubmit(handleSubmit)}
           className={'space-y-3'}>
+          {isEditing && hasExternalUpdate && (
+            <ExternalUpdateAlert
+              onReload={async () => {
+                form.reset()
+                await onReloadFromServer?.()
+              }}
+            />
+          )}
           <FieldGroup>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
@@ -320,7 +353,7 @@ export function LecturerDialog({
               />
             </div>
             <DialogFooter>
-              <Button type="submit">
+              <Button type="submit" disabled={isEditing && hasExternalUpdate}>
                 {isEditing ? 'Speichern' : 'Erstellen'}
               </Button>
             </DialogFooter>

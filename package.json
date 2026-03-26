@@ -17,6 +17,7 @@
     "prisma:seed": "prisma db seed",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:reset": "prisma migrate reset",
+    "reset": "rm -rf .next/ && prisma generate && docker compose down -v && docker compose up -d && sleep 10s && prisma migrate reset --force && prisma db seed && npm run dev",
     "prepare": "husky"
   },
   "dependencies": {
@@ -44,6 +45,7 @@
     "react-dom": "19.2.4",
     "react-hook-form": "^7.70.0",
     "react-phone-number-input": "^3.4.14",
+    "redis": "^5.10.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.5"

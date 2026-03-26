@@ -1,9 +1,7 @@
 'use server'
 
-import { updateTag } from 'next/cache'
-
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
-import { publishScopeUpdate } from '@/features/shared/lib/update-stream'
 
 export async function deleteCourses(ids: string[]) {
   await prisma.course.deleteMany({
@@ -14,6 +12,9 @@ export async function deleteCourses(ids: string[]) {
     },
   })
 
-  updateTag('courses')
-  publishScopeUpdate('courses')
+  await notifyTagsUpdated(
+    ['courses'],
+    'courses:delete-courses',
+    ids.map((id) => ({ entityType: 'course' as const, entityId: id }))
+  )
 }

@@ -22,6 +22,11 @@ export interface LecturerTableMeta {
   deleteLecturer: (id: string) => void
   deleteLecturers: (ids: string[]) => void
   refreshLecturers: () => void
+  beginEditingLecturer?: (id: string) => void
+  stopEditingLecturer?: (id: string) => void
+  reloadEditingLecturer?: () => void
+  editingLecturerId?: string | null
+  hasExternalUpdateForEditing?: boolean
 }
 
 export interface GetLecturersParams {
