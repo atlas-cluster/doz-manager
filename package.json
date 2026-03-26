@@ -17,6 +17,7 @@
     "prisma:seed": "prisma db seed",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:reset": "prisma migrate reset",
+    "reset": "rm -rf .next/ && prisma generate && docker compose down -v && docker compose up -d && sleep 10s && prisma migrate reset --force && prisma db seed && npm run dev",
     "prepare": "husky"
   },
   "dependencies": {
