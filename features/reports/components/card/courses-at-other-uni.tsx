@@ -35,7 +35,7 @@ export function ReportCardCoursesAtOtherUni({
   qualifications: GetCoursesAtOtherUniResponse
 }) {
   const lecturerCount = Object.keys(qualifications).length
-  const courseCount = Object.values(qualifications).flat().length
+  const courseCount = new Set(Object.values(qualifications).flat()).size
 
   const handleExportAsPDF = async () => {
     const { doc, contentStartY } = await generatePDF(
@@ -50,6 +50,9 @@ export function ReportCardCoursesAtOtherUni({
         lecturer,
         courses.join(', '),
       ]),
+      columnStyles: {
+        0: { minCellWidth: 40 },
+      },
     })
 
     doc.save('vorlesungen-an-anderen-universitaeten.pdf')

@@ -25,11 +25,16 @@ async function getCoursesAtProvadis(): Promise<GetCoursesAtProvadisResponse> {
         },
       },
     },
+    orderBy: {
+      lastName: 'asc',
+    },
   })
 
   return response.reduce((acc, lecturer) => {
     const lecturerName = `${lecturer.title ? lecturer.title + ' ' : ''}${lecturer.firstName} ${lecturer.lastName}`
-    const courses = lecturer.qualifications.map((q) => q.course.name)
+    const courses = lecturer.qualifications
+      .map((q) => q.course.name)
+      .sort((a, b) => a.localeCompare(b))
     acc[lecturerName] = courses
     return acc
   }, {} as GetCoursesAtProvadisResponse)
@@ -50,11 +55,16 @@ async function getCoursesAtOtherUni(): Promise<GetCoursesAtOtherUniResponse> {
         },
       },
     },
+    orderBy: {
+      lastName: 'asc',
+    },
   })
 
   return response.reduce((acc, lecturer) => {
     const lecturerName = `${lecturer.title ? lecturer.title + ' ' : ''}${lecturer.firstName} ${lecturer.lastName}`
-    const courses = lecturer.qualifications.map((q) => q.course.name)
+    const courses = lecturer.qualifications
+      .map((q) => q.course.name)
+      .sort((a, b) => a.localeCompare(b))
     acc[lecturerName] = courses
     return acc
   }, {} as GetCoursesAtOtherUniResponse)
@@ -69,7 +79,7 @@ async function getCoursesWithoutProvadisExperience(): Promise<GetCoursesWithoutP
     },
     select: { name: true },
   })
-  return courses.map((c) => c.name)
+  return courses.map((c) => c.name).sort((a, b) => a.localeCompare(b))
 }
 
 async function getCoursesWithoutLecturer(): Promise<GetCoursesWithoutProvadisExperienceResponse> {
@@ -81,7 +91,7 @@ async function getCoursesWithoutLecturer(): Promise<GetCoursesWithoutProvadisExp
     },
     select: { name: true },
   })
-  return courses.map((c) => c.name)
+  return courses.map((c) => c.name).sort((a, b) => a.localeCompare(b))
 }
 
 async function getCardDataInternal(): Promise<CardData> {
