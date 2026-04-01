@@ -93,7 +93,7 @@ function parseToolArguments(jsonString: string): Record<string, unknown> {
   }
 }
 
-function getOpenAIProxyUrl(): string | undefined {
+function getProxyUrl(): string | undefined {
   const rawValue =
     process.env.OPENAI_PROXY_URL ??
     process.env.HTTPS_PROXY ??
@@ -116,7 +116,7 @@ async function callOpenAI(messages: OpenAIMessage[]) {
   const baseUrl = process.env.OPENAI_BASE_URL ?? DEFAULT_OPENAI_BASE_URL
   const model = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL
   const apiKey = process.env.OPENAI_API_KEY
-  const proxyUrl = getOpenAIProxyUrl()
+  const proxyUrl = getProxyUrl()
 
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is not configured.')
