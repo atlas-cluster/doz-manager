@@ -1,6 +1,6 @@
 'use client'
 
-import { ShieldAlert } from 'lucide-react'
+import { Crown } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -91,7 +91,7 @@ export function AppHeader({ isAdmin }: AppHeaderProps) {
         </h1>
         {isAdmin && (
           <Badge className="flex w-fit items-center gap-1">
-            <ShieldAlert className="size-3" />
+            <Crown className="size-4" />
             Admin
           </Badge>
         )}

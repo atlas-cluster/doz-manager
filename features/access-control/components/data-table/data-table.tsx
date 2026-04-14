@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, RefreshCwIcon, ShieldCheck, User, XIcon } from 'lucide-react'
+import { Crown, Plus, RefreshCwIcon, User, XIcon } from 'lucide-react'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -489,7 +489,7 @@ export function DataTable({
               {
                 value: 'true',
                 label: 'Admin',
-                icon: ShieldCheck,
+                icon: Crown,
               },
               {
                 value: 'false',
