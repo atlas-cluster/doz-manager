@@ -36,6 +36,7 @@ function renderWithSidebar(user: SidebarUser = testUser) {
     <SidebarProvider>
       <SidebarUserMenu
         user={user}
+        isAdmin={false}
         authSettings={{
           passwordEnabled: true,
           passkeyEnabled: true,

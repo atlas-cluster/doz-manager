@@ -62,13 +62,11 @@ const getInitials = (name: string) => {
 type SidebarUserMenuProps = {
   user: SidebarUser
   authSettings: PublicAuthSettings
-  isAdmin: boolean
 }
 
 export function SidebarUserMenu({
   user: initialUser,
   authSettings,
-  isAdmin,
 }: SidebarUserMenuProps) {
   const router = useRouter()
   const { isMobile } = useSidebar()
@@ -121,9 +119,7 @@ export function SidebarUserMenu({
                   </Avatar>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-medium">{user.name}</span>
-                  </div>
+                  <span className="truncate font-medium">{user.name}</span>
                   <span className="text-muted-foreground truncate text-xs">
                     {user.email}
                   </span>
