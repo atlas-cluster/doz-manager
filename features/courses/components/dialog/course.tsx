@@ -1,12 +1,13 @@
 'use client'
 
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { courseSchema } from '@/features/courses/schemas/course'
 import { Course } from '@/features/courses/types'
 import { NumberInput } from '@/features/shared/components/number-input'
+import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,
@@ -39,6 +40,9 @@ interface CourseDialogProps {
   open?: boolean
   onOpenChange?: (open: boolean) => void
   onSubmit?: (data: z.infer<typeof courseSchema>) => Promise<unknown> | unknown
+  hasExternalUpdate?: boolean
+  onReloadFromServer?: () => Promise<unknown> | unknown
+  onEditingChange?: (editing: boolean) => void
 }
 
 export function CourseDialog({
@@ -47,12 +51,30 @@ export function CourseDialog({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   onSubmit,
+  hasExternalUpdate = false,
+  onReloadFromServer,
+  onEditingChange,
 }: CourseDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false)
 
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
   const isEditing = !!course
+  const wasEditingRef = useRef(false)
+
+  useEffect(() => {
+    if (!isEditing) return
+    if (open && !wasEditingRef.current) {
+      onEditingChange?.(true)
+      wasEditingRef.current = true
+      return
+    }
+
+    if (!open && wasEditingRef.current) {
+      onEditingChange?.(false)
+      wasEditingRef.current = false
+    }
+  }, [isEditing, onEditingChange, open])
 
   const form = useForm<z.infer<typeof courseSchema>>({
     resolver: zodResolver(courseSchema),
@@ -67,6 +89,9 @@ export function CourseDialog({
   useEffect(() => {
     if (open) {
       if (course) {
+        if (form.formState.isDirty) {
+          return
+        }
         form.reset({
           name: course.name,
           isOpen: course.isOpen,
@@ -103,6 +128,14 @@ export function CourseDialog({
           id="course-form"
           onSubmit={form.handleSubmit(handleSubmit)}
           className={'space-y-3'}>
+          {isEditing && hasExternalUpdate && (
+            <ExternalUpdateAlert
+              onReload={async () => {
+                form.reset()
+                await onReloadFromServer?.()
+              }}
+            />
+          )}
           <FieldGroup>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
@@ -228,7 +261,7 @@ export function CourseDialog({
             </div>
 
             <div className="mt-4 flex justify-end">
-              <Button type="submit">
+              <Button type="submit" disabled={isEditing && hasExternalUpdate}>
                 {isEditing ? 'Speichern' : 'Erstellen'}
               </Button>
             </div>

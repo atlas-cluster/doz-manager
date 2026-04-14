@@ -1,10 +1,10 @@
 'use server'
 
 import { hashPassword } from 'better-auth/crypto'
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function changeUserPassword(userId: string, newPassword: string) {
@@ -36,5 +36,7 @@ export async function changeUserPassword(userId: string, newPassword: string) {
     data: { password: hashedPassword },
   })
 
-  updateTag('users')
+  await notifyTagsUpdated(['users'], 'access-control:change-user-password', [
+    { entityType: 'user', entityId: userId },
+  ])
 }

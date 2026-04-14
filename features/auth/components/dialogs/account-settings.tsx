@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { invalidateUsersCache } from '@/features/access-control/actions/invalidate-users-cache'
+import { getProfile } from '@/features/auth/actions/get-profile'
 import { deleteAccount } from '@/features/auth/actions/delete-account'
 import { getBackupCodeCount } from '@/features/auth/actions/get-backup-code-count'
 import { updateProfile } from '@/features/auth/actions/update-profile'
@@ -27,6 +28,8 @@ import { TwoFactorSetupDialog } from '@/features/auth/components/dialogs/two-fac
 import { formatBackupCodes } from '@/features/auth/lib/backup-code-format'
 import { authClient } from '@/features/auth/lib/client'
 import { AccountUser, PublicAuthSettings } from '@/features/auth/types'
+import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
+import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
 import {
   Avatar,
   AvatarFallback,
@@ -109,6 +112,7 @@ export function AccountSettings({
   const [isDeleting, setIsDeleting] = useState(false)
   const [showPasskeyManagementDialog, setShowPasskeyManagementDialog] =
     useState(false)
+  const [hasExternalUpdate, setHasExternalUpdate] = useState(false)
   const {
     data: passkeys,
     isPending: isPasskeysPending,
@@ -131,6 +135,51 @@ export function AccountSettings({
       ...overrides,
     })
   }
+
+  const reloadCurrentUserData = async () => {
+    const profile = await getProfile()
+    if (!profile.user) {
+      throw new Error(
+        profile.error ?? 'Profil konnte nicht neu geladen werden.'
+      )
+    }
+
+    const nextUser: AccountUser = {
+      id: profile.user.id,
+      name: profile.user.name,
+      email: profile.user.email,
+      image: profile.user.image,
+      twoFactorEnabled: profile.user.twoFactorEnabled,
+    }
+
+    twoFactorEnabledRef.current = nextUser.twoFactorEnabled
+    setSaved(nextUser)
+    setTwoFactorEnabled(nextUser.twoFactorEnabled)
+    onUserChange?.(nextUser)
+    await refetchPasskeys()
+
+    if (nextUser.twoFactorEnabled) {
+      await refreshBackupCodeCount()
+    } else {
+      setBackupCodeCount(0)
+    }
+
+    setHasExternalUpdate(false)
+  }
+
+  useLiveChanges({
+    tags: ['users'],
+    onChangeAction: (event) => {
+      const isOwnUserChanged = event.entities?.some(
+        (entity) => entity.entityType === 'user' && entity.entityId === saved.id
+      )
+
+      if (isOwnUserChanged) {
+        setHasExternalUpdate(true)
+      }
+    },
+    ignoreOwnChanges: true,
+  })
 
   // Refetch passkeys on mount so the dialog always shows fresh data
   // (e.g. after an admin removed passkeys via access-control).
@@ -427,7 +476,19 @@ export function AccountSettings({
 
   return (
     <>
-      <Tabs defaultValue="profile" className="w-full">
+      {hasExternalUpdate && (
+        <div className="mb-2">
+          <ExternalUpdateAlert
+            onReload={async () => {
+              await reloadCurrentUserData()
+            }}
+          />
+        </div>
+      )}
+
+      <Tabs
+        defaultValue="profile"
+        className={`w-full ${hasExternalUpdate ? 'pointer-events-none opacity-60' : ''}`}>
         <TabsList className="w-full">
           <TabsTrigger value="profile" className="flex-1 gap-1.5">
             <UserIcon className="size-4" />
@@ -839,6 +900,7 @@ export function AccountSettings({
       <PasskeyManagementDialog
         open={showPasskeyManagementDialog}
         onOpenChangeAction={setShowPasskeyManagementDialog}
+        currentUserId={saved.id}
         onPasskeyCountChangeAction={(count) => {
           emitUserProfileUpdated({ hasPasskey: count > 0 })
         }}

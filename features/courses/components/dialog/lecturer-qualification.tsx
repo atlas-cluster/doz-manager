@@ -10,7 +10,7 @@ import {
   XCircle,
   XIcon,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import z from 'zod'
 
@@ -22,6 +22,7 @@ import { Course, CourseQualification } from '@/features/courses/types'
 import { Lecturer, getLecturers } from '@/features/lecturers'
 import { qualificationSchema } from '@/features/lecturers'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
+import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
 import {
@@ -54,6 +55,9 @@ interface LecturerQualificationDialogProps {
   course: Course
   open: boolean
   onOpenChange: (open: boolean) => void
+  hasExternalUpdate?: boolean
+  onReloadFromServer?: () => Promise<unknown> | unknown
+  onEditingChange?: (editing: boolean) => void
 }
 
 function lecturerDisplayName(lecturer: Lecturer): string {
@@ -71,6 +75,9 @@ export function LecturerQualificationDialog({
   course,
   open,
   onOpenChange,
+  hasExternalUpdate = false,
+  onReloadFromServer,
+  onEditingChange,
 }: LecturerQualificationDialogProps) {
   const [lecturers, setLecturers] = useState<Lecturer[]>([])
   const [lecturerQualifications, setLecturerQualifications] = useState<
@@ -91,27 +98,43 @@ export function LecturerQualificationDialog({
   )
   const [leadTimeFilter, setLeadTimeFilter] = useState<LeadTimeOption[]>([])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const [lecturersResponse, qualificationResponse] = await Promise.all([
-          getLecturers({ pageIndex: 0, pageSize: 999999999 }),
-          getCourseLecturerQualifications(course.id),
-        ])
-        setLecturers(lecturersResponse.data)
-        setLecturerQualifications(qualificationResponse)
-        setEditedLecturerQualifications(qualificationResponse)
-      } catch (error) {
-        console.error('Failed to fetch data', error)
-        toast.error('Daten konnten nicht geladen werden')
-      } finally {
-        setLoading(false)
-      }
-    }
-    if (open) {
-      fetchData()
+  const loadDialogData = async () => {
+    setLoading(true)
+    try {
+      const [lecturersResponse, qualificationResponse] = await Promise.all([
+        getLecturers({ pageIndex: 0, pageSize: 999999999 }),
+        getCourseLecturerQualifications(course.id),
+      ])
+      setLecturers(lecturersResponse.data)
+      setLecturerQualifications(qualificationResponse)
+      setEditedLecturerQualifications(qualificationResponse)
       setSearchQuery('')
+    } catch (error) {
+      console.error('Failed to fetch data', error)
+      toast.error('Daten konnten nicht geladen werden')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const wasEditingRef = useRef(false)
+
+  useEffect(() => {
+    if (open && !wasEditingRef.current) {
+      onEditingChange?.(true)
+      wasEditingRef.current = true
+      return
+    }
+
+    if (!open && wasEditingRef.current) {
+      onEditingChange?.(false)
+      wasEditingRef.current = false
+    }
+  }, [onEditingChange, open])
+
+  useEffect(() => {
+    if (open) {
+      void loadDialogData()
     }
   }, [course.id, open])
 
@@ -194,6 +217,8 @@ export function LecturerQualificationDialog({
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
+    onEditingChange?.(false)
+    let shouldRestoreEditingContext = true
 
     const qualificationsToCreate = editedLecturerQualifications.filter(
       (editedQualification) => {
@@ -233,19 +258,25 @@ export function LecturerQualificationDialog({
       ])
     })()
 
-    toast.promise(savePromise, {
-      loading: 'Qualifikationen werden gespeichert...',
-      success: () => {
-        setIsSubmitting(false)
-        onOpenChange(false)
-        return 'Qualifikationen erfolgreich gespeichert'
-      },
-      error: (err) => {
-        setIsSubmitting(false)
-        console.error('Failed to save qualifications', err)
-        return 'Qualifikationen konnten nicht gespeichert werden'
-      },
-    })
+    try {
+      await toast.promise(savePromise, {
+        loading: 'Qualifikationen werden gespeichert...',
+        success: 'Qualifikationen erfolgreich gespeichert',
+        error: (err) => {
+          console.error('Failed to save qualifications', err)
+          return 'Qualifikationen konnten nicht gespeichert werden'
+        },
+      })
+      onOpenChange(false)
+      shouldRestoreEditingContext = false
+    } catch {
+      // Toast already shows the error.
+    } finally {
+      setIsSubmitting(false)
+      if (shouldRestoreEditingContext) {
+        onEditingChange?.(true)
+      }
+    }
   }
 
   const handleEditQualificationDialogSubmit = (
@@ -304,6 +335,14 @@ export function LecturerQualificationDialog({
           </DialogDescription>
         </DialogHeader>
         <div className={'flex min-h-0 flex-1 flex-col gap-3'}>
+          {hasExternalUpdate && (
+            <ExternalUpdateAlert
+              onReload={async () => {
+                await onReloadFromServer?.()
+                await loadDialogData()
+              }}
+            />
+          )}
           {loading ? (
             <>
               <div className="flex flex-wrap items-center gap-2">
@@ -524,11 +563,11 @@ export function LecturerQualificationDialog({
           <DialogClose asChild>
             <Button variant="outline">{'Abbrechen'}</Button>
           </DialogClose>
-          {
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              Speichern
-            </Button>
-          }
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || hasExternalUpdate}>
+            Speichern
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

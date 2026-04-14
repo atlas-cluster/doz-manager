@@ -1,9 +1,9 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { z } from 'zod'
 
 import { courseSchema } from '@/features/courses/schemas/course'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function updateCourse(
@@ -20,5 +20,7 @@ export async function updateCourse(
     },
   })
 
-  updateTag('courses')
+  await notifyTagsUpdated(['courses'], 'courses:update-course', [
+    { entityType: 'course', entityId: id },
+  ])
 }

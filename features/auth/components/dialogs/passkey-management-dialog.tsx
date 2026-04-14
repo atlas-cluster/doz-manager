@@ -27,6 +27,7 @@ import { Spinner } from '@/features/shared/components/ui/spinner'
 type PasskeyManagementDialogProps = {
   open: boolean
   onOpenChangeAction: (open: boolean) => void
+  currentUserId: string
   onPasskeyCountChangeAction?: (count: number) => void
 }
 
@@ -39,6 +40,7 @@ type PasskeyListItem = {
 export function PasskeyManagementDialog({
   open,
   onOpenChangeAction,
+  currentUserId,
   onPasskeyCountChangeAction,
 }: PasskeyManagementDialogProps) {
   const [isAddingPasskey, setIsAddingPasskey] = useState(false)
@@ -93,7 +95,7 @@ export function PasskeyManagementDialog({
       }
 
       const refetchResult = await refetchPasskeys()
-      await invalidateUsersCache()
+      await invalidateUsersCache(currentUserId)
       onPasskeyCountChangeAction?.(
         getRefetchedPasskeyCount(refetchResult, passkeyItems.length + 1)
       )
@@ -115,6 +117,7 @@ export function PasskeyManagementDialog({
     }
 
     setIsRevokingPasskey(true)
+    let deleted = false
     try {
       const { error } = await authClient.passkey.deletePasskey({
         id: selectedPasskey.id,
@@ -125,19 +128,37 @@ export function PasskeyManagementDialog({
         return
       }
 
-      const refetchResult = await refetchPasskeys()
-      await invalidateUsersCache()
-      onPasskeyCountChangeAction?.(
-        getRefetchedPasskeyCount(
-          refetchResult,
-          Math.max(passkeyItems.length - 1, 0)
+      deleted = true
+
+      // Run refetch and cache invalidation in parallel so that a refetch
+      // failure cannot prevent the live-update event from being published.
+      const [refetchSettled, invalidateSettled] = await Promise.allSettled([
+        refetchPasskeys(),
+        invalidateUsersCache(currentUserId),
+      ])
+
+      if (invalidateSettled.status === 'rejected') {
+        console.error(
+          'Failed to invalidate users cache after passkey revoke:',
+          invalidateSettled.reason
         )
+      }
+
+      onPasskeyCountChangeAction?.(
+        refetchSettled.status === 'fulfilled'
+          ? getRefetchedPasskeyCount(
+              refetchSettled.value,
+              Math.max(passkeyItems.length - 1, 0)
+            )
+          : Math.max(passkeyItems.length - 1, 0)
       )
       toast.success('Passkey wurde widerrufen.')
-      setShowRevokeDialog(false)
-      setSelectedPasskey(null)
     } finally {
       setIsRevokingPasskey(false)
+      if (deleted) {
+        setShowRevokeDialog(false)
+        setSelectedPasskey(null)
+      }
     }
   }
 

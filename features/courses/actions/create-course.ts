@@ -1,9 +1,9 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { z } from 'zod'
 
 import { courseSchema } from '@/features/courses/schemas/course'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function createCourse(data: z.infer<typeof courseSchema>) {
@@ -16,5 +16,5 @@ export async function createCourse(data: z.infer<typeof courseSchema>) {
     },
   })
 
-  updateTag('courses')
+  await notifyTagsUpdated(['courses'], 'courses:create-course')
 }

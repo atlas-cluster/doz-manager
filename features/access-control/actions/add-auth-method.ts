@@ -2,10 +2,10 @@
 
 import { createId } from '@paralleldrive/cuid2'
 import { hashPassword } from 'better-auth/crypto'
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 /**
@@ -63,5 +63,7 @@ export async function addAuthMethod(userId: string, password: string) {
     },
   })
 
-  updateTag('users')
+  await notifyTagsUpdated(['users'], 'access-control:add-auth-method', [
+    { entityType: 'user', entityId: userId },
+  ])
 }

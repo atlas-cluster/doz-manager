@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 import {
   type SidebarUser,
@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from '@/features/shared/components/ui/sidebar'
+import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
 
 const navItems = [
   { url: '/lecturers', icon: UsersIcon, adminOnly: false },
@@ -45,6 +46,15 @@ type AppSidebarProps = {
 
 export function AppSidebar({ user, isAdmin, authSettings }: AppSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+
+  useLiveChanges({
+    tags: ['users'],
+    onChangeAction: () => {
+      router.refresh()
+    },
+    ignoreOwnChanges: true,
+  })
 
   const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin)
 

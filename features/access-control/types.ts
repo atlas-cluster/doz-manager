@@ -30,6 +30,11 @@ export interface AccessControlTableMeta {
   removePasskeys: (userId: string) => void
   refreshUsers: () => void
   enabledMethods?: PublicAuthSettings
+  beginEditingUser?: (id: string) => void
+  stopEditingUser?: (id: string) => void
+  reloadEditingUser?: () => void
+  editingUserId?: string | null
+  hasExternalUpdateForEditing?: boolean
 }
 
 export interface GetUsersParams {

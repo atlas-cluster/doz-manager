@@ -1,9 +1,9 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { z } from 'zod'
 
 import { lecturerSchema } from '@/features/lecturers/schemas/lecturer'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function createLecturer(data: z.infer<typeof lecturerSchema>) {
@@ -20,5 +20,5 @@ export async function createLecturer(data: z.infer<typeof lecturerSchema>) {
     },
   })
 
-  updateTag('lecturers')
+  await notifyTagsUpdated(['lecturers'], 'lecturers:create-lecturer')
 }

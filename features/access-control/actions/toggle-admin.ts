@@ -1,9 +1,9 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function toggleAdmin(userId: string, isAdmin: boolean) {
@@ -33,5 +33,7 @@ export async function toggleAdmin(userId: string, isAdmin: boolean) {
     data: { isAdmin },
   })
 
-  updateTag('users')
+  await notifyTagsUpdated(['users'], 'access-control:toggle-admin', [
+    { entityType: 'user', entityId: userId },
+  ])
 }

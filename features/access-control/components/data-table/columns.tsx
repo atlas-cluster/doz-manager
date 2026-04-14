@@ -188,6 +188,16 @@ function ActionsCell({
         open={editOpen}
         onOpenChange={setEditOpen}
         onSubmit={(payload) => meta?.updateUser?.(user.id, payload)}
+        onEditingChange={(editing) =>
+          editing
+            ? meta?.beginEditingUser?.(user.id)
+            : meta?.stopEditingUser?.(user.id)
+        }
+        hasExternalUpdate={
+          meta?.editingUserId === user.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        }
+        onReloadFromServer={() => meta?.reloadEditingUser?.()}
       />
       <ChangePasswordDialog
         userName={user.name}

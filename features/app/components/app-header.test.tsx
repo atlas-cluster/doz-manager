@@ -1,11 +1,13 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AppHeader } from '@/features/app/components/app-header'
 import { SidebarProvider } from '@/features/shared/components/ui/sidebar'
 import { cleanup, render, screen } from '@testing-library/react'
 
+let mockPathname = '/lecturers'
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/lecturers',
+  usePathname: () => mockPathname,
+  useRouter: () => ({}),
 }))
 
 function renderWithProviders(props: { isAdmin?: boolean } = {}) {
@@ -17,8 +19,15 @@ function renderWithProviders(props: { isAdmin?: boolean } = {}) {
 }
 
 describe('AppHeader', () => {
+  beforeEach(() => {
+    window.sessionStorage.clear()
+    mockPathname = '/lecturers'
+    vi.spyOn(window.crypto, 'randomUUID').mockReturnValue('tab-connection-1')
+  })
+
   afterEach(() => {
     cleanup()
+    vi.unstubAllGlobals()
   })
 
   it('should render the formatted route name', () => {
@@ -45,5 +54,19 @@ describe('AppHeader', () => {
     renderWithProviders({ isAdmin: false })
 
     expect(screen.queryByText('Admin')).not.toBeInTheDocument()
+    
+  it('should render a different route name for courses', () => {
+    mockPathname = '/courses'
+    renderWithProviders()
+
+    expect(screen.getByText('Vorlesungen')).toBeInTheDocument()
+  })
+
+  it('should store the connection ID in session storage', () => {
+    renderWithProviders()
+
+    expect(window.sessionStorage.getItem('doz-client-connection-id')).toBe(
+      'tab-connection-1'
+    )
   })
 })

@@ -1,9 +1,9 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 /**
@@ -50,5 +50,7 @@ export async function removePasskeys(userId: string) {
 
   await prisma.passkey.deleteMany({ where: { userId } })
 
-  updateTag('users')
+  await notifyTagsUpdated(['users'], 'access-control:remove-passkeys', [
+    { entityType: 'user', entityId: userId },
+  ])
 }

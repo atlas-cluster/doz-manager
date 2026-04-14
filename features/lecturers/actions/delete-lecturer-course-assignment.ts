@@ -1,7 +1,6 @@
 'use server'
 
-import { updateTag } from 'next/cache'
-
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function deleteLecturerCourseAssignment(
@@ -17,8 +16,17 @@ export async function deleteLecturerCourseAssignment(
     },
   })
 
-  updateTag('lecturers')
-  updateTag('courses')
-  updateTag(`lecturer-${lecturerId}-courses`)
-  updateTag(`course-${courseId}-lecturers`)
+  await notifyTagsUpdated(
+    [
+      'lecturers',
+      'courses',
+      `lecturer-${lecturerId}-courses`,
+      `course-${courseId}-lecturers`,
+    ],
+    'lecturers:delete-lecturer-course-assignment',
+    [
+      { entityType: 'lecturer', entityId: lecturerId },
+      { entityType: 'course', entityId: courseId },
+    ]
+  )
 }

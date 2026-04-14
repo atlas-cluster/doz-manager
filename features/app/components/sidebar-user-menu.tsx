@@ -75,6 +75,10 @@ export function SidebarUserMenu({
   const [isAccountOpen, setIsAccountOpen] = useState(false)
 
   useEffect(() => {
+    setUser(initialUser)
+  }, [initialUser])
+
+  useEffect(() => {
     const handler = (event: Event) => {
       const { detail } = event as CustomEvent<UserProfileUpdatedDetail>
       if (!detail) return

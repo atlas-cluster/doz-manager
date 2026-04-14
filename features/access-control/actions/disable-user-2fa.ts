@@ -1,9 +1,9 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function disableUser2FA(userId: string) {
@@ -33,5 +33,7 @@ export async function disableUser2FA(userId: string) {
     data: { twoFactorEnabled: false },
   })
 
-  updateTag('users')
+  await notifyTagsUpdated(['users'], 'access-control:disable-user-2fa', [
+    { entityType: 'user', entityId: userId },
+  ])
 }

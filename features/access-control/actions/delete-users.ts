@@ -1,9 +1,9 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function deleteUsers(ids: string[]) {
@@ -36,5 +36,9 @@ export async function deleteUsers(ids: string[]) {
     },
   })
 
-  updateTag('users')
+  await notifyTagsUpdated(
+    ['users'],
+    'access-control:delete-users',
+    ids.map((id) => ({ entityType: 'user' as const, entityId: id }))
+  )
 }

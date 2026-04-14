@@ -59,9 +59,12 @@ describe('getCardData', () => {
             },
           },
         },
+        orderBy: {
+          lastName: 'asc',
+        },
       })
       expect(result.coursesAtProvadis).toEqual({
-        'Dr. Max Mustermann': ['Mathematik', 'Informatik'],
+        'Dr. Max Mustermann': ['Informatik', 'Mathematik'],
         'Anna Schmidt': ['Physik'],
       })
     })
@@ -190,8 +193,8 @@ describe('getCardData', () => {
       const result = await getCardData()
 
       expect(result.coursesWithoutLecturer).toEqual([
-        'Philosophie',
         'Geschichte',
+        'Philosophie',
       ])
     })
 

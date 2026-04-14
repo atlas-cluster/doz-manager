@@ -1,9 +1,9 @@
 'use server'
 
-import { updateTag } from 'next/cache'
 import { headers } from 'next/headers'
 
 import { auth } from '@/features/auth/lib/auth'
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function removeAuthMethod(userId: string, providerId: string) {
@@ -57,5 +57,7 @@ export async function removeAuthMethod(userId: string, providerId: string) {
     where: { userId, providerId },
   })
 
-  updateTag('users')
+  await notifyTagsUpdated(['users'], 'access-control:remove-auth-method', [
+    { entityType: 'user', entityId: userId },
+  ])
 }

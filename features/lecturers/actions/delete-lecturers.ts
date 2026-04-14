@@ -1,7 +1,6 @@
 'use server'
 
-import { updateTag } from 'next/cache'
-
+import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
 
 export async function deleteLecturers(ids: string[]) {
@@ -13,5 +12,9 @@ export async function deleteLecturers(ids: string[]) {
     },
   })
 
-  updateTag('lecturers')
+  await notifyTagsUpdated(
+    ['lecturers'],
+    'lecturers:delete-lecturers',
+    ids.map((id) => ({ entityType: 'lecturer' as const, entityId: id }))
+  )
 }
