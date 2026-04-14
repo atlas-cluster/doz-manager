@@ -1,6 +1,6 @@
 'use client'
 
-import { BathIcon, LogOutIcon, SettingsIcon } from 'lucide-react'
+import { LogOutIcon, SettingsIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
