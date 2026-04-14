@@ -10,7 +10,14 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react'
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { toast } from 'sonner'
 
 import { getCourseLecturerAssignments } from '@/features/courses/actions/get-course-lecturer-assignments'
@@ -150,29 +157,32 @@ export function LecturerAssignmentDialog({
     void loadDialogData()
   }, [open, course.id])
 
-  const filterLecturer = (
-    lecturer: Lecturer,
-    opts: { skipExperience?: boolean; skipLeadTime?: boolean } = {}
-  ): boolean => {
-    if (debouncedSearchQuery) {
-      const fullName = lecturerDisplayName(lecturer).toLowerCase()
-      if (!fullName.includes(debouncedSearchQuery.toLowerCase())) return false
-    }
-    const lq = qualifications.find((q) => q.lecturerId === lecturer.id)
-    if (
-      !opts.skipExperience &&
-      experienceFilter.length > 0 &&
-      (!lq || !experienceFilter.includes(lq.experience))
-    )
-      return false
-    if (
-      !opts.skipLeadTime &&
-      leadTimeFilter.length > 0 &&
-      (!lq || !leadTimeFilter.includes(lq.leadTime))
-    )
-      return false
-    return true
-  }
+  const filterLecturer = useCallback(
+    (
+      lecturer: Lecturer,
+      opts: { skipExperience?: boolean; skipLeadTime?: boolean } = {}
+    ): boolean => {
+      if (debouncedSearchQuery) {
+        const fullName = lecturerDisplayName(lecturer).toLowerCase()
+        if (!fullName.includes(debouncedSearchQuery.toLowerCase())) return false
+      }
+      const lq = qualifications.find((q) => q.lecturerId === lecturer.id)
+      if (
+        !opts.skipExperience &&
+        experienceFilter.length > 0 &&
+        (!lq || !experienceFilter.includes(lq.experience))
+      )
+        return false
+      if (
+        !opts.skipLeadTime &&
+        leadTimeFilter.length > 0 &&
+        (!lq || !leadTimeFilter.includes(lq.leadTime))
+      )
+        return false
+      return true
+    },
+    [debouncedSearchQuery, qualifications, experienceFilter, leadTimeFilter]
+  )
 
   const experienceCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -184,7 +194,7 @@ export function LecturerAssignmentDialog({
       }
     })
     return map
-  }, [lecturers, qualifications, debouncedSearchQuery, leadTimeFilter])
+  }, [lecturers, filterLecturer])
 
   const leadTimeCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -196,17 +206,11 @@ export function LecturerAssignmentDialog({
       }
     })
     return map
-  }, [lecturers, qualifications, debouncedSearchQuery, experienceFilter])
+  }, [lecturers, filterLecturer])
 
   const filteredLecturers = useMemo(() => {
     return lecturers.filter((lecturer) => filterLecturer(lecturer))
-  }, [
-    lecturers,
-    qualifications,
-    debouncedSearchQuery,
-    experienceFilter,
-    leadTimeFilter,
-  ])
+  }, [lecturers, filterLecturer])
 
   const toggleAssignment = (lecturer: Lecturer) => {
     const isAssigned = assignments.some((a) => a.id === lecturer.id)

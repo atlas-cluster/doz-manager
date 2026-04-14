@@ -10,7 +10,7 @@ import {
   XCircle,
   XIcon,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import z from 'zod'
 
@@ -128,34 +128,45 @@ export function CourseQualificationDialog({
     }
   }, [lecturer.id, open])
 
-  const filterCourse = (
-    course: Course,
-    opts: {
-      skipStatus?: boolean
-      skipExperience?: boolean
-      skipLeadTime?: boolean
-    } = {}
-  ): boolean => {
-    if (debouncedSearchQuery) {
-      const searchLower = debouncedSearchQuery.toLowerCase()
-      if (!course.name.toLowerCase().includes(searchLower)) return false
-    }
-    const cq = editedCourseQualifications.find((q) => q.courseId === course.id)
-    if (!opts.skipStatus && statusFilter.length > 0) {
-      const hasQualification = !!cq
-      const statusMatch =
-        (statusFilter.includes('qualified') && hasQualification) ||
-        (statusFilter.includes('not_qualified') && !hasQualification)
-      if (!statusMatch) return false
-    }
-    if (!opts.skipExperience && experienceFilter.length > 0) {
-      if (!cq || !experienceFilter.includes(cq.experience)) return false
-    }
-    if (!opts.skipLeadTime && leadTimeFilter.length > 0) {
-      if (!cq || !leadTimeFilter.includes(cq.leadTime)) return false
-    }
-    return true
-  }
+  const filterCourse = useCallback(
+    (
+      course: Course,
+      opts: {
+        skipStatus?: boolean
+        skipExperience?: boolean
+        skipLeadTime?: boolean
+      } = {}
+    ): boolean => {
+      if (debouncedSearchQuery) {
+        const searchLower = debouncedSearchQuery.toLowerCase()
+        if (!course.name.toLowerCase().includes(searchLower)) return false
+      }
+      const cq = editedCourseQualifications.find(
+        (q) => q.courseId === course.id
+      )
+      if (!opts.skipStatus && statusFilter.length > 0) {
+        const hasQualification = !!cq
+        const statusMatch =
+          (statusFilter.includes('qualified') && hasQualification) ||
+          (statusFilter.includes('not_qualified') && !hasQualification)
+        if (!statusMatch) return false
+      }
+      if (!opts.skipExperience && experienceFilter.length > 0) {
+        if (!cq || !experienceFilter.includes(cq.experience)) return false
+      }
+      if (!opts.skipLeadTime && leadTimeFilter.length > 0) {
+        if (!cq || !leadTimeFilter.includes(cq.leadTime)) return false
+      }
+      return true
+    },
+    [
+      debouncedSearchQuery,
+      editedCourseQualifications,
+      statusFilter,
+      experienceFilter,
+      leadTimeFilter,
+    ]
+  )
 
   const statusCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -168,13 +179,7 @@ export function CourseQualificationDialog({
       map.set(key, (map.get(key) ?? 0) + 1)
     })
     return map
-  }, [
-    courses,
-    editedCourseQualifications,
-    debouncedSearchQuery,
-    experienceFilter,
-    leadTimeFilter,
-  ])
+  }, [courses, editedCourseQualifications, filterCourse])
 
   const experienceCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -188,13 +193,7 @@ export function CourseQualificationDialog({
       }
     })
     return map
-  }, [
-    courses,
-    editedCourseQualifications,
-    debouncedSearchQuery,
-    statusFilter,
-    leadTimeFilter,
-  ])
+  }, [courses, editedCourseQualifications, filterCourse])
 
   const leadTimeCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -208,24 +207,11 @@ export function CourseQualificationDialog({
       }
     })
     return map
-  }, [
-    courses,
-    editedCourseQualifications,
-    debouncedSearchQuery,
-    statusFilter,
-    experienceFilter,
-  ])
+  }, [courses, editedCourseQualifications, filterCourse])
 
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => filterCourse(course))
-  }, [
-    courses,
-    editedCourseQualifications,
-    debouncedSearchQuery,
-    statusFilter,
-    experienceFilter,
-    leadTimeFilter,
-  ])
+  }, [courses, filterCourse])
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
