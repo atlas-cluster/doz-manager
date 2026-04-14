@@ -10,7 +10,7 @@ import {
   XCircle,
   XIcon,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import z from 'zod'
 
@@ -138,37 +138,46 @@ export function LecturerQualificationDialog({
     }
   }, [course.id, open])
 
-  const filterLecturer = (
-    lecturer: Lecturer,
-    opts: {
-      skipStatus?: boolean
-      skipExperience?: boolean
-      skipLeadTime?: boolean
-    } = {}
-  ): boolean => {
-    if (debouncedSearchQuery) {
-      const searchLower = debouncedSearchQuery.toLowerCase()
-      const fullName = lecturerDisplayName(lecturer).toLowerCase()
-      if (!fullName.includes(searchLower)) return false
-    }
-    const lq = editedLecturerQualifications.find(
-      (q) => q.lecturerId === lecturer.id
-    )
-    if (!opts.skipStatus && statusFilter.length > 0) {
-      const hasQualification = !!lq
-      const statusMatch =
-        (statusFilter.includes('qualified') && hasQualification) ||
-        (statusFilter.includes('not_qualified') && !hasQualification)
-      if (!statusMatch) return false
-    }
-    if (!opts.skipExperience && experienceFilter.length > 0) {
-      if (!lq || !experienceFilter.includes(lq.experience)) return false
-    }
-    if (!opts.skipLeadTime && leadTimeFilter.length > 0) {
-      if (!lq || !leadTimeFilter.includes(lq.leadTime)) return false
-    }
-    return true
-  }
+  const filterLecturer = useCallback(
+    (
+      lecturer: Lecturer,
+      opts: {
+        skipStatus?: boolean
+        skipExperience?: boolean
+        skipLeadTime?: boolean
+      } = {}
+    ): boolean => {
+      if (debouncedSearchQuery) {
+        const searchLower = debouncedSearchQuery.toLowerCase()
+        const fullName = lecturerDisplayName(lecturer).toLowerCase()
+        if (!fullName.includes(searchLower)) return false
+      }
+      const lq = editedLecturerQualifications.find(
+        (q) => q.lecturerId === lecturer.id
+      )
+      if (!opts.skipStatus && statusFilter.length > 0) {
+        const hasQualification = !!lq
+        const statusMatch =
+          (statusFilter.includes('qualified') && hasQualification) ||
+          (statusFilter.includes('not_qualified') && !hasQualification)
+        if (!statusMatch) return false
+      }
+      if (!opts.skipExperience && experienceFilter.length > 0) {
+        if (!lq || !experienceFilter.includes(lq.experience)) return false
+      }
+      if (!opts.skipLeadTime && leadTimeFilter.length > 0) {
+        if (!lq || !leadTimeFilter.includes(lq.leadTime)) return false
+      }
+      return true
+    },
+    [
+      debouncedSearchQuery,
+      editedLecturerQualifications,
+      statusFilter,
+      experienceFilter,
+      leadTimeFilter,
+    ]
+  )
 
   const statusCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -181,13 +190,7 @@ export function LecturerQualificationDialog({
       map.set(key, (map.get(key) ?? 0) + 1)
     })
     return map
-  }, [
-    lecturers,
-    editedLecturerQualifications,
-    debouncedSearchQuery,
-    experienceFilter,
-    leadTimeFilter,
-  ])
+  }, [lecturers, editedLecturerQualifications, filterLecturer])
 
   const experienceCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -201,13 +204,7 @@ export function LecturerQualificationDialog({
       }
     })
     return map
-  }, [
-    lecturers,
-    editedLecturerQualifications,
-    debouncedSearchQuery,
-    statusFilter,
-    leadTimeFilter,
-  ])
+  }, [lecturers, editedLecturerQualifications, filterLecturer])
 
   const leadTimeCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -221,24 +218,11 @@ export function LecturerQualificationDialog({
       }
     })
     return map
-  }, [
-    lecturers,
-    editedLecturerQualifications,
-    debouncedSearchQuery,
-    statusFilter,
-    experienceFilter,
-  ])
+  }, [lecturers, editedLecturerQualifications, filterLecturer])
 
   const filteredLecturers = useMemo(() => {
     return lecturers.filter((lecturer) => filterLecturer(lecturer))
-  }, [
-    lecturers,
-    editedLecturerQualifications,
-    debouncedSearchQuery,
-    statusFilter,
-    experienceFilter,
-    leadTimeFilter,
-  ])
+  }, [lecturers, filterLecturer])
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
