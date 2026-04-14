@@ -99,13 +99,13 @@ describe('AppSidebar', () => {
   it('should show access-control link for admins', () => {
     renderWithSidebar(true)
 
-    expect(screen.getByText('Zugriffsverwaltung')).toBeInTheDocument()
+    expect(screen.getByText('Benutzerverwaltung')).toBeInTheDocument()
   })
 
   it('should hide access-control link for non-admins', () => {
     renderWithSidebar(false)
 
-    expect(screen.queryByText('Zugriffsverwaltung')).not.toBeInTheDocument()
+    expect(screen.queryByText('Benutzerverwaltung')).not.toBeInTheDocument()
   })
 
   it('should show settings link for admins', () => {
