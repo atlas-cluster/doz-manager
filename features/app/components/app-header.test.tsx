@@ -54,20 +54,20 @@ describe('AppHeader', () => {
     renderWithProviders({ isAdmin: false })
 
     expect(screen.queryByText('Admin')).not.toBeInTheDocument()
+  })
 
-    it('should render a different route name for courses', () => {
-      mockPathname = '/courses'
-      renderWithProviders()
+  it('should render a different route name for courses', () => {
+    mockPathname = '/courses'
+    renderWithProviders()
 
-      expect(screen.getByText('Vorlesungen')).toBeInTheDocument()
-    })
+    expect(screen.getByText('Vorlesungen')).toBeInTheDocument()
+  })
 
-    it('should store the connection ID in session storage', () => {
-      renderWithProviders()
+  it('should store the connection ID in session storage', () => {
+    renderWithProviders()
 
-      expect(window.sessionStorage.getItem('doz-client-connection-id')).toBe(
-        'tab-connection-1'
-      )
-    })
+    expect(window.sessionStorage.getItem('doz-client-connection-id')).toBe(
+      'tab-connection-1'
+    )
   })
 })
