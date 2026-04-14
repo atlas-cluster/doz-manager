@@ -138,9 +138,42 @@ export function LecturerQualificationDialog({
     }
   }, [course.id, open])
 
+  const filterLecturer = (
+    lecturer: Lecturer,
+    opts: {
+      skipStatus?: boolean
+      skipExperience?: boolean
+      skipLeadTime?: boolean
+    } = {}
+  ): boolean => {
+    if (debouncedSearchQuery) {
+      const searchLower = debouncedSearchQuery.toLowerCase()
+      const fullName = lecturerDisplayName(lecturer).toLowerCase()
+      if (!fullName.includes(searchLower)) return false
+    }
+    const lq = editedLecturerQualifications.find(
+      (q) => q.lecturerId === lecturer.id
+    )
+    if (!opts.skipStatus && statusFilter.length > 0) {
+      const hasQualification = !!lq
+      const statusMatch =
+        (statusFilter.includes('qualified') && hasQualification) ||
+        (statusFilter.includes('not_qualified') && !hasQualification)
+      if (!statusMatch) return false
+    }
+    if (!opts.skipExperience && experienceFilter.length > 0) {
+      if (!lq || !experienceFilter.includes(lq.experience)) return false
+    }
+    if (!opts.skipLeadTime && leadTimeFilter.length > 0) {
+      if (!lq || !leadTimeFilter.includes(lq.leadTime)) return false
+    }
+    return true
+  }
+
   const statusCounts = useMemo(() => {
     const map = new Map<string, number>()
     lecturers.forEach((lecturer) => {
+      if (!filterLecturer(lecturer, { skipStatus: true })) return
       const hasQualification = editedLecturerQualifications.some(
         (lq) => lq.lecturerId === lecturer.id
       )
@@ -148,11 +181,18 @@ export function LecturerQualificationDialog({
       map.set(key, (map.get(key) ?? 0) + 1)
     })
     return map
-  }, [lecturers, editedLecturerQualifications])
+  }, [
+    lecturers,
+    editedLecturerQualifications,
+    debouncedSearchQuery,
+    experienceFilter,
+    leadTimeFilter,
+  ])
 
   const experienceCounts = useMemo(() => {
     const map = new Map<string, number>()
     lecturers.forEach((lecturer) => {
+      if (!filterLecturer(lecturer, { skipExperience: true })) return
       const lq = editedLecturerQualifications.find(
         (q) => q.lecturerId === lecturer.id
       )
@@ -161,11 +201,18 @@ export function LecturerQualificationDialog({
       }
     })
     return map
-  }, [lecturers, editedLecturerQualifications])
+  }, [
+    lecturers,
+    editedLecturerQualifications,
+    debouncedSearchQuery,
+    statusFilter,
+    leadTimeFilter,
+  ])
 
   const leadTimeCounts = useMemo(() => {
     const map = new Map<string, number>()
     lecturers.forEach((lecturer) => {
+      if (!filterLecturer(lecturer, { skipLeadTime: true })) return
       const lq = editedLecturerQualifications.find(
         (q) => q.lecturerId === lecturer.id
       )
@@ -174,38 +221,16 @@ export function LecturerQualificationDialog({
       }
     })
     return map
-  }, [lecturers, editedLecturerQualifications])
+  }, [
+    lecturers,
+    editedLecturerQualifications,
+    debouncedSearchQuery,
+    statusFilter,
+    experienceFilter,
+  ])
 
   const filteredLecturers = useMemo(() => {
-    return lecturers.filter((lecturer) => {
-      if (debouncedSearchQuery) {
-        const searchLower = debouncedSearchQuery.toLowerCase()
-        const fullName = lecturerDisplayName(lecturer).toLowerCase()
-        const matchesSearch = fullName.includes(searchLower)
-        if (!matchesSearch) return false
-      }
-      const lq = editedLecturerQualifications.find(
-        (q) => q.lecturerId === lecturer.id
-      )
-      if (statusFilter.length > 0) {
-        const hasQualification = !!lq
-        const statusMatch =
-          (statusFilter.includes('qualified') && hasQualification) ||
-          (statusFilter.includes('not_qualified') && !hasQualification)
-        if (!statusMatch) return false
-      }
-      if (experienceFilter.length > 0) {
-        if (!lq || !experienceFilter.includes(lq.experience)) {
-          return false
-        }
-      }
-      if (leadTimeFilter.length > 0) {
-        if (!lq || !leadTimeFilter.includes(lq.leadTime)) {
-          return false
-        }
-      }
-      return true
-    })
+    return lecturers.filter((lecturer) => filterLecturer(lecturer))
   }, [
     lecturers,
     editedLecturerQualifications,
