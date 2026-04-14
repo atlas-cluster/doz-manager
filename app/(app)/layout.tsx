@@ -54,7 +54,7 @@ export default async function AppLayout({
         authSettings={authSettings}
       />
       <SidebarInset>
-        <AppHeader />
+        <AppHeader isAdmin={dbUser?.isAdmin ?? false} />
         <div className={'p-3'}>{children}</div>
       </SidebarInset>
     </SidebarProvider>

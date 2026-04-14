@@ -1,13 +1,19 @@
 'use client'
 
+import { ShieldAlert } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 import { ThemeToggle } from '@/features/app/components/theme-toggle'
 import { formatRoute } from '@/features/app/utils/format-route'
+import { Badge } from '@/features/shared/components/ui/badge'
 import { Separator } from '@/features/shared/components/ui/separator'
 import { SidebarTrigger } from '@/features/shared/components/ui/sidebar'
 
-export function AppHeader() {
+type AppHeaderProps = {
+  isAdmin: boolean
+}
+
+export function AppHeader({ isAdmin }: AppHeaderProps) {
   const pathname = usePathname()
 
   return (
@@ -24,6 +30,12 @@ export function AppHeader() {
         <h1 className="ml-1 text-base font-semibold">
           {formatRoute(pathname)}
         </h1>
+        {isAdmin && (
+          <Badge className="flex w-fit items-center gap-1">
+            <ShieldAlert className="size-3" />
+            Admin
+          </Badge>
+        )}
       </div>
       <div className={'ml-auto flex items-center gap-2'}>
         <ThemeToggle />

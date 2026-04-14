@@ -8,10 +8,10 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/lecturers',
 }))
 
-function renderWithProviders() {
+function renderWithProviders(props: { isAdmin?: boolean } = {}) {
   return render(
     <SidebarProvider>
-      <AppHeader />
+      <AppHeader isAdmin={props.isAdmin ?? false} />
     </SidebarProvider>
   )
 }
@@ -33,5 +33,17 @@ describe('AppHeader', () => {
     expect(
       screen.getByRole('button', { name: 'Toggle theme' })
     ).toBeInTheDocument()
+  })
+
+  it('should render admin badge when isAdmin is true', () => {
+    renderWithProviders({ isAdmin: true })
+
+    expect(screen.getByText('Admin')).toBeInTheDocument()
+  })
+
+  it('should not render admin badge when isAdmin is false', () => {
+    renderWithProviders({ isAdmin: false })
+
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 })
