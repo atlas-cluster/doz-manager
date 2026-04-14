@@ -128,9 +128,39 @@ export function CourseQualificationDialog({
     }
   }, [lecturer.id, open])
 
+  const filterCourse = (
+    course: Course,
+    opts: {
+      skipStatus?: boolean
+      skipExperience?: boolean
+      skipLeadTime?: boolean
+    } = {}
+  ): boolean => {
+    if (debouncedSearchQuery) {
+      const searchLower = debouncedSearchQuery.toLowerCase()
+      if (!course.name.toLowerCase().includes(searchLower)) return false
+    }
+    const cq = editedCourseQualifications.find((q) => q.courseId === course.id)
+    if (!opts.skipStatus && statusFilter.length > 0) {
+      const hasQualification = !!cq
+      const statusMatch =
+        (statusFilter.includes('qualified') && hasQualification) ||
+        (statusFilter.includes('not_qualified') && !hasQualification)
+      if (!statusMatch) return false
+    }
+    if (!opts.skipExperience && experienceFilter.length > 0) {
+      if (!cq || !experienceFilter.includes(cq.experience)) return false
+    }
+    if (!opts.skipLeadTime && leadTimeFilter.length > 0) {
+      if (!cq || !leadTimeFilter.includes(cq.leadTime)) return false
+    }
+    return true
+  }
+
   const statusCounts = useMemo(() => {
     const map = new Map<string, number>()
     courses.forEach((course) => {
+      if (!filterCourse(course, { skipStatus: true })) return
       const hasQualification = editedCourseQualifications.some(
         (cq) => cq.courseId === course.id
       )
@@ -138,11 +168,18 @@ export function CourseQualificationDialog({
       map.set(key, (map.get(key) ?? 0) + 1)
     })
     return map
-  }, [courses, editedCourseQualifications])
+  }, [
+    courses,
+    editedCourseQualifications,
+    debouncedSearchQuery,
+    experienceFilter,
+    leadTimeFilter,
+  ])
 
   const experienceCounts = useMemo(() => {
     const map = new Map<string, number>()
     courses.forEach((course) => {
+      if (!filterCourse(course, { skipExperience: true })) return
       const cq = editedCourseQualifications.find(
         (q) => q.courseId === course.id
       )
@@ -151,11 +188,18 @@ export function CourseQualificationDialog({
       }
     })
     return map
-  }, [courses, editedCourseQualifications])
+  }, [
+    courses,
+    editedCourseQualifications,
+    debouncedSearchQuery,
+    statusFilter,
+    leadTimeFilter,
+  ])
 
   const leadTimeCounts = useMemo(() => {
     const map = new Map<string, number>()
     courses.forEach((course) => {
+      if (!filterCourse(course, { skipLeadTime: true })) return
       const cq = editedCourseQualifications.find(
         (q) => q.courseId === course.id
       )
@@ -164,37 +208,16 @@ export function CourseQualificationDialog({
       }
     })
     return map
-  }, [courses, editedCourseQualifications])
+  }, [
+    courses,
+    editedCourseQualifications,
+    debouncedSearchQuery,
+    statusFilter,
+    experienceFilter,
+  ])
 
   const filteredCourses = useMemo(() => {
-    return courses.filter((course) => {
-      if (debouncedSearchQuery) {
-        const searchLower = debouncedSearchQuery.toLowerCase()
-        const matchesSearch = course.name.toLowerCase().includes(searchLower)
-        if (!matchesSearch) return false
-      }
-      const cq = editedCourseQualifications.find(
-        (q) => q.courseId === course.id
-      )
-      if (statusFilter.length > 0) {
-        const hasQualification = !!cq
-        const statusMatch =
-          (statusFilter.includes('qualified') && hasQualification) ||
-          (statusFilter.includes('not_qualified') && !hasQualification)
-        if (!statusMatch) return false
-      }
-      if (experienceFilter.length > 0) {
-        if (!cq || !experienceFilter.includes(cq.experience)) {
-          return false
-        }
-      }
-      if (leadTimeFilter.length > 0) {
-        if (!cq || !leadTimeFilter.includes(cq.leadTime)) {
-          return false
-        }
-      }
-      return true
-    })
+    return courses.filter((course) => filterCourse(course))
   }, [
     courses,
     editedCourseQualifications,
