@@ -79,7 +79,7 @@ export function FloatingChat() {
           role: 'assistant',
           content:
             payload.message ??
-            'Ich habe aktuell keine Antwort erhalten. Bitte versuche es erneut.',
+            'Keine Antwort erhalten. Bitte versuche es erneut oder frage etwas anderes.',
         },
       ])
     } catch (error) {
