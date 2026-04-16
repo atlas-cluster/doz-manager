@@ -6,6 +6,7 @@ import { headers } from 'next/headers'
 import { auth } from '@/features/auth/lib/auth'
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function deleteAccount(password?: string) {
   const session = await auth.api.getSession({
@@ -42,9 +43,11 @@ export async function deleteAccount(password?: string) {
   }
 
   // Delete the user (cascades delete sessions, accounts, etc.)
-  await prisma.user.delete({
-    where: { id: session.user.id },
-  })
+  await runInTransaction(async (tx) =>
+    tx.user.delete({
+      where: { id: session.user.id },
+    })
+  )
 
   await notifyTagsUpdated(['users'], 'auth:delete-account', [
     { entityType: 'user', entityId: session.user.id },

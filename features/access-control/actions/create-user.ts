@@ -7,7 +7,7 @@ import { z } from 'zod'
 import { userSchema } from '@/features/access-control/schemas/user'
 import { auth } from '@/features/auth/lib/auth'
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
-import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function createUser(data: z.infer<typeof userSchema>) {
   const session = await auth.api.getSession({
@@ -18,23 +18,25 @@ export async function createUser(data: z.infer<typeof userSchema>) {
     throw new Error('Nicht authentifiziert')
   }
 
-  const caller = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { isAdmin: true },
+  await runInTransaction(async (tx) => {
+    const caller = await tx.user.findUnique({
+      where: { id: session.user.id },
+      select: { isAdmin: true },
+    })
+
+    if (!caller?.isAdmin) {
+      throw new Error('Keine Berechtigung')
+    }
+
+    // Check if user already exists
+    const existing = await tx.user.findUnique({
+      where: { email: data.email },
+    })
+
+    if (existing) {
+      throw new Error('Ein Benutzer mit dieser E-Mail existiert bereits.')
+    }
   })
-
-  if (!caller?.isAdmin) {
-    throw new Error('Keine Berechtigung')
-  }
-
-  // Check if user already exists
-  const existing = await prisma.user.findUnique({
-    where: { email: data.email },
-  })
-
-  if (existing) {
-    throw new Error('Ein Benutzer mit dieser E-Mail existiert bereits.')
-  }
 
   if (data.password) {
     // Create user with credential (password) via BetterAuth
@@ -48,15 +50,17 @@ export async function createUser(data: z.infer<typeof userSchema>) {
   } else {
     // Create user record without password — social providers will
     // link automatically when the user logs in (matched by email).
-    await prisma.user.create({
-      data: {
-        id: createId(),
-        name: data.name,
-        email: data.email,
-        emailVerified: true,
-        image: data.image || null,
-      },
-    })
+    await runInTransaction(async (tx) =>
+      tx.user.create({
+        data: {
+          id: createId(),
+          name: data.name,
+          email: data.email,
+          emailVerified: true,
+          image: data.image || null,
+        },
+      })
+    )
   }
 
   await notifyTagsUpdated(['users'], 'access-control:create-user')

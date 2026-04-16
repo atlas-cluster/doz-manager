@@ -4,21 +4,23 @@ import z from 'zod'
 
 import { qualificationSchema } from '@/features/lecturers'
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
-import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function createCourseLecturerQualification(
   courseId: string,
   lecturerId: string,
   data: z.infer<typeof qualificationSchema>
 ) {
-  await prisma.courseQualification.create({
-    data: {
-      lecturerId: lecturerId,
-      courseId: courseId,
-      leadTime: data.leadTime,
-      experience: data.experience,
-    },
-  })
+  await runInTransaction(async (tx) =>
+    tx.courseQualification.create({
+      data: {
+        lecturerId: lecturerId,
+        courseId: courseId,
+        leadTime: data.leadTime,
+        experience: data.experience,
+      },
+    })
+  )
 
   await notifyTagsUpdated(
     [
