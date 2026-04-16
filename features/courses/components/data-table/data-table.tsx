@@ -1,7 +1,15 @@
 'use client'
 
-import { Plus, RefreshCwIcon, XIcon } from 'lucide-react'
-import { useEffect, useRef, useState, useTransition } from 'react'
+import {
+  BookOpen,
+  Check,
+  GraduationCap,
+  Lock,
+  Plus,
+  RefreshCwIcon,
+  XIcon,
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -15,6 +23,7 @@ import { columns } from '@/features/courses/components/data-table/columns'
 import { CourseDialog } from '@/features/courses/components/dialog/course'
 import { courseSchema } from '@/features/courses/schemas/course'
 import { Course, GetCoursesResponse } from '@/features/courses/types'
+import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { DataTablePagination } from '@/features/shared/components/data-table-pagination'
 import { DataTableViewOptions } from '@/features/shared/components/data-table-view-options'
 import { Button } from '@/features/shared/components/ui/button'
@@ -80,6 +89,7 @@ export function DataTable({
   const [data, setData] = useState<Course[]>(initialData.data)
   const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
   const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
+  const [facets, setFacets] = useState(initialData.facets)
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null)
   const [hasExternalUpdateForEditing, setHasExternalUpdateForEditing] =
     useState(false)
@@ -88,6 +98,7 @@ export function DataTable({
   const fetchData = (
     currentPagination = pagination,
     currentSorting = sorting,
+    currentFilters = columnFilters,
     currentGlobal = globalFilter
   ) => {
     return new Promise<void>((resolve) => {
@@ -97,12 +108,14 @@ export function DataTable({
             pageIndex: currentPagination.pageIndex,
             pageSize: currentPagination.pageSize,
             sorting: currentSorting as { id: string; desc: boolean }[],
+            columnFilters: currentFilters as { id: string; value: unknown }[],
             globalFilter: currentGlobal,
           })
           setRowSelection({})
           setData(result.data)
           setPageCount(result.pageCount)
           setRowCount(result.rowCount)
+          setFacets(result.facets)
         } finally {
           resolve()
         }
@@ -124,7 +137,7 @@ export function DataTable({
       isMounted.current = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination, sorting, globalFilter])
+  }, [pagination, sorting, columnFilters, globalFilter])
 
   useLiveChanges({
     tags: ['courses'],
@@ -225,7 +238,7 @@ export function DataTable({
     setInputValue('')
     setPagination(nextPagination)
 
-    fetchData(nextPagination, sorting, '')
+    fetchData(nextPagination, sorting, [], '')
   }
 
   const onColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (
@@ -283,6 +296,16 @@ export function DataTable({
     },
   })
 
+  const isOpenCounts = useMemo(
+    () => new Map(Object.entries(facets.isOpen)),
+    [facets.isOpen]
+  )
+
+  const courseLevelCounts = useMemo(
+    () => new Map(Object.entries(facets.courseLevel)),
+    [facets.courseLevel]
+  )
+
   return (
     <div className="w-full space-y-3">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -327,9 +350,40 @@ export function DataTable({
               onSubmit={handleCreate}
             />
           </div>
-          {/** REPLACE THIS DIV WITH FACETED FILTERS ONCE IMPLEMENTED */}
-          {/** This div's only purpose is to push the clear filters button to the bottom on mobile, when no faceted filters are present */}
-          <div className={'h-0 w-full md:hidden'} />
+          <DataTableFacetedFilter
+            title={'Offen'}
+            options={[
+              {
+                value: 'true',
+                label: 'Offen',
+                icon: Check,
+              },
+              {
+                value: 'false',
+                label: 'Geschlossen',
+                icon: Lock,
+              },
+            ]}
+            column={table.getColumn('isOpen')}
+            facets={isOpenCounts}
+          />
+          <DataTableFacetedFilter
+            title={'Vorlesungsstufe'}
+            options={[
+              {
+                value: 'bachelor',
+                label: 'Bachelor',
+                icon: BookOpen,
+              },
+              {
+                value: 'master',
+                label: 'Master',
+                icon: GraduationCap,
+              },
+            ]}
+            column={table.getColumn('courseLevel')}
+            facets={courseLevelCounts}
+          />
           {(table.getState().columnFilters.length > 0 || globalFilter) && (
             <Button
               variant="ghost"

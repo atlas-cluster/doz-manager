@@ -18,15 +18,19 @@ vi.mock('@/features/courses/actions/delete-courses', () => ({
   deleteCourses: vi.fn().mockResolvedValue({}),
 }))
 vi.mock('@/features/courses/actions/get-courses', () => ({
-  getCourses: vi
-    .fn()
-    .mockResolvedValue({ data: [], pageCount: 0, rowCount: 0 }),
+  getCourses: vi.fn().mockResolvedValue({
+    data: [],
+    pageCount: 0,
+    rowCount: 0,
+    facets: { isOpen: {}, courseLevel: {} },
+  }),
 }))
 
 const emptyData: GetCoursesResponse = {
   data: [],
   pageCount: 0,
   rowCount: 0,
+  facets: { isOpen: {}, courseLevel: {} },
 }
 
 const sampleData: GetCoursesResponse = {
@@ -52,6 +56,10 @@ const sampleData: GetCoursesResponse = {
   ],
   pageCount: 1,
   rowCount: 2,
+  facets: {
+    isOpen: { true: 1, false: 1 },
+    courseLevel: { bachelor: 1, master: 1 },
+  },
 }
 
 describe('Courses DataTable', () => {
@@ -131,6 +139,14 @@ describe('Courses DataTable', () => {
     const checkboxes = screen.getAllByRole('checkbox')
     // Header select-all + 2 rows
     expect(checkboxes.length).toBe(3)
+  })
+
+  it('should render faceted filters', () => {
+    render(<DataTable initialData={sampleData} />)
+    expect(screen.getByRole('button', { name: /Offen/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Vorlesungsstufe/i })
+    ).toBeInTheDocument()
   })
 
   it('should open create dialog when create button is clicked', async () => {

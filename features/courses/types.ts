@@ -37,6 +37,7 @@ export interface GetCoursesParams {
   pageIndex: number
   pageSize: number
   sorting?: { id: string; desc: boolean }[]
+  columnFilters?: { id: string; value: unknown }[]
   globalFilter?: string
 }
 
@@ -44,4 +45,8 @@ export interface GetCoursesResponse {
   data: Course[]
   pageCount: number
   rowCount: number
+  facets: {
+    isOpen: Record<string, number>
+    courseLevel: Record<string, number>
+  }
 }

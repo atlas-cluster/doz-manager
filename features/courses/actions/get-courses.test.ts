@@ -15,7 +15,12 @@ describe('getCourses', () => {
 
   it('should return paginated courses with default params', async () => {
     const mockCourses = [{ id: 'c1', name: 'Mathematik' }]
-    vi.mocked(prisma.$transaction).mockResolvedValue([1, mockCourses])
+    vi.mocked(prisma.$transaction).mockResolvedValue([
+      1,
+      mockCourses,
+      [{ isOpen: true, _count: { isOpen: 1 } }],
+      [{ courseLevel: 'bachelor', _count: { courseLevel: 1 } }],
+    ])
 
     const result = await getCourses({ pageIndex: 0, pageSize: 10 })
 
@@ -24,11 +29,33 @@ describe('getCourses', () => {
       data: mockCourses,
       pageCount: 1,
       rowCount: 1,
+      facets: {
+        isOpen: { true: 1 },
+        courseLevel: { bachelor: 1 },
+      },
+    })
+  })
+
+  it('should apply column filters when provided', async () => {
+    vi.mocked(prisma.$transaction).mockResolvedValue([0, [], [], []])
+
+    await getCourses({
+      pageIndex: 0,
+      pageSize: 10,
+      columnFilters: [{ id: 'isOpen', value: ['true'] }],
+    })
+
+    expect(vi.mocked(prisma.course.count)).toHaveBeenCalledWith({
+      where: {
+        AND: expect.arrayContaining([
+          expect.objectContaining({ OR: [{ isOpen: true }] }),
+        ]),
+      },
     })
   })
 
   it('should apply global filter when provided', async () => {
-    vi.mocked(prisma.$transaction).mockResolvedValue([0, []])
+    vi.mocked(prisma.$transaction).mockResolvedValue([0, [], [], []])
 
     await getCourses({
       pageIndex: 0,
@@ -41,7 +68,7 @@ describe('getCourses', () => {
   })
 
   it('should apply sorting when provided', async () => {
-    vi.mocked(prisma.$transaction).mockResolvedValue([0, []])
+    vi.mocked(prisma.$transaction).mockResolvedValue([0, [], [], []])
 
     await getCourses({
       pageIndex: 0,
@@ -53,7 +80,7 @@ describe('getCourses', () => {
   })
 
   it('should calculate pageCount correctly', async () => {
-    vi.mocked(prisma.$transaction).mockResolvedValue([25, []])
+    vi.mocked(prisma.$transaction).mockResolvedValue([25, [], [], []])
 
     const result = await getCourses({ pageIndex: 0, pageSize: 10 })
 
