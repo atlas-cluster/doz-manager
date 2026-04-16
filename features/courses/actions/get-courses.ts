@@ -7,7 +7,10 @@ import {
   GetCoursesParams,
   GetCoursesResponse,
 } from '@/features/courses/types'
-import { Prisma } from '@/features/shared/lib/generated/prisma/client'
+import {
+  CourseLevel as CourseLevelEnum,
+  Prisma,
+} from '@/features/shared/lib/generated/prisma/client'
 import { prisma } from '@/features/shared/lib/prisma'
 
 async function getCoursesInternal({
@@ -36,15 +39,23 @@ async function getCoursesInternal({
     }
 
     if (filter.id === 'courseLevel' && Array.isArray(filter.value)) {
-      courseLevelConditions.push({
-        courseLevel: { in: filter.value as CourseLevel[] },
-      })
+      const validLevels = Object.values(CourseLevelEnum) as CourseLevel[]
+      const levels = (filter.value as string[]).filter((v): v is CourseLevel =>
+        validLevels.includes(v as CourseLevel)
+      )
+      if (levels.length > 0) {
+        courseLevelConditions.push({
+          courseLevel: { in: levels },
+        })
+      }
     }
   }
 
   const whereMain: Prisma.CourseWhereInput =
-    [...globalConditions, ...isOpenConditions, ...courseLevelConditions]
-      .length > 0
+    globalConditions.length +
+      isOpenConditions.length +
+      courseLevelConditions.length >
+    0
       ? {
           AND: [
             ...globalConditions,
@@ -55,12 +66,12 @@ async function getCoursesInternal({
       : {}
 
   const whereIsOpen: Prisma.CourseWhereInput =
-    [...globalConditions, ...courseLevelConditions].length > 0
+    globalConditions.length + courseLevelConditions.length > 0
       ? { AND: [...globalConditions, ...courseLevelConditions] }
       : {}
 
   const whereCourseLevel: Prisma.CourseWhereInput =
-    [...globalConditions, ...isOpenConditions].length > 0
+    globalConditions.length + isOpenConditions.length > 0
       ? { AND: [...globalConditions, ...isOpenConditions] }
       : {}
 

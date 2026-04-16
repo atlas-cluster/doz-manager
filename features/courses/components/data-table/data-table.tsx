@@ -9,7 +9,7 @@ import {
   RefreshCwIcon,
   XIcon,
 } from 'lucide-react'
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -89,9 +89,7 @@ export function DataTable({
   const [data, setData] = useState<Course[]>(initialData.data)
   const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
   const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
-  const [facets, setFacets] = useState(
-    initialData.facets ?? { isOpen: {}, courseLevel: {} }
-  )
+  const [facets, setFacets] = useState(initialData.facets)
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null)
   const [hasExternalUpdateForEditing, setHasExternalUpdateForEditing] =
     useState(false)
@@ -298,19 +296,15 @@ export function DataTable({
     },
   })
 
-  const isOpenCounts = new Map<string, number>()
-  if (facets.isOpen) {
-    Object.entries(facets.isOpen).forEach(([key, value]) => {
-      isOpenCounts.set(key, value)
-    })
-  }
+  const isOpenCounts = useMemo(
+    () => new Map(Object.entries(facets.isOpen)),
+    [facets.isOpen]
+  )
 
-  const courseLevelCounts = new Map<string, number>()
-  if (facets.courseLevel) {
-    Object.entries(facets.courseLevel).forEach(([key, value]) => {
-      courseLevelCounts.set(key, value)
-    })
-  }
+  const courseLevelCounts = useMemo(
+    () => new Map(Object.entries(facets.courseLevel)),
+    [facets.courseLevel]
+  )
 
   return (
     <div className="w-full space-y-3">

@@ -45,7 +45,13 @@ describe('getCourses', () => {
       columnFilters: [{ id: 'isOpen', value: ['true'] }],
     })
 
-    expect(prisma.$transaction).toHaveBeenCalled()
+    expect(vi.mocked(prisma.course.count)).toHaveBeenCalledWith({
+      where: {
+        AND: expect.arrayContaining([
+          expect.objectContaining({ OR: [{ isOpen: true }] }),
+        ]),
+      },
+    })
   })
 
   it('should apply global filter when provided', async () => {
