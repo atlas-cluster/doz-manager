@@ -18,27 +18,27 @@ export async function createUser(data: z.infer<typeof userSchema>) {
     throw new Error('Nicht authentifiziert')
   }
 
-  await runInTransaction(async (tx) => {
-    const caller = await tx.user.findUnique({
-      where: { id: session.user.id },
-      select: { isAdmin: true },
-    })
-
-    if (!caller?.isAdmin) {
-      throw new Error('Keine Berechtigung')
-    }
-
-    // Check if user already exists
-    const existing = await tx.user.findUnique({
-      where: { email: data.email },
-    })
-
-    if (existing) {
-      throw new Error('Ein Benutzer mit dieser E-Mail existiert bereits.')
-    }
-  })
-
   if (data.password) {
+    await runInTransaction(async (tx) => {
+      const caller = await tx.user.findUnique({
+        where: { id: session.user.id },
+        select: { isAdmin: true },
+      })
+
+      if (!caller?.isAdmin) {
+        throw new Error('Keine Berechtigung')
+      }
+
+      // Check if user already exists
+      const existing = await tx.user.findUnique({
+        where: { email: data.email },
+      })
+
+      if (existing) {
+        throw new Error('Ein Benutzer mit dieser E-Mail existiert bereits.')
+      }
+    })
+
     // Create user with credential (password) via BetterAuth
     await auth.api.signUpEmail({
       body: {
@@ -50,8 +50,26 @@ export async function createUser(data: z.infer<typeof userSchema>) {
   } else {
     // Create user record without password — social providers will
     // link automatically when the user logs in (matched by email).
-    await runInTransaction(async (tx) =>
-      tx.user.create({
+    await runInTransaction(async (tx) => {
+      const caller = await tx.user.findUnique({
+        where: { id: session.user.id },
+        select: { isAdmin: true },
+      })
+
+      if (!caller?.isAdmin) {
+        throw new Error('Keine Berechtigung')
+      }
+
+      // Check if user already exists
+      const existing = await tx.user.findUnique({
+        where: { email: data.email },
+      })
+
+      if (existing) {
+        throw new Error('Ein Benutzer mit dieser E-Mail existiert bereits.')
+      }
+
+      await tx.user.create({
         data: {
           id: createId(),
           name: data.name,
@@ -60,7 +78,7 @@ export async function createUser(data: z.infer<typeof userSchema>) {
           image: data.image || null,
         },
       })
-    )
+    })
   }
 
   await notifyTagsUpdated(['users'], 'access-control:create-user')
