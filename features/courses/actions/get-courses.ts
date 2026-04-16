@@ -2,7 +2,11 @@
 
 import { unstable_cache } from 'next/cache'
 
-import { GetCoursesParams, GetCoursesResponse } from '@/features/courses/types'
+import {
+  CourseLevel,
+  GetCoursesParams,
+  GetCoursesResponse,
+} from '@/features/courses/types'
 import { Prisma } from '@/features/shared/lib/generated/prisma/client'
 import { prisma } from '@/features/shared/lib/prisma'
 
@@ -10,9 +14,12 @@ async function getCoursesInternal({
   pageIndex = 0,
   pageSize = 10,
   sorting = [],
+  columnFilters = [],
   globalFilter = '',
 }: GetCoursesParams): Promise<GetCoursesResponse> {
   const globalConditions: Prisma.CourseWhereInput[] = []
+  const isOpenConditions: Prisma.CourseWhereInput[] = []
+  const courseLevelConditions: Prisma.CourseWhereInput[] = []
 
   if (globalFilter) {
     globalConditions.push({
@@ -20,8 +27,42 @@ async function getCoursesInternal({
     })
   }
 
+  for (const filter of columnFilters) {
+    if (filter.id === 'isOpen' && Array.isArray(filter.value)) {
+      const boolValues = (filter.value as string[]).map((v) => v === 'true')
+      isOpenConditions.push({
+        OR: boolValues.map((v) => ({ isOpen: v })),
+      })
+    }
+
+    if (filter.id === 'courseLevel' && Array.isArray(filter.value)) {
+      courseLevelConditions.push({
+        courseLevel: { in: filter.value as CourseLevel[] },
+      })
+    }
+  }
+
   const whereMain: Prisma.CourseWhereInput =
-    [...globalConditions].length > 0 ? { AND: [...globalConditions] } : {}
+    [...globalConditions, ...isOpenConditions, ...courseLevelConditions]
+      .length > 0
+      ? {
+          AND: [
+            ...globalConditions,
+            ...isOpenConditions,
+            ...courseLevelConditions,
+          ],
+        }
+      : {}
+
+  const whereIsOpen: Prisma.CourseWhereInput =
+    [...globalConditions, ...courseLevelConditions].length > 0
+      ? { AND: [...globalConditions, ...courseLevelConditions] }
+      : {}
+
+  const whereCourseLevel: Prisma.CourseWhereInput =
+    [...globalConditions, ...isOpenConditions].length > 0
+      ? { AND: [...globalConditions, ...isOpenConditions] }
+      : {}
 
   const orderBy: Prisma.CourseOrderByWithRelationInput[] =
     sorting.length > 0
@@ -33,32 +74,63 @@ async function getCoursesInternal({
         })
       : [{ name: 'asc' }]
 
-  const [count, data] = await prisma.$transaction([
-    prisma.course.count({ where: whereMain }),
-    prisma.course.findMany({
-      where: whereMain,
-      skip: pageIndex * pageSize,
-      take: pageSize,
-      orderBy,
-      include: {
-        assignments: {
-          select: {
-            lecturer: {
-              select: {
-                firstName: true,
-                lastName: true,
+  const [count, data, isOpenFacets, courseLevelFacets] =
+    await prisma.$transaction([
+      prisma.course.count({ where: whereMain }),
+      prisma.course.findMany({
+        where: whereMain,
+        skip: pageIndex * pageSize,
+        take: pageSize,
+        orderBy,
+        include: {
+          assignments: {
+            select: {
+              lecturer: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
               },
             },
           },
         },
-      },
-    }),
-  ])
+      }),
+      prisma.course.groupBy({
+        by: ['isOpen'],
+        where: whereIsOpen,
+        _count: { isOpen: true },
+        orderBy: {
+          isOpen: 'asc',
+        },
+      }),
+      prisma.course.groupBy({
+        by: ['courseLevel'],
+        where: whereCourseLevel,
+        _count: { courseLevel: true },
+        orderBy: {
+          courseLevel: 'asc',
+        },
+      }),
+    ])
 
   return {
     data,
     pageCount: Math.ceil(count / pageSize),
     rowCount: count,
+    facets: {
+      isOpen: Object.fromEntries(
+        isOpenFacets.map((f) => [
+          String(f.isOpen),
+          (f._count as { isOpen: number }).isOpen ?? 0,
+        ])
+      ),
+      courseLevel: Object.fromEntries(
+        courseLevelFacets.map((f) => [
+          f.courseLevel,
+          (f._count as { courseLevel: number }).courseLevel ?? 0,
+        ])
+      ),
+    },
   }
 }
 
