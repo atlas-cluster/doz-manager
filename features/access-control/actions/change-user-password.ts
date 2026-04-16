@@ -6,6 +6,7 @@ import { headers } from 'next/headers'
 import { auth } from '@/features/auth/lib/auth'
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function changeUserPassword(userId: string, newPassword: string) {
   const session = await auth.api.getSession({
@@ -31,10 +32,12 @@ export async function changeUserPassword(userId: string, newPassword: string) {
 
   const hashedPassword = await hashPassword(newPassword)
 
-  await prisma.account.updateMany({
-    where: { userId, providerId: 'credential' },
-    data: { password: hashedPassword },
-  })
+  await runInTransaction(async (tx) =>
+    tx.account.updateMany({
+      where: { userId, providerId: 'credential' },
+      data: { password: hashedPassword },
+    })
+  )
 
   await notifyTagsUpdated(['users'], 'access-control:change-user-password', [
     { entityType: 'user', entityId: userId },

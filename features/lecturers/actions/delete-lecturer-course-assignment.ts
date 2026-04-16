@@ -1,20 +1,22 @@
 'use server'
 
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
-import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function deleteLecturerCourseAssignment(
   lecturerId: string,
   courseId: string
 ) {
-  await prisma.courseAssignment.delete({
-    where: {
-      lecturerId_courseId: {
-        lecturerId,
-        courseId,
+  await runInTransaction(async (tx) =>
+    tx.courseAssignment.delete({
+      where: {
+        lecturerId_courseId: {
+          lecturerId,
+          courseId,
+        },
       },
-    },
-  })
+    })
+  )
 
   await notifyTagsUpdated(
     [

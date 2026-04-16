@@ -1,16 +1,18 @@
 'use server'
 
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
-import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function deleteLecturers(ids: string[]) {
-  await prisma.lecturer.deleteMany({
-    where: {
-      id: {
-        in: ids,
+  await runInTransaction(async (tx) =>
+    tx.lecturer.deleteMany({
+      where: {
+        id: {
+          in: ids,
+        },
       },
-    },
-  })
+    })
+  )
 
   await notifyTagsUpdated(
     ['lecturers'],
