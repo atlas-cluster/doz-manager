@@ -220,3 +220,18 @@ model AuthSettings {
   @@map("auth_settings")
 }
 
+model AiSettings {
+  id String @id @default("singleton")
+
+  enabled   Boolean @default(true)
+  baseUrl   String? @db.Text
+  apiKey    String? @db.Text
+  model     String? @db.Text
+  timeoutMs Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("ai_settings")
+}
+

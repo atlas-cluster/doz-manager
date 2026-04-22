@@ -2,19 +2,63 @@ import { headers } from 'next/headers'
 import { ProxyAgent } from 'undici'
 
 import { auth } from '@/features/auth/lib/auth'
+import { decrypt } from '@/features/auth/lib/encrypt'
 import {
+  TOOL_LABELS,
   executeChatTool,
   getChatToolDefinitions,
 } from '@/features/chat/lib/chat-tools'
+import { prisma } from '@/features/shared/lib/prisma'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
-const timeoutMs = Number.parseInt(process.env.OPENAI_TIMEOUT_MS ?? '60000', 10)
 
 const DEFAULT_OPENAI_BASE_URL = 'https://ollama-api.mauelshagen.eu/v1'
 const DEFAULT_OPENAI_MODEL = 'qwen3.5:9b'
+const DEFAULT_TIMEOUT_MS = 60000
 const MAX_TOOL_LOOPS = 6
 const proxyAgents = new Map<string, ProxyAgent>()
+
+type AiConfig = {
+  baseUrl: string
+  model: string
+  apiKey: string
+  timeoutMs: number
+}
+
+async function loadAiConfig(): Promise<AiConfig> {
+  const row = await prisma.aiSettings.findUnique({
+    where: { id: 'singleton' },
+  })
+
+  if (row && !row.enabled) {
+    throw new Error('CHAT_DISABLED')
+  }
+
+  const envBaseUrl = process.env.OPENAI_BASE_URL ?? DEFAULT_OPENAI_BASE_URL
+  const envModel = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL
+  const envApiKey = process.env.OPENAI_API_KEY ?? ''
+  const envTimeout = Number.parseInt(
+    process.env.OPENAI_TIMEOUT_MS ?? String(DEFAULT_TIMEOUT_MS),
+    10
+  )
+
+  if (!row) {
+    return {
+      baseUrl: envBaseUrl,
+      model: envModel,
+      apiKey: envApiKey,
+      timeoutMs: envTimeout,
+    }
+  }
+
+  return {
+    baseUrl: row.baseUrl ? await decrypt(row.baseUrl) : envBaseUrl,
+    model: row.model ? await decrypt(row.model) : envModel,
+    apiKey: row.apiKey ? await decrypt(row.apiKey) : envApiKey,
+    timeoutMs: row.timeoutMs ?? envTimeout,
+  }
+}
 
 type IncomingMessage = {
   role: 'user' | 'assistant'
@@ -112,10 +156,8 @@ function getProxyAgent(proxyUrl: string): ProxyAgent {
   return agent
 }
 
-async function callOpenAI(messages: OpenAIMessage[]) {
-  const baseUrl = process.env.OPENAI_BASE_URL ?? DEFAULT_OPENAI_BASE_URL
-  const model = process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL
-  const apiKey = process.env.OPENAI_API_KEY
+async function callOpenAI(messages: OpenAIMessage[], config: AiConfig) {
+  const { baseUrl, model, apiKey, timeoutMs } = config
   const proxyUrl = getProxyUrl()
 
   if (!apiKey) {
@@ -135,7 +177,9 @@ async function callOpenAI(messages: OpenAIMessage[]) {
       temperature: 0.2,
     }),
     signal: AbortSignal.timeout(
-      Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 60000
+      Number.isFinite(timeoutMs) && timeoutMs > 0
+        ? timeoutMs
+        : DEFAULT_TIMEOUT_MS
     ),
   }
 
@@ -202,60 +246,105 @@ export async function POST(req: Request) {
     ...messages,
   ]
 
+  const userId = session.user.id
+
+  let aiConfig: AiConfig
   try {
-    for (let i = 0; i < MAX_TOOL_LOOPS; i++) {
-      const assistantMessage = await callOpenAI(conversation)
-
-      if (!assistantMessage) {
-        throw new Error('OpenAI did not return a message.')
-      }
-
-      const toolCalls = assistantMessage.tool_calls ?? []
-
-      if (toolCalls.length === 0) {
-        return Response.json({
-          message: assistantMessage.content ?? '',
-        })
-      }
-
-      conversation.push({
-        role: 'assistant',
-        content: assistantMessage.content ?? '',
-        tool_calls: toolCalls,
-      })
-
-      for (const toolCall of toolCalls) {
-        const toolResult = await executeChatTool(
-          {
-            name: toolCall.function.name,
-            arguments: parseToolArguments(toolCall.function.arguments),
-          },
-          session.user.id
-        )
-
-        conversation.push({
-          role: 'tool',
-          content: JSON.stringify(toolResult),
-          tool_call_id: toolCall.id,
-        })
-      }
+    aiConfig = await loadAiConfig()
+  } catch (e) {
+    if (e instanceof Error && e.message === 'CHAT_DISABLED') {
+      return Response.json(
+        { error: 'Der Chat-Assistent ist deaktiviert.' },
+        { status: 403 }
+      )
     }
-
-    console.warn('[chat] Max tool loops reached without response completion')
-
-    return Response.json({
-      message:
-        'Ich konnte die Antwort nicht finalisieren. Bitte formuliere deine Frage etwas konkreter.',
-    })
-  } catch (error) {
-    console.error('[chat] Error while processing request', error)
-
     return Response.json(
-      {
-        error:
-          'Der Chat-Dienst ist aktuell nicht erreichbar. Bitte versuche es später erneut.',
-      },
+      { error: 'Failed to load AI configuration.' },
       { status: 500 }
     )
   }
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder()
+
+      function send(event: string, data: Record<string, unknown>) {
+        controller.enqueue(
+          encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+        )
+      }
+
+      try {
+        for (let i = 0; i < MAX_TOOL_LOOPS; i++) {
+          const assistantMessage = await callOpenAI(conversation, aiConfig)
+
+          if (!assistantMessage) {
+            throw new Error('OpenAI did not return a message.')
+          }
+
+          const toolCalls = assistantMessage.tool_calls ?? []
+
+          if (toolCalls.length === 0) {
+            send('content', { text: assistantMessage.content ?? '' })
+            send('done', {})
+            controller.close()
+            return
+          }
+
+          conversation.push({
+            role: 'assistant',
+            content: assistantMessage.content ?? '',
+            tool_calls: toolCalls,
+          })
+
+          for (const toolCall of toolCalls) {
+            const toolName = toolCall.function.name
+            const toolLabel = TOOL_LABELS[toolName] ?? toolName
+
+            send('tool_start', { name: toolName, label: toolLabel })
+
+            const toolResult = await executeChatTool(
+              {
+                name: toolName,
+                arguments: parseToolArguments(toolCall.function.arguments),
+              },
+              userId
+            )
+
+            conversation.push({
+              role: 'tool',
+              content: JSON.stringify(toolResult),
+              tool_call_id: toolCall.id,
+            })
+
+            send('tool_end', { name: toolName, label: toolLabel })
+          }
+        }
+
+        console.warn(
+          '[chat] Max tool loops reached without response completion'
+        )
+        send('content', {
+          text: 'Ich konnte die Antwort nicht finalisieren. Bitte formuliere deine Frage etwas konkreter.',
+        })
+        send('done', {})
+        controller.close()
+      } catch (error) {
+        console.error('[chat] Error while processing request', error)
+        send('error', {
+          message:
+            'Der Chat-Dienst ist aktuell nicht erreichbar. Bitte versuche es später erneut.',
+        })
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  })
 }
