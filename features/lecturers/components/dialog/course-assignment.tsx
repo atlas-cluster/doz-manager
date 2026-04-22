@@ -1,10 +1,20 @@
 import {
-  ChevronsUpDown,
+  BookOpen,
+  Calendar,
   CircleQuestionMark,
+  GraduationCap,
   PencilRuler,
+  Plus,
   Trash2,
 } from 'lucide-react'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { toast } from 'sonner'
 
 import { Course, getCourses } from '@/features/courses'
@@ -12,18 +22,11 @@ import { Lecturer } from '@/features/lecturers'
 import { createLecturerCourseAssignment } from '@/features/lecturers/actions/create-lecturer-course-assignment'
 import { deleteLecturerCourseAssignment } from '@/features/lecturers/actions/delete-lecturer-course-assignment'
 import { getLecturerCourseAssignments } from '@/features/lecturers/actions/get-lecturer-course-assignments'
+import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
 import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
-import { Checkbox } from '@/features/shared/components/ui/checkbox'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/features/shared/components/ui/command'
+import { Input } from '@/features/shared/components/ui/input'
 import {
   Dialog,
   DialogClose,
@@ -49,13 +52,9 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/features/shared/components/ui/item'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/features/shared/components/ui/popover'
 import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import { Skeleton } from '@/features/shared/components/ui/skeleton'
+import { useDebounce } from '@/features/shared/hooks/use-debounce'
 import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
 import { initialsFromName } from '@/features/shared/lib/utils'
 import '@radix-ui/react-avatar'
@@ -90,6 +89,12 @@ export function CourseAssignmentDialog({
 
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearchQuery = useDebounce(searchQuery)
+  const [courseLevelFilter, setCourseLevelFilter] = useState<
+    Array<'bachelor' | 'master'>
+  >([])
+  const [semesterFilter, setSemesterFilter] = useState<string[]>([])
 
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
@@ -103,6 +108,7 @@ export function CourseAssignmentDialog({
       ])
       setCourses(coursesResponse.data)
       setSelectedCourses(assignmentsResponse)
+      setSearchQuery('')
     } catch (error) {
       console.error('Failed to fetch data', error)
       toast.error('Daten konnten nicht geladen werden')
@@ -166,8 +172,74 @@ export function CourseAssignmentDialog({
 
   const effectiveHasExternalUpdate = hasExternalUpdate || hasLocalExternalUpdate
 
+  const filterCourse = useCallback(
+    (
+      course: Course,
+      opts: { skipCourseLevel?: boolean; skipSemester?: boolean } = {}
+    ): boolean => {
+      if (debouncedSearchQuery) {
+        if (
+          !course.name
+            .toLowerCase()
+            .includes(debouncedSearchQuery.toLowerCase())
+        ) {
+          return false
+        }
+      }
+
+      if (
+        !opts.skipCourseLevel &&
+        courseLevelFilter.length > 0 &&
+        !courseLevelFilter.includes(course.courseLevel)
+      ) {
+        return false
+      }
+
+      if (
+        !opts.skipSemester &&
+        semesterFilter.length > 0 &&
+        !semesterFilter.includes(String(course.semester))
+      ) {
+        return false
+      }
+
+      return true
+    },
+    [debouncedSearchQuery, courseLevelFilter, semesterFilter]
+  )
+
+  const courseLevelCounts = useMemo(() => {
+    const map = new Map<string, number>()
+
+    courses.forEach((course) => {
+      if (!filterCourse(course, { skipCourseLevel: true })) return
+      map.set(course.courseLevel, (map.get(course.courseLevel) ?? 0) + 1)
+    })
+
+    return map
+  }, [courses, filterCourse])
+
+  const semesterCounts = useMemo(() => {
+    const map = new Map<string, number>()
+
+    courses.forEach((course) => {
+      if (!filterCourse(course, { skipSemester: true })) return
+      const semester = String(course.semester)
+      map.set(semester, (map.get(semester) ?? 0) + 1)
+    })
+
+    return map
+  }, [courses, filterCourse])
+
+  const filteredCourses = useMemo(() => {
+    return courses.filter((course) => filterCourse(course))
+  }, [courses, filterCourse])
+
+  const isCourseSelected = (courseId: string) =>
+    selectedCourses.some((course) => course.id === courseId)
+
   const toggleCourse = (courseId: string) => {
-    if (selectedCourses.some((c) => c.id === courseId)) {
+    if (isCourseSelected(courseId)) {
       setSelectedCourses(selectedCourses.filter((c) => c.id !== courseId))
     } else {
       const course = courses.find((c) => c.id === courseId)
@@ -292,84 +364,142 @@ export function CourseAssignmentDialog({
                 </Button>
               )}
               {!readonlyMode && (
-                <Popover modal>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      suppressHydrationWarning
-                      className="w-fit">
-                      {selectedCourses.length >= 1
-                        ? `${selectedCourses.length} Vorlesung${selectedCourses.length != 1 ? 'en' : ''} ausgewählt`
-                        : 'Vorlesungen auswählen...'}
-                      <ChevronsUpDown />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Suche Vorlesungen..." />
-                      <CommandList>
-                        <CommandEmpty>Keine Vorlesungen gefunden.</CommandEmpty>
-                        <CommandGroup>
-                          {courses.map((course) => (
-                            <CommandItem
-                              key={course.id}
-                              onSelect={() => toggleCourse(course.id)}
-                              value={course.name}>
-                              <Checkbox
-                                checked={selectedCourses.some(
-                                  (c) => c.id === course.id
-                                )}
-                                className="pointer-events-none"
-                              />
-                              {course.name}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <div className="flex w-full flex-wrap items-center gap-2">
+                  <Input
+                    placeholder="Vorlesungen suchen..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="md:w-64"
+                  />
+
+                  <DataTableFacetedFilter
+                    title="Studiengang"
+                    options={[
+                      {
+                        value: 'bachelor',
+                        label: 'Bachelor',
+                        icon: GraduationCap,
+                      },
+                      { value: 'master', label: 'Master', icon: BookOpen },
+                    ]}
+                    value={courseLevelFilter}
+                    onChange={(v) =>
+                      setCourseLevelFilter(v as Array<'bachelor' | 'master'>)
+                    }
+                    facets={courseLevelCounts}
+                  />
+
+                  <DataTableFacetedFilter
+                    title="Semester"
+                    options={Array.from({ length: 6 }).map((_, index) => ({
+                      value: String(index + 1),
+                      label: `${index + 1}. Semester`,
+                      icon: Calendar,
+                    }))}
+                    value={semesterFilter}
+                    onChange={(v) => setSemesterFilter(v)}
+                    facets={semesterCounts}
+                  />
+                </div>
               )}
-              {selectedCourses.length > 0 ? (
+              {readonlyMode ? (
+                selectedCourses.length > 0 ? (
+                  <ScrollArea className="min-h-0 flex-1">
+                    <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
+                      {selectedCourses.map((course) => (
+                        <Item
+                          key={course.id}
+                          variant="outline"
+                          size="sm"
+                          className="border-primary bg-sidebar-accent/30 flex flex-nowrap">
+                          <ItemMedia>
+                            <Avatar className="size-10">
+                              <AvatarFallback>
+                                {initialsFromName(course.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                          </ItemMedia>
+                          <ItemContent>
+                            <ItemTitle>{course.name}</ItemTitle>
+                            <ItemDescription>
+                              {course.courseLevel === 'bachelor'
+                                ? 'Bachelor'
+                                : 'Master'}{' '}
+                              | {course.semester}. Semester
+                            </ItemDescription>
+                          </ItemContent>
+                        </Item>
+                      ))}
+                    </ItemGroup>
+                  </ScrollArea>
+                ) : (
+                  <Empty className="flex-1">
+                    <EmptyMedia variant={'icon'}>
+                      <CircleQuestionMark />
+                    </EmptyMedia>
+                    <EmptyTitle>Keine zugeordneten Vorlesungen</EmptyTitle>
+                    <EmptyDescription>
+                      Dieser Dozent ist derzeit keiner Vorlesung zugeordnet.
+                    </EmptyDescription>
+                  </Empty>
+                )
+              ) : filteredCourses.length > 0 ? (
                 <ScrollArea className="min-h-0 flex-1">
                   <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
-                    {selectedCourses.map((course) => (
-                      <Item
-                        key={course.id}
-                        variant="outline"
-                        size={'sm'}
-                        className={'flex flex-nowrap'}>
-                        <ItemMedia>
-                          <Avatar className={'size-10'}>
-                            <AvatarFallback>
-                              {initialsFromName(course.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                        </ItemMedia>
-                        <ItemContent>
-                          <ItemTitle>{course.name}</ItemTitle>
-                          <ItemDescription>
-                            {course.courseLevel === 'bachelor'
-                              ? 'Bachelor'
-                              : 'Master'}{' '}
-                            | {course.semester}. Semester
-                          </ItemDescription>
-                        </ItemContent>
-                        {!readonlyMode && (
-                          <ItemActions>
-                            <Button
-                              variant={'ghost'}
-                              size={'icon'}
-                              onClick={() => toggleCourse(course.id)}>
-                              <Trash2 />
-                              <span className={'sr-only'}>
-                                {course.name + ' entfernen'}
-                              </span>
-                            </Button>
-                          </ItemActions>
-                        )}
-                      </Item>
-                    ))}
+                    {filteredCourses
+                      .slice()
+                      .sort((a, b) => {
+                        const aSelected = isCourseSelected(a.id)
+                        const bSelected = isCourseSelected(b.id)
+                        if (aSelected && !bSelected) return -1
+                        if (!aSelected && bSelected) return 1
+                        return 0
+                      })
+                      .map((course) => {
+                        const isSelected = isCourseSelected(course.id)
+
+                        return (
+                          <Item
+                            key={course.id}
+                            variant="outline"
+                            size="sm"
+                            className={
+                              isSelected
+                                ? 'border-primary bg-sidebar-accent/30 flex flex-nowrap'
+                                : 'flex flex-nowrap'
+                            }>
+                            <ItemMedia>
+                              <Avatar className={'size-10'}>
+                                <AvatarFallback>
+                                  {initialsFromName(course.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                            </ItemMedia>
+                            <ItemContent>
+                              <ItemTitle>{course.name}</ItemTitle>
+                              <ItemDescription>
+                                {course.courseLevel === 'bachelor'
+                                  ? 'Bachelor'
+                                  : 'Master'}{' '}
+                                | {course.semester}. Semester
+                              </ItemDescription>
+                            </ItemContent>
+                            <ItemActions>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleCourse(course.id)}>
+                                {isSelected ? <Trash2 /> : <Plus />}
+                                <span className="sr-only">
+                                  {isSelected
+                                    ? course.name + ' entfernen'
+                                    : course.name + ' zuordnen'}
+                                </span>
+                              </Button>
+                            </ItemActions>
+                          </Item>
+                        )
+                      })}
                   </ItemGroup>
                 </ScrollArea>
               ) : (
@@ -380,12 +510,12 @@ export function CourseAssignmentDialog({
                   <EmptyTitle>
                     {readonlyMode
                       ? 'Keine zugeordneten Vorlesungen'
-                      : 'Keine Vorlesungen ausgewählt'}
+                      : 'Keine Vorlesungen gefunden'}
                   </EmptyTitle>
                   <EmptyDescription>
                     {readonlyMode
                       ? 'Dieser Dozent ist derzeit keiner Vorlesung zugeordnet.'
-                      : 'Bitte wählen Sie Vorlesungen aus, die diesem Dozenten zugeordnet werden sollen.'}
+                      : 'Bitte passen Sie Suche oder Filter an.'}
                   </EmptyDescription>
                 </Empty>
               )}
