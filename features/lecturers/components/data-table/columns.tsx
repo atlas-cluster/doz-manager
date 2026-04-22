@@ -341,7 +341,6 @@ export const columns: ColumnDef<Lecturer>[] = [
               table.options.meta as LecturerTableMeta | undefined
             )?.reloadEditingLecturer?.()
           }
-          readonly
           trigger={
             <AvatarGroup className="cursor-pointer grayscale">
               {displayAssignments.map((assignment, index) => (
