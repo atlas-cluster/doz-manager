@@ -96,6 +96,26 @@ export function getVisibleFeatures(isAdmin: boolean) {
   return ALL_FEATURES.filter((feature) => isAdmin || !feature.adminOnly)
 }
 
+export const TOOL_LABELS: Record<string, string> = {
+  find_lecturer: 'Dozent suchen',
+  find_course: 'Vorlesung suchen',
+  get_user_features: 'Features laden',
+  get_courses: 'Vorlesungen abrufen',
+  get_lecturers: 'Dozenten abrufen',
+  get_lecturer_details: 'Dozenten-Details laden',
+  get_report_snapshot: 'Bericht erstellen',
+  get_courses_taught_by_lecturer: 'Vorlesungen des Dozenten',
+  count_courses_taught_by_lecturer: 'Vorlesungen zählen',
+  get_lecturers_teaching_course: 'Dozenten der Vorlesung',
+  count_lecturers_teaching_course: 'Dozenten zählen',
+  get_qualified_lecturers_for_course: 'Qualifizierte Dozenten',
+  assign_lecturer_to_course: 'Dozent zuweisen',
+  remove_lecturer_from_course: 'Zuweisung entfernen',
+  update_lecturer: 'Dozent aktualisieren',
+  update_course: 'Vorlesung aktualisieren',
+  update_qualification: 'Qualifikation aktualisieren',
+}
+
 function normalizeForSearch(value: string) {
   return value
     .normalize('NFD')

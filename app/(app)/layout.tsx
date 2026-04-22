@@ -6,6 +6,7 @@ import { AppHeader } from '@/features/app'
 import { AppSidebar } from '@/features/app'
 import { getPublicAuthSettings } from '@/features/auth/actions/get-public-auth-settings'
 import { auth } from '@/features/auth/lib/auth'
+import { isChatEnabled } from '@/features/chat/actions/is-chat-enabled'
 import { FloatingChat } from '@/features/chat'
 import {
   SidebarInset,
@@ -26,17 +27,19 @@ export default async function AppLayout({
     redirect('/login')
   }
 
-  const [dbUser, credentialAccount, authSettings] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { isAdmin: true, twoFactorEnabled: true },
-    }),
-    prisma.account.findFirst({
-      where: { userId: session.user.id, providerId: 'credential' },
-      select: { id: true },
-    }),
-    getPublicAuthSettings(),
-  ])
+  const [dbUser, credentialAccount, authSettings, chatEnabled] =
+    await Promise.all([
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { isAdmin: true, twoFactorEnabled: true },
+      }),
+      prisma.account.findFirst({
+        where: { userId: session.user.id, providerId: 'credential' },
+        select: { id: true },
+      }),
+      getPublicAuthSettings(),
+      isChatEnabled(),
+    ])
 
   const sidebarUser = {
     id: session.user.id,
@@ -57,7 +60,7 @@ export default async function AppLayout({
       <SidebarInset>
         <AppHeader isAdmin={dbUser?.isAdmin ?? false} />
         <div className={'p-3'}>{children}</div>
-        <FloatingChat />
+        {chatEnabled && <FloatingChat />}
       </SidebarInset>
     </SidebarProvider>
   )
