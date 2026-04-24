@@ -12,6 +12,7 @@ import {
   GraduationCap,
   MoreHorizontalIcon,
   PencilIcon,
+  Plus,
   TrashIcon,
   VenetianMask,
 } from 'lucide-react'
@@ -157,6 +158,44 @@ function ActionsCell({
   )
 }
 
+function NameCell({
+  row,
+  table,
+}: {
+  row: Row<Lecturer>
+  table: Table<Lecturer>
+}) {
+  const meta = table.options.meta as LecturerTableMeta | undefined
+  const lecturer = row.original
+  const [open, setOpen] = useState(false)
+
+  const fullName = `${lecturer.title ? lecturer.title + ' ' : ''}${lecturer.firstName} ${lecturer.secondName ? lecturer.secondName + ' ' : ''}${lecturer.lastName}`
+
+  return (
+    <>
+      <div className="cursor-pointer" onClick={() => setOpen(true)}>
+        {fullName}
+      </div>
+      <LecturerDialog
+        lecturer={lecturer}
+        open={open}
+        onOpenChange={setOpen}
+        onSubmit={(payload) => meta?.updateLecturer?.(lecturer.id, payload)}
+        onEditingChange={(editing) =>
+          editing
+            ? meta?.beginEditingLecturer?.(lecturer.id)
+            : meta?.stopEditingLecturer?.(lecturer.id)
+        }
+        hasExternalUpdate={
+          meta?.editingLecturerId === lecturer.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        }
+        onReloadFromServer={() => meta?.reloadEditingLecturer?.()}
+      />
+    </>
+  )
+}
+
 export const columns: ColumnDef<Lecturer>[] = [
   {
     id: 'select',
@@ -204,6 +243,7 @@ export const columns: ColumnDef<Lecturer>[] = [
     sortingFn: (rowA, rowB) => {
       return rowA.original.lastName.localeCompare(rowB.original.lastName)
     },
+    cell: ({ row, table }) => <NameCell row={row} table={table} />,
     enableSorting: true,
     enableHiding: false,
     enableGlobalFilter: true,
@@ -300,18 +340,11 @@ export const columns: ColumnDef<Lecturer>[] = [
     header: 'Vorlesungen',
     accessorKey: 'assignments',
     cell: ({ row, table }) => {
-      const assignments = row.original.assignments
-
-      if (!assignments || assignments.length === 0) {
-        return null
-      }
+      const assignments = row.original.assignments ?? []
 
       const displayAssignments = assignments.slice(0, 3)
       const remainingCount = assignments.length - 3
-
-      if (displayAssignments.length === 0) {
-        return null
-      }
+      const isEmpty = displayAssignments.length === 0
 
       return (
         <CourseAssignmentDialog
@@ -344,15 +377,25 @@ export const columns: ColumnDef<Lecturer>[] = [
           readonly
           trigger={
             <AvatarGroup className="cursor-pointer grayscale">
-              {displayAssignments.map((assignment, index) => (
-                <Avatar key={index}>
+              {isEmpty ? (
+                <Avatar>
                   <AvatarFallback>
-                    {initialsFromName(assignment.course.name)}
+                    <Plus className="size-4" />
                   </AvatarFallback>
                 </Avatar>
-              ))}
-              {remainingCount > 0 && (
-                <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+              ) : (
+                <>
+                  {displayAssignments.map((assignment, index) => (
+                    <Avatar key={index}>
+                      <AvatarFallback>
+                        {initialsFromName(assignment.course.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {remainingCount > 0 && (
+                    <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+                  )}
+                </>
               )}
             </AvatarGroup>
           }
