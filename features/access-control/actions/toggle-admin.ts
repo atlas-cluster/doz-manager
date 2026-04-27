@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { auth } from '@/features/auth/lib/auth'
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function toggleAdmin(userId: string, isAdmin: boolean) {
   const session = await auth.api.getSession({
@@ -28,10 +29,12 @@ export async function toggleAdmin(userId: string, isAdmin: boolean) {
     throw new Error('Sie können sich nicht selbst die Adminrechte entziehen.')
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { isAdmin },
-  })
+  await runInTransaction(async (tx) =>
+    tx.user.update({
+      where: { id: userId },
+      data: { isAdmin },
+    })
+  )
 
   await notifyTagsUpdated(['users'], 'access-control:toggle-admin', [
     { entityType: 'user', entityId: userId },

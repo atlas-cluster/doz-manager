@@ -5,7 +5,7 @@ import { headers } from 'next/headers'
 import { auth } from '@/features/auth/lib/auth'
 import type { ProfileActionResult } from '@/features/auth/types'
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
-import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function updateProfile(data: {
   name?: string
@@ -44,17 +44,19 @@ export async function updateProfile(data: {
     if (email !== undefined) updateData.email = email
     if (image !== undefined) updateData.image = image
 
-    const user = await prisma.user.update({
-      where: { id: session.user.id },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        twoFactorEnabled: true,
-      },
-    })
+    const user = await runInTransaction((tx) =>
+      tx.user.update({
+        where: { id: session.user.id },
+        data: updateData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          twoFactorEnabled: true,
+        },
+      })
+    )
 
     await notifyTagsUpdated(['users'], 'auth:update-profile', [
       { entityType: 'user', entityId: user.id },

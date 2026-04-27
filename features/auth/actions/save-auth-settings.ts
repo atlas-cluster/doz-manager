@@ -5,7 +5,7 @@ import { headers } from 'next/headers'
 import { encrypt } from '@/features/auth/lib/encrypt'
 import { auth, reinitializeAuth } from '@/features/auth/lib/auth'
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
-import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 type SaveAuthSettingsInput = {
   passwordEnabled: boolean
@@ -36,15 +36,6 @@ export async function saveAuthSettings(data: SaveAuthSettingsInput) {
     throw new Error('Nicht authentifiziert')
   }
 
-  const caller = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { isAdmin: true },
-  })
-
-  if (!caller?.isAdmin) {
-    throw new Error('Keine Berechtigung')
-  }
-
   // Enforce: at least one auth method must stay enabled
   const enabledCount = [
     data.passwordEnabled,
@@ -58,11 +49,6 @@ export async function saveAuthSettings(data: SaveAuthSettingsInput) {
     throw new Error('Mindestens eine Anmeldemethode muss aktiviert bleiben.')
   }
 
-  // Read existing row to preserve secrets that weren't re-submitted
-  const existing = await prisma.authSettings.findUnique({
-    where: { id: 'singleton' },
-  })
-
   // Encrypt non-empty strings, keep existing encrypted value, or null
   const encryptOrKeep = async (
     newValue: string | undefined,
@@ -74,72 +60,88 @@ export async function saveAuthSettings(data: SaveAuthSettingsInput) {
     return existingValue ?? null
   }
 
-  await prisma.authSettings.upsert({
-    where: { id: 'singleton' },
-    create: {
-      id: 'singleton',
-      passwordEnabled: data.passwordEnabled,
-      passkeyEnabled: data.passkeyEnabled,
+  await runInTransaction(async (tx) => {
+    const caller = await tx.user.findUnique({
+      where: { id: session.user.id },
+      select: { isAdmin: true },
+    })
 
-      microsoftEnabled: data.microsoftEnabled,
-      microsoftClientId: await encryptOrKeep(data.microsoftClientId, null),
-      microsoftClientSecret: await encryptOrKeep(
-        data.microsoftClientSecret,
-        null
-      ),
-      microsoftTenantId: await encryptOrKeep(data.microsoftTenantId, null),
+    if (!caller?.isAdmin) {
+      throw new Error('Keine Berechtigung')
+    }
 
-      githubEnabled: data.githubEnabled,
-      githubClientId: await encryptOrKeep(data.githubClientId, null),
-      githubClientSecret: await encryptOrKeep(data.githubClientSecret, null),
+    // Read existing row to preserve secrets that weren't re-submitted
+    const existing = await tx.authSettings.findUnique({
+      where: { id: 'singleton' },
+    })
 
-      oauthEnabled: data.oauthEnabled,
-      oauthClientId: await encryptOrKeep(data.oauthClientId, null),
-      oauthClientSecret: await encryptOrKeep(data.oauthClientSecret, null),
-      oauthIssuerUrl: await encryptOrKeep(data.oauthIssuerUrl, null),
-    },
-    update: {
-      passwordEnabled: data.passwordEnabled,
-      passkeyEnabled: data.passkeyEnabled,
+    await tx.authSettings.upsert({
+      where: { id: 'singleton' },
+      create: {
+        id: 'singleton',
+        passwordEnabled: data.passwordEnabled,
+        passkeyEnabled: data.passkeyEnabled,
 
-      microsoftEnabled: data.microsoftEnabled,
-      microsoftClientId: await encryptOrKeep(
-        data.microsoftClientId,
-        existing?.microsoftClientId
-      ),
-      microsoftClientSecret: await encryptOrKeep(
-        data.microsoftClientSecret,
-        existing?.microsoftClientSecret
-      ),
-      microsoftTenantId: await encryptOrKeep(
-        data.microsoftTenantId,
-        existing?.microsoftTenantId
-      ),
+        microsoftEnabled: data.microsoftEnabled,
+        microsoftClientId: await encryptOrKeep(data.microsoftClientId, null),
+        microsoftClientSecret: await encryptOrKeep(
+          data.microsoftClientSecret,
+          null
+        ),
+        microsoftTenantId: await encryptOrKeep(data.microsoftTenantId, null),
 
-      githubEnabled: data.githubEnabled,
-      githubClientId: await encryptOrKeep(
-        data.githubClientId,
-        existing?.githubClientId
-      ),
-      githubClientSecret: await encryptOrKeep(
-        data.githubClientSecret,
-        existing?.githubClientSecret
-      ),
+        githubEnabled: data.githubEnabled,
+        githubClientId: await encryptOrKeep(data.githubClientId, null),
+        githubClientSecret: await encryptOrKeep(data.githubClientSecret, null),
 
-      oauthEnabled: data.oauthEnabled,
-      oauthClientId: await encryptOrKeep(
-        data.oauthClientId,
-        existing?.oauthClientId
-      ),
-      oauthClientSecret: await encryptOrKeep(
-        data.oauthClientSecret,
-        existing?.oauthClientSecret
-      ),
-      oauthIssuerUrl: await encryptOrKeep(
-        data.oauthIssuerUrl,
-        existing?.oauthIssuerUrl
-      ),
-    },
+        oauthEnabled: data.oauthEnabled,
+        oauthClientId: await encryptOrKeep(data.oauthClientId, null),
+        oauthClientSecret: await encryptOrKeep(data.oauthClientSecret, null),
+        oauthIssuerUrl: await encryptOrKeep(data.oauthIssuerUrl, null),
+      },
+      update: {
+        passwordEnabled: data.passwordEnabled,
+        passkeyEnabled: data.passkeyEnabled,
+
+        microsoftEnabled: data.microsoftEnabled,
+        microsoftClientId: await encryptOrKeep(
+          data.microsoftClientId,
+          existing?.microsoftClientId
+        ),
+        microsoftClientSecret: await encryptOrKeep(
+          data.microsoftClientSecret,
+          existing?.microsoftClientSecret
+        ),
+        microsoftTenantId: await encryptOrKeep(
+          data.microsoftTenantId,
+          existing?.microsoftTenantId
+        ),
+
+        githubEnabled: data.githubEnabled,
+        githubClientId: await encryptOrKeep(
+          data.githubClientId,
+          existing?.githubClientId
+        ),
+        githubClientSecret: await encryptOrKeep(
+          data.githubClientSecret,
+          existing?.githubClientSecret
+        ),
+
+        oauthEnabled: data.oauthEnabled,
+        oauthClientId: await encryptOrKeep(
+          data.oauthClientId,
+          existing?.oauthClientId
+        ),
+        oauthClientSecret: await encryptOrKeep(
+          data.oauthClientSecret,
+          existing?.oauthClientSecret
+        ),
+        oauthIssuerUrl: await encryptOrKeep(
+          data.oauthIssuerUrl,
+          existing?.oauthIssuerUrl
+        ),
+      },
+    })
   })
 
   // Re-create the BetterAuth instance with the new settings

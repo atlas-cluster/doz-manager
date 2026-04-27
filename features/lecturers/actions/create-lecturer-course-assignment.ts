@@ -1,18 +1,20 @@
 'use server'
 
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
-import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function createLecturerCourseAssignment(
   lecturerId: string,
   courseId: string
 ) {
-  await prisma.courseAssignment.create({
-    data: {
-      courseId: courseId,
-      lecturerId: lecturerId,
-    },
-  })
+  await runInTransaction(async (tx) =>
+    tx.courseAssignment.create({
+      data: {
+        courseId: courseId,
+        lecturerId: lecturerId,
+      },
+    })
+  )
 
   await notifyTagsUpdated(
     [

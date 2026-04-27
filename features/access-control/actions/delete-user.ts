@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { auth } from '@/features/auth/lib/auth'
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { prisma } from '@/features/shared/lib/prisma'
+import { runInTransaction } from '@/features/shared/lib/transaction'
 
 export async function deleteUser(id: string) {
   const session = await auth.api.getSession({
@@ -28,9 +29,11 @@ export async function deleteUser(id: string) {
     throw new Error('Sie können sich nicht selbst löschen.')
   }
 
-  await prisma.user.delete({
-    where: { id },
-  })
+  await runInTransaction(async (tx) =>
+    tx.user.delete({
+      where: { id },
+    })
+  )
 
   await notifyTagsUpdated(['users'], 'access-control:delete-user', [
     { entityType: 'user', entityId: id },
