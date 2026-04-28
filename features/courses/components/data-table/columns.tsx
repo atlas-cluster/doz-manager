@@ -12,6 +12,7 @@ import {
   Lock,
   MoreHorizontalIcon,
   PencilIcon,
+  Plus,
   TrashIcon,
 } from 'lucide-react'
 import React, { useState } from 'react'
@@ -158,6 +159,36 @@ function ActionsCell({
   )
 }
 
+function NameCell({ row, table }: { row: Row<Course>; table: Table<Course> }) {
+  const meta = table.options.meta as CourseTableMeta | undefined
+  const course = row.original
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <div className="cursor-pointer" onClick={() => setOpen(true)}>
+        {course.name}
+      </div>
+      <CourseDialog
+        course={course}
+        open={open}
+        onOpenChange={setOpen}
+        onSubmit={(payload) => meta?.updateCourse?.(course.id, payload)}
+        onEditingChange={(editing) =>
+          editing
+            ? meta?.beginEditingCourse?.(course.id)
+            : meta?.stopEditingCourse?.(course.id)
+        }
+        hasExternalUpdate={
+          meta?.editingCourseId === course.id &&
+          Boolean(meta?.hasExternalUpdateForEditing)
+        }
+        onReloadFromServer={() => meta?.reloadEditingCourse?.()}
+      />
+    </>
+  )
+}
+
 function LecturerAssignmentsCell({
   row,
   table,
@@ -165,19 +196,12 @@ function LecturerAssignmentsCell({
   row: Row<Course>
   table: Table<Course>
 }) {
-  const assignments = row.original.assignments
+  const assignments = row.original.assignments ?? []
   const [dialogOpen, setDialogOpen] = useState(false)
-
-  if (!assignments || assignments.length === 0) {
-    return null
-  }
 
   const displayAssignments = assignments.slice(0, 3)
   const remainingCount = assignments.length - 3
-
-  if (displayAssignments.length === 0) {
-    return null
-  }
+  const isEmpty = displayAssignments.length === 0
 
   return (
     <LecturerAssignmentDialog
@@ -209,19 +233,29 @@ function LecturerAssignmentsCell({
       }
       trigger={
         <AvatarGroup className="cursor-pointer grayscale">
-          {displayAssignments.map((assignment, index) => (
-            <Avatar key={index}>
+          {isEmpty ? (
+            <Avatar>
               <AvatarFallback>
-                {initialsFromName(
-                  assignment.lecturer.firstName +
-                    ' ' +
-                    assignment.lecturer.lastName
-                )}
+                <Plus className="size-4" />
               </AvatarFallback>
             </Avatar>
-          ))}
-          {remainingCount > 0 && (
-            <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+          ) : (
+            <>
+              {displayAssignments.map((assignment, index) => (
+                <Avatar key={index}>
+                  <AvatarFallback>
+                    {initialsFromName(
+                      assignment.lecturer.firstName +
+                        ' ' +
+                        assignment.lecturer.lastName
+                    )}
+                  </AvatarFallback>
+                </Avatar>
+              ))}
+              {remainingCount > 0 && (
+                <AvatarGroupCount>+{remainingCount}</AvatarGroupCount>
+              )}
+            </>
           )}
         </AvatarGroup>
       }
@@ -272,6 +306,7 @@ export const columns: ColumnDef<Course>[] = [
         </Button>
       )
     },
+    cell: ({ row, table }) => <NameCell row={row} table={table} />,
     enableSorting: true,
     enableHiding: false,
     enableGlobalFilter: true,
