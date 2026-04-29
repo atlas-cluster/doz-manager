@@ -3,15 +3,14 @@
 import { notifyTagsUpdated } from '@/features/shared/lib/cache-notify'
 import { runInTransaction } from '@/features/shared/lib/transaction'
 
-export async function createLecturerCourseAssignment(
+export async function deleteCourseAssignment(
   lecturerId: string,
   courseId: string
 ) {
   await runInTransaction(async (tx) =>
-    tx.courseAssignment.create({
-      data: {
-        courseId: courseId,
-        lecturerId: lecturerId,
+    tx.courseAssignment.delete({
+      where: {
+        lecturerId_courseId: { lecturerId, courseId },
       },
     })
   )
@@ -23,7 +22,7 @@ export async function createLecturerCourseAssignment(
       `lecturer-${lecturerId}-courses`,
       `course-${courseId}-lecturers`,
     ],
-    'lecturers:create-lecturer-course-assignment',
+    'course-assignments:delete',
     [
       { entityType: 'lecturer', entityId: lecturerId },
       { entityType: 'course', entityId: courseId },

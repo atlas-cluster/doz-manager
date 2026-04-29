@@ -95,6 +95,7 @@ async function getCoursesInternal({
         orderBy,
         include: {
           assignments: {
+            where: { isAssigned: true },
             select: {
               lecturer: {
                 select: {

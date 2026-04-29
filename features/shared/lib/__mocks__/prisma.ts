@@ -21,12 +21,12 @@ export const prisma = {
   },
   courseAssignment: {
     create: vi.fn(),
-    delete: vi.fn(),
-  },
-  courseQualification: {
-    create: vi.fn(),
     update: vi.fn(),
+    upsert: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
+    updateMany: vi.fn(),
+    findFirst: vi.fn(),
     findMany: vi.fn(),
   },
   user: {

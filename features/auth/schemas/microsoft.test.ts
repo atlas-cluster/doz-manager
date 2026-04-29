@@ -15,7 +15,7 @@ describe('microsoftSchema', () => {
   it('should require clientId', () => {
     const result = microsoftSchema.safeParse({
       clientId: '',
-      clientSecret: '',
+      clientSecret: 'secret',
       tenantId: 'tenant',
     })
     expect(result.success).toBe(false)
@@ -24,7 +24,7 @@ describe('microsoftSchema', () => {
   it('should require tenantId', () => {
     const result = microsoftSchema.safeParse({
       clientId: 'id',
-      clientSecret: '',
+      clientSecret: 'secret',
       tenantId: '',
     })
     expect(result.success).toBe(false)
@@ -37,5 +37,21 @@ describe('microsoftSchema', () => {
       tenantId: 'tenant',
     })
     expect(result.success).toBe(true)
+  })
+
+  it('should reject missing clientId field', () => {
+    const result = microsoftSchema.safeParse({
+      clientSecret: 'secret',
+      tenantId: 'tenant',
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('should reject missing tenantId field', () => {
+    const result = microsoftSchema.safeParse({
+      clientId: 'id',
+      clientSecret: 'secret',
+    })
+    expect(result.success).toBe(false)
   })
 })

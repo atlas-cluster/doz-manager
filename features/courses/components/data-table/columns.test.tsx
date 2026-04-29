@@ -22,24 +22,15 @@ vi.mock('@/features/lecturers', async (importOriginal) => {
     }),
   }
 })
-vi.mock(
-  '@/features/courses/actions/get-course-lecturer-qualifications',
-  () => ({
-    getCourseLecturerQualifications: vi.fn().mockResolvedValue([]),
-  })
-)
-vi.mock(
-  '@/features/courses/actions/create-course-lecturer-qualification',
-  () => ({
-    createCourseLecturerQualification: vi.fn().mockResolvedValue({}),
-  })
-)
-vi.mock(
-  '@/features/courses/actions/update-course-lecturer-qualification',
-  () => ({
-    updateCourseLecturerQualification: vi.fn().mockResolvedValue({}),
-  })
-)
+vi.mock('@/features/courses/actions/get-course-assignments-for-course', () => ({
+  getCourseAssignmentsForCourse: vi.fn().mockResolvedValue([]),
+}))
+vi.mock('@/features/shared/actions/upsert-course-assignment', () => ({
+  upsertCourseAssignment: vi.fn().mockResolvedValue({}),
+}))
+vi.mock('@/features/shared/actions/delete-course-assignment', () => ({
+  deleteCourseAssignment: vi.fn().mockResolvedValue({}),
+}))
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
 
@@ -216,7 +207,7 @@ describe('Course columns', () => {
 
       expect(await screen.findByText('Aktionen')).toBeInTheDocument()
       expect(screen.getByText('Bearbeiten')).toBeInTheDocument()
-      expect(screen.getByText('Qualifikationen bearbeiten')).toBeInTheDocument()
+      expect(screen.getByText('Dozenten verwalten')).toBeInTheDocument()
       expect(screen.getByText('Löschen')).toBeInTheDocument()
     })
   })

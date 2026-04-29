@@ -2,8 +2,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import z from 'zod'
 
-import { CourseQualification } from '@/features/courses'
-import { qualificationSchema } from '@/features/lecturers/schemas/qualification'
+import { courseAssignmentSchema } from '@/features/lecturers/schemas/qualification'
 import { Button } from '@/features/shared/components/ui/button'
 import {
   Dialog,
@@ -28,47 +27,73 @@ import {
 } from '@/features/shared/components/ui/radio-group'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-interface EditQualificationDialogProps {
-  trigger: ReactNode
-  onSubmit: (
-    data: z.infer<typeof qualificationSchema>,
-    courseId: string
-  ) => void
-  courseQualification?: CourseQualification
-  courseId: string
+const formSchema = z.object({
+  experience: z.enum(['none', 'other_uni', 'provadis']),
+  leadTime: z.enum(['short', 'four_weeks', 'more_weeks']),
+  courseLevelPreference: z.enum(['none', 'bachelor', 'master']).optional(),
+})
+
+type FormValues = z.infer<typeof formSchema>
+
+export interface CourseAssignmentDetails {
+  experience: 'none' | 'other_uni' | 'provadis' | null
+  leadTime: 'short' | 'four_weeks' | 'more_weeks' | null
+  courseLevelPreference: 'bachelor' | 'master' | null
 }
 
-export function EditQualificationDialog({
+interface EditCourseAssignmentDialogProps {
+  trigger: ReactNode
+  /** Existing values (if any) for this assignment row. */
+  initial?: Partial<CourseAssignmentDetails>
+  /** When true, render the per-row courseLevelPreference selector. */
+  showCourseLevelPreference?: boolean
+  onSubmit: (data: CourseAssignmentDetails) => void
+}
+
+/**
+ * Small inline dialog used inside the merged assignment+qualification dialog
+ * to edit qualification fields (experience, leadTime) and, when the lecturer
+ * has `courseLevelPreference === 'both'`, an optional per-assignment
+ * courseLevelPreference override.
+ */
+export function EditCourseAssignmentDialog({
   trigger,
+  initial,
+  showCourseLevelPreference = false,
   onSubmit,
-  courseQualification,
-  courseId,
-}: EditQualificationDialogProps) {
+}: EditCourseAssignmentDialogProps) {
   const [open, setOpen] = useState(false)
 
-  const form = useForm<z.infer<typeof qualificationSchema>>({
-    resolver: zodResolver(qualificationSchema),
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      experience: 'none',
-      leadTime: 'short',
+      experience: initial?.experience ?? 'none',
+      leadTime: initial?.leadTime ?? 'short',
+      courseLevelPreference: initial?.courseLevelPreference ?? 'none',
     },
   })
 
   useEffect(() => {
     if (open) {
-      if (courseQualification) {
-        form.reset({
-          experience: courseQualification.experience,
-          leadTime: courseQualification.leadTime,
-        })
-      }
-      form.reset()
+      form.reset({
+        experience: initial?.experience ?? 'none',
+        leadTime: initial?.leadTime ?? 'short',
+        courseLevelPreference: initial?.courseLevelPreference ?? 'none',
+      })
     }
-  }, [courseQualification, form, open])
+  }, [form, initial, open])
 
-  const handleSubmit = async (data: z.infer<typeof qualificationSchema>) => {
-    onSubmit(data, courseId)
-    form.reset()
+  const handleSubmit = (data: FormValues) => {
+    onSubmit({
+      experience: data.experience,
+      leadTime: data.leadTime,
+      courseLevelPreference:
+        showCourseLevelPreference &&
+        data.courseLevelPreference &&
+        data.courseLevelPreference !== 'none'
+          ? data.courseLevelPreference
+          : null,
+    })
     setOpen(false)
   }
 
@@ -79,8 +104,10 @@ export function EditQualificationDialog({
         <DialogHeader>
           <DialogTitle>Details bearbeiten</DialogTitle>
           <DialogDescription>
-            Wählen Sie die Erfahrung und die Vorlaufzeit für diese Vorlesung
-            aus.
+            Wählen Sie Erfahrung und Vorlaufzeit
+            {showCourseLevelPreference
+              ? ' sowie ggf. die Vorlesungspräferenz für diese Zuordnung.'
+              : '.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -178,6 +205,46 @@ export function EditQualificationDialog({
               </Field>
             )}
           />
+          {showCourseLevelPreference && (
+            <Controller
+              name="courseLevelPreference"
+              control={form.control}
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel>Vorlesungspräferenz</FieldLabel>
+                  <RadioGroup
+                    value={field.value ?? 'none'}
+                    onValueChange={field.onChange}
+                    className="flex flex-col gap-2">
+                    <FieldLabel htmlFor="clp-none">
+                      <Field orientation="horizontal">
+                        <FieldContent>
+                          <FieldTitle>Keine Präferenz</FieldTitle>
+                        </FieldContent>
+                        <RadioGroupItem value="none" id="clp-none" />
+                      </Field>
+                    </FieldLabel>
+                    <FieldLabel htmlFor="clp-bachelor">
+                      <Field orientation="horizontal">
+                        <FieldContent>
+                          <FieldTitle>Bachelor</FieldTitle>
+                        </FieldContent>
+                        <RadioGroupItem value="bachelor" id="clp-bachelor" />
+                      </Field>
+                    </FieldLabel>
+                    <FieldLabel htmlFor="clp-master">
+                      <Field orientation="horizontal">
+                        <FieldContent>
+                          <FieldTitle>Master</FieldTitle>
+                        </FieldContent>
+                        <RadioGroupItem value="master" id="clp-master" />
+                      </Field>
+                    </FieldLabel>
+                  </RadioGroup>
+                </Field>
+              )}
+            />
+          )}
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">Abbrechen</Button>
@@ -189,3 +256,5 @@ export function EditQualificationDialog({
     </Dialog>
   )
 }
+
+export { courseAssignmentSchema }

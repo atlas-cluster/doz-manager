@@ -367,82 +367,76 @@ async function main() {
     }
   }
 
-  console.log(`Assigning lecturers to courses...`)
-  for (const [lecturerEmail, courseNames] of Object.entries(
-    lecturerAssignments
-  )) {
-    const lecturer = await prisma.lecturer.findUnique({
-      where: { email: lecturerEmail },
-    })
-    if (!lecturer) continue
+  console.log(`Assigning lecturers to courses (with qualifications)...`)
 
+  // Build a unified map: email -> courseName -> { isAssigned, leadTime?, experience? }
+  type AssignmentEntry = {
+    isAssigned: boolean
+    leadTime?: import('@/features/shared/lib/generated/prisma/enums').LeadTimeOption
+    experience?: import('@/features/shared/lib/generated/prisma/enums').ExperienceOption
+  }
+  const assignmentsByEmail: Record<string, Record<string, AssignmentEntry>> = {}
+
+  for (const [email, courseNames] of Object.entries(lecturerAssignments)) {
+    assignmentsByEmail[email] ??= {}
     for (const courseName of courseNames) {
-      const course = await prisma.course.findFirst({
-        where: { name: courseName },
-      })
-      if (!course || !lecturer) continue
-
-      const existingAssignment = await prisma.courseAssignment.findFirst({
-        where: {
-          courseId: course.id,
-          lecturerId: lecturer.id,
-        },
-      })
-
-      if (!existingAssignment) {
-        await prisma.courseAssignment.create({
-          data: {
-            courseId: course.id,
-            lecturerId: lecturer.id,
-          },
-        })
-        console.log(`Assigned ${lecturerEmail} to ${courseName}`)
-      } else {
-        console.log(
-          `Assignment already exists: ${lecturerEmail} -> ${courseName}`
-        )
+      assignmentsByEmail[email][courseName] = {
+        ...assignmentsByEmail[email][courseName],
+        isAssigned: true,
       }
     }
   }
-  console.log(`Assigning lecturer qualifications...`)
-  for (const [lecturerEmail, courseQuals] of Object.entries(
-    lecturerQualifications
-  )) {
-    const lecturer = await prisma.lecturer.findUnique({
-      where: { email: lecturerEmail },
-    })
+
+  for (const [email, courseQuals] of Object.entries(lecturerQualifications)) {
+    assignmentsByEmail[email] ??= {}
+    for (const [courseName, qualification] of Object.entries(courseQuals)) {
+      assignmentsByEmail[email][courseName] = {
+        isAssigned: assignmentsByEmail[email][courseName]?.isAssigned ?? false,
+        leadTime: qualification.leadTime,
+        experience: qualification.experience,
+      }
+    }
+  }
+
+  for (const [email, byCourse] of Object.entries(assignmentsByEmail)) {
+    const lecturer = await prisma.lecturer.findUnique({ where: { email } })
     if (!lecturer) continue
 
-    for (const [courseName, qualification] of Object.entries(courseQuals)) {
+    for (const [courseName, entry] of Object.entries(byCourse)) {
       const course = await prisma.course.findFirst({
         where: { name: courseName },
       })
-      if (!course || !lecturer) continue
+      if (!course) continue
 
-      const existingQualification = await prisma.courseQualification.findFirst({
+      await prisma.courseAssignment.upsert({
         where: {
-          courseId: course.id,
+          lecturerId_courseId: {
+            lecturerId: lecturer.id,
+            courseId: course.id,
+          },
+        },
+        create: {
           lecturerId: lecturer.id,
+          courseId: course.id,
+          isAssigned: entry.isAssigned,
+          leadTime: entry.leadTime ?? null,
+          experience: entry.experience ?? null,
+        },
+        update: {
+          isAssigned: entry.isAssigned,
+          ...(entry.leadTime !== undefined && { leadTime: entry.leadTime }),
+          ...(entry.experience !== undefined && {
+            experience: entry.experience,
+          }),
         },
       })
-
-      if (!existingQualification) {
-        await prisma.courseQualification.create({
-          data: {
-            courseId: course.id,
-            lecturerId: lecturer.id,
-            leadTime: qualification.leadTime,
-            experience: qualification.experience,
-          },
-        })
-        console.log(
-          `Added qualification for ${lecturerEmail} -> ${courseName}: ${qualification.leadTime}/${qualification.experience}`
-        )
-      } else {
-        console.log(
-          `Qualification already exists: ${lecturerEmail} -> ${courseName}`
-        )
-      }
+      console.log(
+        `Upserted course assignment ${email} -> ${courseName} ` +
+          `(assigned=${entry.isAssigned}` +
+          (entry.leadTime ? `, leadTime=${entry.leadTime}` : '') +
+          (entry.experience ? `, experience=${entry.experience}` : '') +
+          ')'
+      )
     }
   }
 

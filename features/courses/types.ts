@@ -5,7 +5,7 @@ import type {
   Course as PrismaCourse,
   CourseAssignment as PrismaCourseAssignment,
   CourseLevel as PrismaCourseLevel,
-  CourseQualification as PrismaCourseQualification,
+  Lecturer as PrismaLecturer,
 } from '@/features/shared/lib/generated/prisma/client'
 
 export type Course = PrismaCourse & {
@@ -17,8 +17,10 @@ export type Course = PrismaCourse & {
   }[]
 }
 export type CourseLevel = PrismaCourseLevel
-export type CourseAssignment = PrismaCourseAssignment
-export type CourseQualification = PrismaCourseQualification
+export type CourseAssignment = PrismaCourseAssignment & {
+  course?: PrismaCourse
+  lecturer?: PrismaLecturer
+}
 
 export interface CourseTableMeta {
   createCourse: (data: z.infer<typeof courseSchema>) => void

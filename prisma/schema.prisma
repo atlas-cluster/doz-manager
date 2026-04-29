@@ -26,8 +26,7 @@ model Lecturer {
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
 
-  assignments    CourseAssignment[]
-  qualifications CourseQualification[]
+  assignments CourseAssignment[]
 }
 
 enum LecturerType {
@@ -50,8 +49,7 @@ model Course {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  assignments    CourseAssignment[]
-  qualifications CourseQualification[]
+  assignments CourseAssignment[]
 }
 
 enum CourseLevel {
@@ -60,25 +58,16 @@ enum CourseLevel {
 }
 
 model CourseAssignment {
-  lecturer   Lecturer @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
-  lecturerId String
-  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  courseId   String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@id([lecturerId, courseId])
-}
-
-model CourseQualification {
-  lecturer   Lecturer         @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
-  lecturerId String
-  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  courseId   String
-  leadTime   LeadTimeOption
-  experience ExperienceOption
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  lecturer              Lecturer               @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  lecturerId            String
+  course                Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId              String
+  isAssigned            Boolean                @default(false)
+  leadTime              LeadTimeOption?
+  experience            ExperienceOption?
+  courseLevelPreference CourseLevelPreference?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@id([lecturerId, courseId])
 }

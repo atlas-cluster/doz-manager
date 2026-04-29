@@ -10,11 +10,9 @@ export async function updateLecturer(
   id: string,
   data: z.infer<typeof lecturerSchema>
 ) {
-  await runInTransaction(async (tx) =>
-    tx.lecturer.update({
-      where: {
-        id: id,
-      },
+  await runInTransaction(async (tx) => {
+    await tx.lecturer.update({
+      where: { id },
       data: {
         title: data.title,
         firstName: data.firstName,
@@ -26,7 +24,17 @@ export async function updateLecturer(
         courseLevelPreference: data.courseLevelPreference,
       },
     })
-  )
+
+    // Per-assignment courseLevelPreference overrides only make sense while
+    // the lecturer's own preference is "both". Clear them otherwise to keep
+    // data consistent.
+    if (data.courseLevelPreference !== 'both') {
+      await tx.courseAssignment.updateMany({
+        where: { lecturerId: id, NOT: { courseLevelPreference: null } },
+        data: { courseLevelPreference: null },
+      })
+    }
+  })
 
   await notifyTagsUpdated(['lecturers'], 'lecturers:update-lecturer', [
     { entityType: 'lecturer', entityId: id },

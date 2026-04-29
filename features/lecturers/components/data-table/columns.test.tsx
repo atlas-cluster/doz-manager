@@ -10,20 +10,23 @@ import {
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-vi.mock('@/features/lecturers/actions/get-lecturer-course-assignments', () => ({
-  getLecturerCourseAssignments: vi.fn().mockResolvedValue([]),
-}))
+vi.mock(
+  '@/features/lecturers/actions/get-course-assignments-for-lecturer',
+  () => ({
+    getCourseAssignmentsForLecturer: vi.fn().mockResolvedValue([]),
+  })
+)
 vi.mock('@/features/courses', () => ({
   getCourses: vi
     .fn()
     .mockResolvedValue({ data: [], pageCount: 0, rowCount: 0 }),
 }))
-vi.mock(
-  '@/features/lecturers/actions/get-lecturer-course-qualification',
-  () => ({
-    getLecturerCourseQualifications: vi.fn().mockResolvedValue([]),
-  })
-)
+vi.mock('@/features/shared/actions/upsert-course-assignment', () => ({
+  upsertCourseAssignment: vi.fn().mockResolvedValue({}),
+}))
+vi.mock('@/features/shared/actions/delete-course-assignment', () => ({
+  deleteCourseAssignment: vi.fn().mockResolvedValue({}),
+}))
 
 // ─── helpers ───────────────────────────────────────────────────────────────────
 
@@ -428,8 +431,7 @@ describe('Lecturer columns', () => {
 
       expect(await screen.findByText('Aktionen')).toBeInTheDocument()
       expect(screen.getByText('Bearbeiten')).toBeInTheDocument()
-      expect(screen.getByText('Vorlesungen zuordnen')).toBeInTheDocument()
-      expect(screen.getByText('Qualifikationen bearbeiten')).toBeInTheDocument()
+      expect(screen.getByText('Vorlesungen verwalten')).toBeInTheDocument()
       expect(screen.getByText('Löschen')).toBeInTheDocument()
     })
   })

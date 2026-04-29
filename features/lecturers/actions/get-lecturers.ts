@@ -87,6 +87,7 @@ async function getLecturersInternal({
       orderBy,
       include: {
         assignments: {
+          where: { isAssigned: true },
           select: {
             course: {
               select: {

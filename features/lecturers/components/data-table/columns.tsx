@@ -19,7 +19,6 @@ import {
 import React, { useState } from 'react'
 
 import { CourseAssignmentDialog } from '@/features/lecturers/components/dialog/course-assignment'
-import { CourseQualificationDialog } from '@/features/lecturers/components/dialog/course-qualification'
 import { LecturerDialog } from '@/features/lecturers/components/dialog/lecturer'
 import { Lecturer } from '@/features/lecturers/types'
 import { LecturerTableMeta } from '@/features/lecturers/types'
@@ -51,8 +50,6 @@ function ActionsCell({
   const meta = table.options.meta as LecturerTableMeta | undefined
   const lecturer = row.original
   const [lecturerDialogOpen, setLecturerDialogOpen] = useState(false)
-  const [CourseQualificationDialogOpen, setCourseQualificationDialogOpen] =
-    useState(false)
   const [courseAssignmentDialogOpen, setCourseAssignmentDialogOpen] =
     useState(false)
 
@@ -91,21 +88,6 @@ function ActionsCell({
         }
         onReloadFromServer={() => meta?.reloadEditingLecturer?.()}
       />
-      <CourseQualificationDialog
-        lecturer={lecturer}
-        open={CourseQualificationDialogOpen}
-        onOpenChange={setCourseQualificationDialogOpen}
-        onEditingChange={(editing) =>
-          editing
-            ? meta?.beginEditingLecturer?.(lecturer.id)
-            : meta?.stopEditingLecturer?.(lecturer.id)
-        }
-        hasExternalUpdate={
-          meta?.editingLecturerId === lecturer.id &&
-          Boolean(meta?.hasExternalUpdateForEditing)
-        }
-        onReloadFromServer={() => meta?.reloadEditingLecturer?.()}
-      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
@@ -124,12 +106,7 @@ function ActionsCell({
               <DropdownMenuItem
                 onSelect={() => setCourseAssignmentDialogOpen(true)}>
                 <ArrowLeftRight />
-                Vorlesungen zuordnen
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => setCourseQualificationDialogOpen(true)}>
-                <BadgeCheck />
-                Qualifikationen bearbeiten
+                Vorlesungen verwalten
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant={'destructive'}

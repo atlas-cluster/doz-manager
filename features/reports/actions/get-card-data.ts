@@ -16,7 +16,7 @@ async function getCoursesAtProvadis(): Promise<GetCoursesAtProvadisResponse> {
       title: true,
       firstName: true,
       lastName: true,
-      qualifications: {
+      assignments: {
         where: { experience: 'provadis' },
         select: {
           course: {
@@ -32,7 +32,7 @@ async function getCoursesAtProvadis(): Promise<GetCoursesAtProvadisResponse> {
 
   return response.reduce((acc, lecturer) => {
     const lecturerName = `${lecturer.title ? lecturer.title + ' ' : ''}${lecturer.firstName} ${lecturer.lastName}`
-    const courses = lecturer.qualifications
+    const courses = lecturer.assignments
       .map((q) => q.course.name)
       .sort((a, b) => a.localeCompare(b))
     acc[lecturerName] = courses
@@ -46,7 +46,7 @@ async function getCoursesAtOtherUni(): Promise<GetCoursesAtOtherUniResponse> {
       title: true,
       firstName: true,
       lastName: true,
-      qualifications: {
+      assignments: {
         where: { experience: 'other_uni' },
         select: {
           course: {
@@ -62,7 +62,7 @@ async function getCoursesAtOtherUni(): Promise<GetCoursesAtOtherUniResponse> {
 
   return response.reduce((acc, lecturer) => {
     const lecturerName = `${lecturer.title ? lecturer.title + ' ' : ''}${lecturer.firstName} ${lecturer.lastName}`
-    const courses = lecturer.qualifications
+    const courses = lecturer.assignments
       .map((q) => q.course.name)
       .sort((a, b) => a.localeCompare(b))
     acc[lecturerName] = courses
@@ -73,7 +73,7 @@ async function getCoursesAtOtherUni(): Promise<GetCoursesAtOtherUniResponse> {
 async function getCoursesWithoutProvadisExperience(): Promise<GetCoursesWithoutProvadisExperienceResponse> {
   const courses = await prisma.course.findMany({
     where: {
-      qualifications: {
+      assignments: {
         none: { experience: 'provadis' },
       },
     },
@@ -86,7 +86,7 @@ async function getCoursesWithoutLecturer(): Promise<GetCoursesWithoutProvadisExp
   const courses = await prisma.course.findMany({
     where: {
       assignments: {
-        none: {},
+        none: { isAssigned: true },
       },
     },
     select: { name: true },

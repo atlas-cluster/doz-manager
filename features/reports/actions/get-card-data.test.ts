@@ -30,7 +30,7 @@ describe('getCardData', () => {
           title: 'Dr.',
           firstName: 'Max',
           lastName: 'Mustermann',
-          qualifications: [
+          assignments: [
             { course: { name: 'Mathematik' } },
             { course: { name: 'Informatik' } },
           ],
@@ -39,7 +39,7 @@ describe('getCardData', () => {
           title: null,
           firstName: 'Anna',
           lastName: 'Schmidt',
-          qualifications: [{ course: { name: 'Physik' } }],
+          assignments: [{ course: { name: 'Physik' } }],
         },
       ] as never)
 
@@ -50,7 +50,7 @@ describe('getCardData', () => {
           title: true,
           firstName: true,
           lastName: true,
-          qualifications: {
+          assignments: {
             where: { experience: 'provadis' },
             select: {
               course: {
@@ -81,7 +81,7 @@ describe('getCardData', () => {
           title: null,
           firstName: 'John',
           lastName: 'Doe',
-          qualifications: [{ course: { name: 'BWL' } }],
+          assignments: [{ course: { name: 'BWL' } }],
         },
       ] as never)
 
@@ -98,7 +98,7 @@ describe('getCardData', () => {
           title: 'Prof.',
           firstName: 'Eva',
           lastName: 'Müller',
-          qualifications: [],
+          assignments: [],
         },
       ] as never)
 
@@ -115,7 +115,7 @@ describe('getCardData', () => {
           title: 'Dr.',
           firstName: 'A',
           lastName: 'B',
-          qualifications: [
+          assignments: [
             { course: { name: 'Kurs 1' } },
             { course: { name: 'Kurs 2' } },
             { course: { name: 'Kurs 3' } },
@@ -125,7 +125,7 @@ describe('getCardData', () => {
           title: '',
           firstName: 'C',
           lastName: 'D',
-          qualifications: [{ course: { name: 'Kurs 4' } }],
+          assignments: [{ course: { name: 'Kurs 4' } }],
         },
       ] as never)
 
@@ -172,7 +172,7 @@ describe('getCardData', () => {
 
       expect(prisma.course.findMany).toHaveBeenCalledWith({
         where: {
-          qualifications: {
+          assignments: {
             none: { experience: 'provadis' },
           },
         },
@@ -214,7 +214,7 @@ describe('getCardData', () => {
       expect(prisma.course.findMany).toHaveBeenCalledWith({
         where: {
           assignments: {
-            none: {},
+            none: { isAssigned: true },
           },
         },
         select: { name: true },
@@ -230,7 +230,7 @@ describe('getCardData', () => {
             title: null,
             firstName: 'Max',
             lastName: 'Meier',
-            qualifications: [{ course: { name: 'Mathe' } }],
+            assignments: [{ course: { name: 'Mathe' } }],
           },
         ] as never)
         .mockResolvedValueOnce([
@@ -238,7 +238,7 @@ describe('getCardData', () => {
             title: null,
             firstName: 'Max',
             lastName: 'Meier',
-            qualifications: [{ course: { name: 'Mathe' } }],
+            assignments: [{ course: { name: 'Mathe' } }],
           },
         ] as never)
       vi.mocked(prisma.course.findMany)

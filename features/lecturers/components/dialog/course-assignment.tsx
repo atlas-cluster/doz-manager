@@ -1,11 +1,17 @@
 import {
   BookOpen,
   Calendar,
+  CheckCircle2,
   CircleQuestionMark,
+  Clock,
   GraduationCap,
+  Pencil,
   PencilRuler,
   Plus,
+  Timer,
   Trash2,
+  XCircle,
+  XIcon,
 } from 'lucide-react'
 import {
   ReactNode,
@@ -17,16 +23,19 @@ import {
 } from 'react'
 import { toast } from 'sonner'
 
-import { Course, getCourses } from '@/features/courses'
+import { Course, CourseAssignment, getCourses } from '@/features/courses'
 import { Lecturer } from '@/features/lecturers'
-import { createLecturerCourseAssignment } from '@/features/lecturers/actions/create-lecturer-course-assignment'
-import { deleteLecturerCourseAssignment } from '@/features/lecturers/actions/delete-lecturer-course-assignment'
-import { getLecturerCourseAssignments } from '@/features/lecturers/actions/get-lecturer-course-assignments'
+import { getCourseAssignmentsForLecturer } from '@/features/lecturers/actions/get-course-assignments-for-lecturer'
+import { deleteCourseAssignment } from '@/features/shared/actions/delete-course-assignment'
+import { upsertCourseAssignment } from '@/features/shared/actions/upsert-course-assignment'
 import { DataTableFacetedFilter } from '@/features/shared/components/data-table-faceted-filter'
+import {
+  CourseAssignmentDetails,
+  EditCourseAssignmentDialog,
+} from '@/features/shared/components/edit-course-assignment'
 import { ExternalUpdateAlert } from '@/features/shared/components/external-update-alert'
 import { Avatar, AvatarFallback } from '@/features/shared/components/ui/avatar'
 import { Button } from '@/features/shared/components/ui/button'
-import { Input } from '@/features/shared/components/ui/input'
 import {
   Dialog,
   DialogClose,
@@ -43,6 +52,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/features/shared/components/ui/empty'
+import { Input } from '@/features/shared/components/ui/input'
 import {
   Item,
   ItemActions,
@@ -56,8 +66,11 @@ import { ScrollArea } from '@/features/shared/components/ui/scroll-area'
 import { Skeleton } from '@/features/shared/components/ui/skeleton'
 import { useDebounce } from '@/features/shared/hooks/use-debounce'
 import { useLiveChanges } from '@/features/shared/hooks/use-live-changes'
+import {
+  ExperienceOption,
+  LeadTimeOption,
+} from '@/features/shared/lib/generated/prisma/enums'
 import { initialsFromName } from '@/features/shared/lib/utils'
-import '@radix-ui/react-avatar'
 
 interface CourseAssignmentProps {
   lecturer: Lecturer
@@ -69,6 +82,57 @@ interface CourseAssignmentProps {
   hasExternalUpdate?: boolean
   onReloadFromServer?: () => Promise<unknown> | unknown
   onEditingChange?: (editing: boolean) => void
+}
+
+type EditableAssignment = {
+  courseId: string
+  isAssigned: boolean
+  experience: ExperienceOption | null
+  leadTime: LeadTimeOption | null
+  courseLevelPreference: 'bachelor' | 'master' | null
+}
+
+function fromCourseAssignment(a: CourseAssignment): EditableAssignment {
+  return {
+    courseId: a.courseId,
+    isAssigned: a.isAssigned,
+    experience: a.experience ?? null,
+    leadTime: a.leadTime ?? null,
+    courseLevelPreference:
+      a.courseLevelPreference === 'bachelor' ||
+      a.courseLevelPreference === 'master'
+        ? a.courseLevelPreference
+        : null,
+  }
+}
+
+function isEmptyRow(row: EditableAssignment): boolean {
+  return (
+    !row.isAssigned &&
+    row.experience === null &&
+    row.leadTime === null &&
+    row.courseLevelPreference === null
+  )
+}
+
+function rowsEqual(a: EditableAssignment, b: EditableAssignment): boolean {
+  return (
+    a.isAssigned === b.isAssigned &&
+    a.experience === b.experience &&
+    a.leadTime === b.leadTime &&
+    a.courseLevelPreference === b.courseLevelPreference
+  )
+}
+
+const experienceLabel: Record<ExperienceOption, string> = {
+  provadis: 'Provadis',
+  other_uni: 'Extern',
+  none: 'Keine',
+}
+const leadTimeLabel: Record<LeadTimeOption, string> = {
+  short: 'Sofort',
+  four_weeks: '4 Wochen',
+  more_weeks: 'Mehr als 4 Wochen',
 }
 
 export function CourseAssignmentDialog({
@@ -88,26 +152,40 @@ export function CourseAssignmentDialog({
   const [readonlyMode, setReadonlyMode] = useState(readonly)
 
   const [courses, setCourses] = useState<Course[]>([])
-  const [selectedCourses, setSelectedCourses] = useState<Course[]>([])
+  const [originalAssignments, setOriginalAssignments] = useState<
+    EditableAssignment[]
+  >([])
+  const [editedAssignments, setEditedAssignments] = useState<
+    EditableAssignment[]
+  >([])
+
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearchQuery = useDebounce(searchQuery)
   const [courseLevelFilter, setCourseLevelFilter] = useState<
     Array<'bachelor' | 'master'>
   >([])
   const [semesterFilter, setSemesterFilter] = useState<string[]>([])
+  const [experienceFilter, setExperienceFilter] = useState<ExperienceOption[]>(
+    []
+  )
+  const [leadTimeFilter, setLeadTimeFilter] = useState<LeadTimeOption[]>([])
 
   const open = controlledOpen ?? internalOpen
   const setOpen = setControlledOpen ?? setInternalOpen
+
+  const showPerRowLevelPref = lecturer.courseLevelPreference === 'both'
 
   const loadDialogData = async () => {
     setLoading(true)
     try {
       const [coursesResponse, assignmentsResponse] = await Promise.all([
         getCourses({ pageIndex: 0, pageSize: 999999999 }),
-        getLecturerCourseAssignments(lecturer.id),
+        getCourseAssignmentsForLecturer(lecturer.id),
       ])
       setCourses(coursesResponse.data)
-      setSelectedCourses(assignmentsResponse)
+      const rows = assignmentsResponse.map(fromCourseAssignment)
+      setOriginalAssignments(rows)
+      setEditedAssignments(rows)
       setSearchQuery('')
     } catch (error) {
       console.error('Failed to fetch data', error)
@@ -139,19 +217,23 @@ export function CourseAssignmentDialog({
       void loadDialogData()
       setReadonlyMode(readonly)
       setHasLocalExternalUpdate(false)
+      // Pre-select the lecturer's level preference (bachelor / master only;
+      // for "both" we leave the filter empty so all courses are visible).
+      setCourseLevelFilter(
+        lecturer.courseLevelPreference === 'bachelor' ||
+          lecturer.courseLevelPreference === 'master'
+          ? [lecturer.courseLevelPreference]
+          : []
+      )
     }
-  }, [lecturer.id, open, readonly])
+  }, [lecturer.id, lecturer.courseLevelPreference, open, readonly])
 
-  // Auto-update the dialog when external changes arrive.
-  // In readonly mode: silently reload the data.
-  // In edit mode: flag the conflict so the ExternalUpdateAlert appears.
   const [hasLocalExternalUpdate, setHasLocalExternalUpdate] = useState(false)
 
   useLiveChanges({
     tags: open ? ['lecturers', 'courses'] : [],
     onChangeAction: (event) => {
       if (!open) return
-
       const isRelevant =
         !event.entities?.length ||
         event.entities.some(
@@ -159,9 +241,7 @@ export function CourseAssignmentDialog({
             (e.entityType === 'lecturer' && e.entityId === lecturer.id) ||
             e.entityType === 'course'
         )
-
       if (!isRelevant) return
-
       if (readonlyMode) {
         void loadDialogData()
       } else {
@@ -172,113 +252,191 @@ export function CourseAssignmentDialog({
 
   const effectiveHasExternalUpdate = hasExternalUpdate || hasLocalExternalUpdate
 
+  const getRow = useCallback(
+    (courseId: string): EditableAssignment | undefined =>
+      editedAssignments.find((r) => r.courseId === courseId),
+    [editedAssignments]
+  )
+
   const filterCourse = useCallback(
     (
       course: Course,
-      opts: { skipCourseLevel?: boolean; skipSemester?: boolean } = {}
+      opts: {
+        skipCourseLevel?: boolean
+        skipSemester?: boolean
+        skipExperience?: boolean
+        skipLeadTime?: boolean
+      } = {}
     ): boolean => {
       if (debouncedSearchQuery) {
         if (
           !course.name
             .toLowerCase()
             .includes(debouncedSearchQuery.toLowerCase())
-        ) {
+        )
           return false
-        }
       }
 
       if (
         !opts.skipCourseLevel &&
         courseLevelFilter.length > 0 &&
         !courseLevelFilter.includes(course.courseLevel)
-      ) {
+      )
         return false
-      }
 
       if (
         !opts.skipSemester &&
         semesterFilter.length > 0 &&
         !semesterFilter.includes(String(course.semester))
-      ) {
+      )
         return false
+
+      const row = getRow(course.id)
+
+      if (!opts.skipExperience && experienceFilter.length > 0) {
+        if (!row?.experience || !experienceFilter.includes(row.experience))
+          return false
+      }
+      if (!opts.skipLeadTime && leadTimeFilter.length > 0) {
+        if (!row?.leadTime || !leadTimeFilter.includes(row.leadTime))
+          return false
       }
 
       return true
     },
-    [debouncedSearchQuery, courseLevelFilter, semesterFilter]
+    [
+      debouncedSearchQuery,
+      courseLevelFilter,
+      semesterFilter,
+      getRow,
+      experienceFilter,
+      leadTimeFilter,
+    ]
   )
 
   const courseLevelCounts = useMemo(() => {
     const map = new Map<string, number>()
-
     courses.forEach((course) => {
       if (!filterCourse(course, { skipCourseLevel: true })) return
       map.set(course.courseLevel, (map.get(course.courseLevel) ?? 0) + 1)
     })
-
     return map
   }, [courses, filterCourse])
 
   const semesterCounts = useMemo(() => {
     const map = new Map<string, number>()
-
     courses.forEach((course) => {
       if (!filterCourse(course, { skipSemester: true })) return
-      const semester = String(course.semester)
-      map.set(semester, (map.get(semester) ?? 0) + 1)
+      const s = String(course.semester)
+      map.set(s, (map.get(s) ?? 0) + 1)
     })
-
     return map
   }, [courses, filterCourse])
 
-  const filteredCourses = useMemo(() => {
-    return courses.filter((course) => filterCourse(course))
-  }, [courses, filterCourse])
+  const experienceCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    courses.forEach((course) => {
+      if (!filterCourse(course, { skipExperience: true })) return
+      const row = getRow(course.id)
+      if (row?.experience)
+        map.set(row.experience, (map.get(row.experience) ?? 0) + 1)
+    })
+    return map
+  }, [courses, filterCourse, getRow])
 
-  const isCourseSelected = (courseId: string) =>
-    selectedCourses.some((course) => course.id === courseId)
+  const leadTimeCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    courses.forEach((course) => {
+      if (!filterCourse(course, { skipLeadTime: true })) return
+      const row = getRow(course.id)
+      if (row?.leadTime) map.set(row.leadTime, (map.get(row.leadTime) ?? 0) + 1)
+    })
+    return map
+  }, [courses, filterCourse, getRow])
 
-  const toggleCourse = (courseId: string) => {
-    if (isCourseSelected(courseId)) {
-      setSelectedCourses(selectedCourses.filter((c) => c.id !== courseId))
-    } else {
-      const course = courses.find((c) => c.id === courseId)
-      if (course) {
-        setSelectedCourses([...selectedCourses, course])
+  const filteredCourses = useMemo(
+    () => courses.filter((c) => filterCourse(c)),
+    [courses, filterCourse]
+  )
+
+  const setRow = (
+    courseId: string,
+    patch: Partial<Omit<EditableAssignment, 'courseId'>>
+  ) => {
+    setEditedAssignments((prev) => {
+      const existing = prev.find((r) => r.courseId === courseId)
+      if (existing) {
+        return prev.map((r) =>
+          r.courseId === courseId ? { ...r, ...patch } : r
+        )
       }
-    }
+      return [
+        ...prev,
+        {
+          courseId,
+          isAssigned: false,
+          experience: null,
+          leadTime: null,
+          courseLevelPreference: null,
+          ...patch,
+        },
+      ]
+    })
+  }
+
+  const toggleAssigned = (courseId: string) => {
+    const row = getRow(courseId)
+    setRow(courseId, { isAssigned: !row?.isAssigned })
+  }
+
+  const applyDetails = (courseId: string, details: CourseAssignmentDetails) => {
+    setRow(courseId, {
+      experience: details.experience,
+      leadTime: details.leadTime,
+      courseLevelPreference: details.courseLevelPreference,
+    })
   }
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
     onEditingChange?.(false)
     let shouldRestoreEditingContext = true
-    const currentCourseIds = selectedCourses.map((c) => c.id)
-    const originalCourseIds = (
-      await getLecturerCourseAssignments(lecturer.id)
-    ).map((c) => c.id)
 
-    const coursesToAdd = currentCourseIds.filter(
-      (id) => !originalCourseIds.includes(id)
-    )
-    const coursesToRemove = originalCourseIds.filter(
-      (id) => !currentCourseIds.includes(id)
-    )
+    const ops: Promise<unknown>[] = []
 
-    const promise = Promise.all([
-      ...coursesToAdd.map((courseId) =>
-        createLecturerCourseAssignment(lecturer.id, courseId)
-      ),
-      ...coursesToRemove.map((courseId) =>
-        deleteLecturerCourseAssignment(lecturer.id, courseId)
-      ),
-    ])
+    for (const edited of editedAssignments) {
+      const original = originalAssignments.find(
+        (o) => o.courseId === edited.courseId
+      )
+      if (original && rowsEqual(original, edited)) continue
+
+      if (isEmptyRow(edited)) {
+        if (original)
+          ops.push(deleteCourseAssignment(lecturer.id, edited.courseId))
+        continue
+      }
+
+      ops.push(
+        upsertCourseAssignment(lecturer.id, edited.courseId, {
+          isAssigned: edited.isAssigned,
+          experience: edited.experience,
+          leadTime: edited.leadTime,
+          courseLevelPreference: edited.courseLevelPreference,
+        })
+      )
+    }
+
+    for (const original of originalAssignments) {
+      if (!editedAssignments.find((e) => e.courseId === original.courseId)) {
+        ops.push(deleteCourseAssignment(lecturer.id, original.courseId))
+      }
+    }
 
     try {
-      await toast.promise(promise, {
-        loading: 'Zuweisungen werden gespeichert...',
-        success: 'Zuweisungen wurden gespeichert',
-        error: 'Zuweisungen konnten nicht gespeichert werden',
+      await toast.promise(Promise.all(ops), {
+        loading: 'Zuordnungen werden gespeichert...',
+        success: 'Zuordnungen gespeichert',
+        error: 'Zuordnungen konnten nicht gespeichert werden',
       })
       onSubmit?.()
       setOpen(false)
@@ -287,10 +445,23 @@ export function CourseAssignmentDialog({
       console.error('Failed to save assignments', error)
     } finally {
       setIsSubmitting(false)
-      if (shouldRestoreEditingContext) {
-        onEditingChange?.(true)
-      }
+      if (shouldRestoreEditingContext) onEditingChange?.(true)
     }
+  }
+
+  const hasActiveFilters =
+    courseLevelFilter.length > 0 ||
+    semesterFilter.length > 0 ||
+    experienceFilter.length > 0 ||
+    leadTimeFilter.length > 0 ||
+    debouncedSearchQuery !== ''
+
+  const clearAllFilters = () => {
+    setCourseLevelFilter([])
+    setSemesterFilter([])
+    setExperienceFilter([])
+    setLeadTimeFilter([])
+    setSearchQuery('')
   }
 
   return (
@@ -308,7 +479,7 @@ export function CourseAssignmentDialog({
           <DialogTitle>
             {readonlyMode
               ? 'Vorlesungen ansehen - '
-              : 'Vorlesungen zuordnen - '}
+              : 'Vorlesungen verwalten - '}
             {lecturer.title ? lecturer.title + ' ' : ''}
             {lecturer.firstName}
             {lecturer.secondName ? ' ' + lecturer.secondName : ''}
@@ -316,8 +487,8 @@ export function CourseAssignmentDialog({
           </DialogTitle>
           <DialogDescription>
             {readonlyMode
-              ? 'Die folgenden Vorlesungen sind diesem Dozenten zugeordnet'
-              : 'Weisen Sie diesem Dozenten Vorlesungen zu'}
+              ? 'Die folgenden Vorlesungen sind diesem Dozenten zugeordnet bzw. qualifiziert'
+              : 'Verwalten Sie Zuordnungen und Qualifikationen für diesen Dozenten'}
           </DialogDescription>
         </DialogHeader>
         <div className={'flex min-h-0 flex-1 flex-col gap-3'}>
@@ -371,9 +542,8 @@ export function CourseAssignmentDialog({
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="md:w-64"
                   />
-
                   <DataTableFacetedFilter
-                    title="Studiengang"
+                    title="Vorlesungsstufe"
                     options={[
                       {
                         value: 'bachelor',
@@ -388,7 +558,6 @@ export function CourseAssignmentDialog({
                     }
                     facets={courseLevelCounts}
                   />
-
                   <DataTableFacetedFilter
                     title="Semester"
                     options={Array.from({ length: 6 }).map((_, index) => ({
@@ -400,71 +569,138 @@ export function CourseAssignmentDialog({
                     onChange={(v) => setSemesterFilter(v)}
                     facets={semesterCounts}
                   />
+                  <DataTableFacetedFilter
+                    title="Erfahrung"
+                    options={[
+                      {
+                        value: 'provadis',
+                        label: 'Provadis',
+                        icon: GraduationCap,
+                      },
+                      {
+                        value: 'other_uni',
+                        label: 'Extern',
+                        icon: GraduationCap,
+                      },
+                      { value: 'none', label: 'Keine', icon: XCircle },
+                    ]}
+                    value={experienceFilter}
+                    onChange={(v) =>
+                      setExperienceFilter(v as ExperienceOption[])
+                    }
+                    facets={experienceCounts}
+                  />
+                  <DataTableFacetedFilter
+                    title="Vorlaufzeit"
+                    options={[
+                      { value: 'short', label: 'Sofort', icon: Timer },
+                      { value: 'four_weeks', label: '4 Wochen', icon: Clock },
+                      {
+                        value: 'more_weeks',
+                        label: 'Mehr als 4 Wochen',
+                        icon: Calendar,
+                      },
+                    ]}
+                    value={leadTimeFilter}
+                    onChange={(v) => setLeadTimeFilter(v as LeadTimeOption[])}
+                    facets={leadTimeCounts}
+                  />
+                  {hasActiveFilters && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={clearAllFilters}>
+                      <XIcon />
+                      <span className="sr-only">Filter löschen</span>
+                    </Button>
+                  )}
                 </div>
               )}
+
               {readonlyMode ? (
-                selectedCourses.length > 0 ? (
-                  <ScrollArea className="min-h-0 flex-1">
-                    <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
-                      {selectedCourses.map((course) => (
-                        <Item
-                          key={course.id}
-                          variant="outline"
-                          size="sm"
-                          className="border-primary bg-sidebar-accent/30 flex flex-nowrap">
-                          <ItemMedia>
-                            <Avatar className="size-10">
-                              <AvatarFallback>
-                                {initialsFromName(course.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                          </ItemMedia>
-                          <ItemContent>
-                            <ItemTitle>{course.name}</ItemTitle>
-                            <ItemDescription>
-                              {course.courseLevel === 'bachelor'
-                                ? 'Bachelor'
-                                : 'Master'}{' '}
-                              | {course.semester}. Semester
-                            </ItemDescription>
-                          </ItemContent>
-                        </Item>
-                      ))}
-                    </ItemGroup>
-                  </ScrollArea>
-                ) : (
-                  <Empty className="flex-1">
-                    <EmptyMedia variant={'icon'}>
-                      <CircleQuestionMark />
-                    </EmptyMedia>
-                    <EmptyTitle>Keine zugeordneten Vorlesungen</EmptyTitle>
-                    <EmptyDescription>
-                      Dieser Dozent ist derzeit keiner Vorlesung zugeordnet.
-                    </EmptyDescription>
-                  </Empty>
-                )
+                (() => {
+                  const visible = courses.filter((c) => {
+                    const row = getRow(c.id)
+                    return row?.isAssigned || row?.experience || row?.leadTime
+                  })
+                  return visible.length > 0 ? (
+                    <ScrollArea className="min-h-0 flex-1">
+                      <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
+                        {visible.map((course) => {
+                          const row = getRow(course.id)!
+                          return (
+                            <Item
+                              key={course.id}
+                              variant="outline"
+                              size="sm"
+                              className={
+                                row.isAssigned
+                                  ? 'border-primary bg-sidebar-accent/30 flex flex-nowrap'
+                                  : 'flex flex-nowrap'
+                              }>
+                              <ItemMedia>
+                                <Avatar className="size-10">
+                                  <AvatarFallback>
+                                    {initialsFromName(course.name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </ItemMedia>
+                              <ItemContent>
+                                <ItemTitle>{course.name}</ItemTitle>
+                                <ItemDescription>
+                                  {course.courseLevel === 'bachelor'
+                                    ? 'Bachelor'
+                                    : 'Master'}
+                                  {course.semester != null
+                                    ? ` | ${course.semester}. Semester`
+                                    : ''}
+                                </ItemDescription>
+                              </ItemContent>
+                            </Item>
+                          )
+                        })}
+                      </ItemGroup>
+                    </ScrollArea>
+                  ) : (
+                    <Empty className="flex-1">
+                      <EmptyMedia variant={'icon'}>
+                        <CircleQuestionMark />
+                      </EmptyMedia>
+                      <EmptyTitle>Keine Einträge</EmptyTitle>
+                      <EmptyDescription>
+                        Dieser Dozent ist derzeit keiner Vorlesung zugeordnet
+                        oder qualifiziert.
+                      </EmptyDescription>
+                    </Empty>
+                  )
+                })()
               ) : filteredCourses.length > 0 ? (
                 <ScrollArea className="min-h-0 flex-1">
                   <ItemGroup className="grid grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] gap-3">
                     {filteredCourses
                       .slice()
                       .sort((a, b) => {
-                        const aSelected = isCourseSelected(a.id)
-                        const bSelected = isCourseSelected(b.id)
-                        if (aSelected && !bSelected) return -1
-                        if (!aSelected && bSelected) return 1
+                        const aRow = getRow(a.id)
+                        const bRow = getRow(b.id)
+                        const aActive = !!aRow?.isAssigned
+                        const bActive = !!bRow?.isAssigned
+                        if (aActive && !bActive) return -1
+                        if (!aActive && bActive) return 1
                         return 0
                       })
                       .map((course) => {
-                        const isSelected = isCourseSelected(course.id)
-
+                        const row = getRow(course.id)
+                        const isAssigned = !!row?.isAssigned
+                        const hasQualification = !!(
+                          row?.experience || row?.leadTime
+                        )
                         return (
                           <Item
                             key={course.id}
                             variant="outline"
                             size="sm"
                             className={
-                              isSelected
+                              isAssigned
                                 ? 'border-primary bg-sidebar-accent/30 flex flex-nowrap'
                                 : 'flex flex-nowrap'
                             }>
@@ -477,21 +713,65 @@ export function CourseAssignmentDialog({
                             </ItemMedia>
                             <ItemContent>
                               <ItemTitle>{course.name}</ItemTitle>
-                              <ItemDescription>
+                              <ItemDescription className="line-clamp-none">
+                                {showPerRowLevelPref && (
+                                  <>
+                                    Präferenz:{' '}
+                                    {row?.courseLevelPreference === 'bachelor'
+                                      ? 'Bachelor'
+                                      : row?.courseLevelPreference === 'master'
+                                        ? 'Master'
+                                        : '—'}
+                                    <br />
+                                  </>
+                                )}
                                 {course.courseLevel === 'bachelor'
                                   ? 'Bachelor'
-                                  : 'Master'}{' '}
-                                | {course.semester}. Semester
+                                  : 'Master'}
+                                {course.semester != null
+                                  ? ` | ${course.semester}. Semester`
+                                  : ''}
+                                {row?.experience || row?.leadTime ? (
+                                  <>
+                                    <br />
+                                    {row?.experience &&
+                                      experienceLabel[row.experience]}
+                                    {row?.experience && row?.leadTime && ' | '}
+                                    {row?.leadTime &&
+                                      leadTimeLabel[row.leadTime]}
+                                  </>
+                                ) : null}
                               </ItemDescription>
                             </ItemContent>
                             <ItemActions>
+                              <EditCourseAssignmentDialog
+                                trigger={
+                                  <Button variant="ghost" size="icon">
+                                    <Pencil />
+                                    <span className="sr-only">
+                                      {course.name +
+                                        (hasQualification
+                                          ? ' bearbeiten'
+                                          : ' qualifizieren')}
+                                    </span>
+                                  </Button>
+                                }
+                                showCourseLevelPreference={showPerRowLevelPref}
+                                initial={{
+                                  experience: row?.experience ?? null,
+                                  leadTime: row?.leadTime ?? null,
+                                  courseLevelPreference:
+                                    row?.courseLevelPreference ?? null,
+                                }}
+                                onSubmit={(d) => applyDetails(course.id, d)}
+                              />
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => toggleCourse(course.id)}>
-                                {isSelected ? <Trash2 /> : <Plus />}
+                                onClick={() => toggleAssigned(course.id)}>
+                                {isAssigned ? <Trash2 /> : <Plus />}
                                 <span className="sr-only">
-                                  {isSelected
+                                  {isAssigned
                                     ? course.name + ' entfernen'
                                     : course.name + ' zuordnen'}
                                 </span>
@@ -507,15 +787,9 @@ export function CourseAssignmentDialog({
                   <EmptyMedia variant={'icon'}>
                     <CircleQuestionMark />
                   </EmptyMedia>
-                  <EmptyTitle>
-                    {readonlyMode
-                      ? 'Keine zugeordneten Vorlesungen'
-                      : 'Keine Vorlesungen gefunden'}
-                  </EmptyTitle>
+                  <EmptyTitle>Keine Vorlesungen gefunden</EmptyTitle>
                   <EmptyDescription>
-                    {readonlyMode
-                      ? 'Dieser Dozent ist derzeit keiner Vorlesung zugeordnet.'
-                      : 'Bitte passen Sie Suche oder Filter an.'}
+                    Bitte passen Sie Suche oder Filter an.
                   </EmptyDescription>
                 </Empty>
               )}

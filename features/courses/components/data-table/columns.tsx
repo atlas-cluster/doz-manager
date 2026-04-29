@@ -19,7 +19,6 @@ import React, { useState } from 'react'
 
 import { CourseDialog } from '@/features/courses/components/dialog/course'
 import { LecturerAssignmentDialog } from '@/features/courses/components/dialog/lecturer-assignment'
-import { LecturerQualificationDialog } from '@/features/courses/components/dialog/lecturer-qualification'
 import { Course, CourseTableMeta } from '@/features/courses/types'
 import {
   Avatar,
@@ -50,8 +49,6 @@ function ActionsCell({
   const course = row.original
   const [open, setOpen] = useState(false)
   const [lecturerAssignmentDialogOpen, setLecturerAssignmentDialogOpen] =
-    useState(false)
-  const [lecturerQualificationDialogOpen, setLecturerQualificationDialogOpen] =
     useState(false)
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
@@ -91,21 +88,6 @@ function ActionsCell({
         }
         onReloadFromServer={() => meta?.reloadEditingCourse?.()}
       />
-      <LecturerQualificationDialog
-        course={course}
-        open={lecturerQualificationDialogOpen}
-        onOpenChange={setLecturerQualificationDialogOpen}
-        onEditingChange={(editing) =>
-          editing
-            ? meta?.beginEditingCourse?.(course.id)
-            : meta?.stopEditingCourse?.(course.id)
-        }
-        hasExternalUpdate={
-          meta?.editingCourseId === course.id &&
-          Boolean(meta?.hasExternalUpdateForEditing)
-        }
-        onReloadFromServer={() => meta?.reloadEditingCourse?.()}
-      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size={'icon'} suppressHydrationWarning>
@@ -125,13 +107,7 @@ function ActionsCell({
               <DropdownMenuItem
                 onSelect={() => setLecturerAssignmentDialogOpen(true)}>
                 <ArrowLeftRight />
-                Dozenten zuordnen
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                onSelect={() => setLecturerQualificationDialogOpen(true)}>
-                <BadgeCheck />
-                Qualifikationen bearbeiten
+                Dozenten verwalten
               </DropdownMenuItem>
 
               <DropdownMenuItem
