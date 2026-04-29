@@ -56,6 +56,11 @@ export function DataTable({
 }: {
   initialData: GetCoursesResponse
 }) {
+  const emptyFacets: GetCoursesResponse['facets'] = {
+    isOpen: {},
+    courseLevel: {},
+  }
+
   const [isPending, startTransition] = useTransition()
 
   // Table state
@@ -89,7 +94,9 @@ export function DataTable({
   const [data, setData] = useState<Course[]>(initialData.data)
   const [pageCount, setPageCount] = useState<number>(initialData.pageCount)
   const [rowCount, setRowCount] = useState<number>(initialData.rowCount)
-  const [facets, setFacets] = useState(initialData.facets)
+  const [facets, setFacets] = useState<GetCoursesResponse['facets']>(
+    initialData.facets ?? emptyFacets
+  )
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null)
   const [hasExternalUpdateForEditing, setHasExternalUpdateForEditing] =
     useState(false)
@@ -115,7 +122,7 @@ export function DataTable({
           setData(result.data)
           setPageCount(result.pageCount)
           setRowCount(result.rowCount)
-          setFacets(result.facets)
+          setFacets(result.facets ?? emptyFacets)
         } finally {
           resolve()
         }
@@ -297,13 +304,13 @@ export function DataTable({
   })
 
   const isOpenCounts = useMemo(
-    () => new Map(Object.entries(facets.isOpen)),
-    [facets.isOpen]
+    () => new Map(Object.entries(facets?.isOpen ?? {})),
+    [facets]
   )
 
   const courseLevelCounts = useMemo(
-    () => new Map(Object.entries(facets.courseLevel)),
-    [facets.courseLevel]
+    () => new Map(Object.entries(facets?.courseLevel ?? {})),
+    [facets]
   )
 
   return (

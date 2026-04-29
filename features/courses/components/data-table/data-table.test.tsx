@@ -73,6 +73,21 @@ describe('Courses DataTable', () => {
     expect(screen.getByText('Keine Vorlesungen gefunden.')).toBeInTheDocument()
   })
 
+  it('should not crash when facets are missing from initial data', () => {
+    render(
+      <DataTable
+        initialData={
+          {
+            ...emptyData,
+            facets: undefined,
+          } as unknown as GetCoursesResponse
+        }
+      />
+    )
+
+    expect(screen.getByText('Keine Vorlesungen gefunden.')).toBeInTheDocument()
+  })
+
   it('should render course rows when data is provided', () => {
     render(<DataTable initialData={sampleData} />)
 
