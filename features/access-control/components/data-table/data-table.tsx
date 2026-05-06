@@ -498,9 +498,7 @@ export function DataTable({
         </div>
         {/** Desktop only: Show view options, refresh button and create button on the right */}
         <div className={'hidden gap-2 md:flex'}>
-          <ButtonGroup>
-            <DataTableViewOptions table={table} />
-          </ButtonGroup>
+          <DataTableViewOptions table={table} />
           <UserDialog
             trigger={
               <Button suppressHydrationWarning>Benutzer erstellen</Button>
