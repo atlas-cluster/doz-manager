@@ -122,14 +122,6 @@ describe('Access Control DataTable', () => {
     expect(createBtns.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('should render the refresh button', () => {
-    render(<DataTable initialData={sampleData} currentUserId="admin-1" />)
-    const refreshBtns = screen.getAllByRole('button', {
-      name: /Daten aktualisieren/,
-    })
-    expect(refreshBtns.length).toBeGreaterThanOrEqual(1)
-  })
-
   it('should render user emails', () => {
     render(<DataTable initialData={sampleData} currentUserId="admin-1" />)
     expect(screen.getByText('alice@example.com')).toBeInTheDocument()

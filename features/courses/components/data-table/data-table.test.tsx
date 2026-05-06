@@ -112,14 +112,6 @@ describe('Courses DataTable', () => {
     ).toBeGreaterThanOrEqual(1)
   })
 
-  it('should render the refresh button', () => {
-    render(<DataTable initialData={sampleData} />)
-
-    expect(
-      screen.getAllByRole('button', { name: 'Daten aktualisieren' }).length
-    ).toBeGreaterThan(0)
-  })
-
   it('should render column headers', () => {
     render(<DataTable initialData={sampleData} />)
 

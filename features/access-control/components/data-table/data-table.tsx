@@ -351,10 +351,6 @@ export function DataTable({
     })
   }
 
-  const handleRefresh = () => {
-    fetchData()
-  }
-
   const handleClearFilters = () => {
     const nextPagination = { ...pagination, pageIndex: 0 }
 
@@ -401,7 +397,6 @@ export function DataTable({
       addPassword: handleAddPassword,
       removePassword: handleRemovePassword,
       removePasskeys: handleRemovePasskeys,
-      refreshUsers: handleRefresh,
       enabledMethods,
       beginEditingUser,
       stopEditingUser,
@@ -459,16 +454,6 @@ export function DataTable({
                 onChange={(e) => setInputValue(e.target.value)}
               />
               <DataTableViewOptions table={table} />
-              <Button
-                variant="outline"
-                size="icon"
-                type="button"
-                disabled={isPending}
-                suppressHydrationWarning
-                onClick={handleRefresh}>
-                <RefreshCwIcon className={isPending ? 'animate-spin' : ''} />
-                <span className={'sr-only'}>Daten aktualisieren</span>
-              </Button>
             </ButtonGroup>
             {/** Mobile only: Show small create button next to searchbar */}
             <div className={'flex md:hidden'}>
@@ -515,16 +500,6 @@ export function DataTable({
         <div className={'hidden gap-2 md:flex'}>
           <ButtonGroup>
             <DataTableViewOptions table={table} />
-            <Button
-              variant="outline"
-              size="icon"
-              type="button"
-              disabled={isPending}
-              suppressHydrationWarning
-              onClick={handleRefresh}>
-              <RefreshCwIcon className={isPending ? 'animate-spin' : ''} />
-              <span className={'sr-only'}>Daten aktualisieren</span>
-            </Button>
           </ButtonGroup>
           <UserDialog
             trigger={

@@ -324,6 +324,55 @@ function ActionsCell({
   )
 }
 
+function NameCell({
+  row,
+  table,
+}: {
+  row: Row<AccessControlUser>
+  table: Table<AccessControlUser>
+}) {
+  const meta = table.options.meta as AccessControlTableMeta | undefined
+  const accessControllUser = row.original
+  const [open, setOpen] = useState(false)
+
+  return (
+    <UserDialog
+      user={accessControllUser}
+      open={open}
+      onOpenChange={setOpen}
+      onSubmit={(payload) => meta?.updateUser?.(accessControllUser.id, payload)}
+      onEditingChange={(editing) =>
+        editing
+          ? meta?.beginEditingUser?.(accessControllUser.id)
+          : meta?.stopEditingUser?.(accessControllUser.id)
+      }
+      hasExternalUpdate={
+        meta?.editingUserId === accessControllUser.id &&
+        Boolean(meta?.hasExternalUpdateForEditing)
+      }
+      onReloadFromServer={() => meta?.reloadEditingUser?.()}
+      trigger={
+        <div className="flex items-center gap-2">
+          <Avatar
+            key={accessControllUser.image ?? accessControllUser.id}
+            className="size-7">
+            {accessControllUser.image && (
+              <AvatarImage
+                src={accessControllUser.image}
+                alt={accessControllUser.name}
+              />
+            )}
+            <AvatarFallback className="text-xs">
+              {getInitials(accessControllUser.name)}
+            </AvatarFallback>
+          </Avatar>
+          <span>{accessControllUser.name}</span>
+        </div>
+      }
+    />
+  )
+}
+
 export const columns: ColumnDef<AccessControlUser>[] = [
   {
     id: 'select',
@@ -367,20 +416,7 @@ export const columns: ColumnDef<AccessControlUser>[] = [
         </Button>
       )
     },
-    cell: ({ row }) => {
-      const user = row.original
-      return (
-        <div className="flex items-center gap-2">
-          <Avatar key={user.image ?? user.id} className="size-7">
-            {user.image && <AvatarImage src={user.image} alt={user.name} />}
-            <AvatarFallback className="text-xs">
-              {getInitials(user.name)}
-            </AvatarFallback>
-          </Avatar>
-          <span>{user.name}</span>
-        </div>
-      )
-    },
+    cell: ({ row, table }) => <NameCell row={row} table={table} />,
     enableSorting: true,
     enableHiding: false,
     enableGlobalFilter: true,
