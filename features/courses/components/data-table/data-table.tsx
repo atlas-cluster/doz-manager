@@ -231,6 +231,10 @@ export function DataTable({
     })
   }
 
+  const handleRefresh = () => {
+    fetchData()
+  }
+
   const handleClearFilters = () => {
     const nextPagination = { ...pagination, pageIndex: 0 }
 
@@ -270,6 +274,7 @@ export function DataTable({
       updateCourse: handleUpdate,
       deleteCourse: handleDelete,
       deleteCourses: handleDeleteMany,
+      refreshCourses: handleRefresh,
       beginEditingCourse,
       stopEditingCourse,
       reloadEditingCourse,
