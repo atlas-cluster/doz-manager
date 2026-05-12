@@ -50,7 +50,6 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { refresh } from 'next/cache'
 
 export function DataTable({
   initialData,
