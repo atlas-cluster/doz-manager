@@ -6,7 +6,7 @@ doz-manager is a Next.js app for managing lecturers, courses, assignments, repor
 
 - Next.js 16
 - React 19
-- Prisma + MySQL/MariaDB
+- Prisma + MySQL
 - Redis
 - Vitest
 
@@ -35,24 +35,36 @@ cp .env.example .env
 Example values for local development:
 
 ```env
-DB_HOST=127.0.0.1
-DB_NAME=doz_manager
-DB_USER=doz_manager
-DB_PASSWORD=doz_manager
+# Database
+DB_NAME=db
+DB_USER=user
+DB_PASSWORD=password
 DB_ROOT_USER=root
-DB_ROOT_PASSWORD=doz_manager_root
+DB_ROOT_PASSWORD=rootpassword
+DB_HOST=localhost
 DB_PORT=3306
 
-REDIS_URL=redis://127.0.0.1:6379
+# Redis
+REDIS_URL=redis://localhost:6379
 CHANGE_EVENTS_CHANNEL=app:changes
 
-BETTER_AUTH_SECRET=replace-this-with-a-long-random-string
+# Auth
+BETTER_AUTH_SECRET=super-secret-base-64-string
 BETTER_AUTH_URL=http://localhost:3000
+
+# Admin contact email shown on the login page
 NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com
 
+# Seed Admin (used by `npm run prisma:seed`)
 SEED_ADMIN_EMAIL=admin@example.com
-SEED_ADMIN_PASSWORD=change-me
-SEED_ADMIN_NAME=Admin
+SEED_ADMIN_PASSWORD=admin123
+SEED_ADMIN_NAME=Admin 
+```
+
+Generate a random `BETTER_AUTH_SECRET` using:
+
+```bash
+openssl rand -base64 32
 ```
 
 ### 3. Start MySQL and Redis
@@ -116,7 +128,7 @@ The repository already includes a production Docker build and a GitHub Actions d
 ### Production requirements
 
 - A Linux host with Docker installed
-- A reachable MySQL/MariaDB database
+- A reachable MySQL database
 - A reachable Redis instance
 - A public app URL for `BETTER_AUTH_URL`
 
