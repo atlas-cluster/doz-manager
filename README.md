@@ -1,86 +1,198 @@
-# Lecturer Management System
+# doz-manager
 
-## Project Description
+doz-manager is a Next.js app for managing lecturers, courses, assignments, reporting, and access control.
 
-The goal of this software is to optimize the assignment of lecturers to lectures at a university. The user should be able to find the most suitable lecturer for a lecture.
+## Stack
 
-### Example Use Cases:
+- Next.js 16
+- React 19
+- Prisma + MySQL/MariaDB
+- Redis
+- Vitest
 
-1. The user urgently needs a lecturer who can teach Mathematics in a Bachelor's program without preparation.
-2. The user is looking for a lecturer who can teach Agile Project Work in the Master's program next semester and has previously taught this subject at Provadis University.
-
-### Key Features:
-
-- **Web Application**: Desktop-based, accessible via browsers
-- **Database Integration**: Stores and manages data for lecturers and lectures.
-
-### Reporting Features:
-
-The application allows the generation of reports, which can be displayed in a table format on the web and exported as CSV, JSON, or PDF:
-
-1. List of all lecturers and lectures they have taught at Provadis University (Bachelor and Master).
-2. List of all lecturers and lectures they can teach but have never taught at Provadis University (Bachelor and Master).
-3. List of all lectures (Bachelor and Master) for which no lecturer is known.
-4. List of all lectures (Bachelor and Master) for which only lecturers who have taught at other universities but not at Provadis University are available.
-
-### Typical User Workflow:
-
-1. Select a lecture.
-2. Choose Bachelor or Master (default: Bachelor).
-3. Choose availability (immediate, within four weeks, or longer; default: immediate).
-4. Choose teaching history (Provadis, none, or other universities; default: Provadis).
-
-### Alternative Workflow:
-
-1. Search or select a lecturer.
-2. View all lectures the lecturer can teach, with filtering options (e.g., Bachelor, taught at Provadis, etc.).
-
-All combinations of workflows are supported.
-
----
-
-## Setup on DevClients
-
-<details>
-<summary>Click to expand</summary>
+## Local development setup
 
 ### Prerequisites
 
-- Docker Desktop
-- Sia-Proxy(http://sia-lb.telekom.de:8080)
+- Node.js 24.x
+- npm
+- Docker with `docker compose`
 
-### Steps
+### 1. Install dependencies
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/atlas-cluster/doz-manager.git
-   cd doz-manager
-   ```
-2. Set Proxy:
-   ```Dockerfile
-   #As Windows environment variable
-   #In Docker Desktop under settings->Resources->Proxies
-   #In Dockerfile.dev
-   ENV HTTP_PROXY=http://sia-lb.telekom.de:8080
-   ENV HTTPS_PROXY=http://sia-lb.telekom.de:8080
-   ENV NO_PROXY=localhost,127.0.0.1
-   ```
-3. Install bun:
-   ```bash
-   winget install -e --id Oven-sh.Bun #restart vs-code to apply changes
-   ```
-4. Install Dependencies:
-   ```bash
-   bun install #restart vs-code to apply changes
-   ```
-5. Generate Prisma Client:
-   ```bash
-   bun prisma:generate
-   ```
-6. Start the Docker-Container:
-   ```bash
-   bun run docker:dev #main way
-   docker compose -f docker-compose.dev.yml up --build #if you get an error
-   ```
+```bash
+npm ci
+```
 
-</details>
+### 2. Create a local env file
+
+Copy the example file and fill it in:
+
+```bash
+cp .env.example .env
+```
+
+Example values for local development:
+
+```env
+DB_HOST=127.0.0.1
+DB_NAME=doz_manager
+DB_USER=doz_manager
+DB_PASSWORD=doz_manager
+DB_ROOT_USER=root
+DB_ROOT_PASSWORD=doz_manager_root
+DB_PORT=3306
+
+REDIS_URL=redis://127.0.0.1:6379
+CHANGE_EVENTS_CHANNEL=app:changes
+
+BETTER_AUTH_SECRET=replace-this-with-a-long-random-string
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com
+
+SEED_ADMIN_EMAIL=admin@example.com
+SEED_ADMIN_PASSWORD=change-me
+SEED_ADMIN_NAME=Admin
+```
+
+### 3. Start MySQL and Redis
+
+```bash
+docker compose up -d
+```
+
+The included `docker-compose.yml` starts:
+
+- MySQL on `localhost:3306`
+- Redis on `localhost:6379`
+
+### 4. Generate the Prisma client
+
+```bash
+npm run prisma:generate
+```
+
+Run this after installing dependencies and any time the Prisma schema changes.
+
+### 5. Apply migrations
+
+```bash
+npm run prisma:migrate
+```
+
+### 6. Seed the database
+
+```bash
+npm run prisma:seed
+```
+
+This creates the initial data set and the seeded admin account from the `SEED_ADMIN_*` variables.
+
+### 7. Start the app
+
+```bash
+npm run dev
+```
+
+Open http://localhost:3000.
+
+## Useful commands
+
+```bash
+npm run lint
+npm test -- --run
+npm run build
+```
+
+Notes:
+
+- `npm run prisma:generate` must be run before tests or builds in a fresh checkout.
+- `npm run build` fetches Geist fonts from Google during the build, so it needs outbound internet access.
+
+## Hosting / deployment
+
+The repository already includes a production Docker build and a GitHub Actions deployment pipeline.
+
+### Production requirements
+
+- A Linux host with Docker installed
+- A reachable MySQL/MariaDB database
+- A reachable Redis instance
+- A public app URL for `BETTER_AUTH_URL`
+
+### Required runtime environment variables
+
+The production container uses these variables:
+
+- `DB_HOST`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
+- `NEXT_PUBLIC_ADMIN_EMAIL`
+- `REDIS_URL`
+- `CHANGE_EVENTS_CHANNEL`
+
+Database migrations use:
+
+- `DB_ROOT_USER`
+- `DB_ROOT_PASSWORD`
+
+### Option 1: Use the existing GitHub Actions pipeline
+
+On pushes to `main`, the workflow:
+
+1. Runs tests
+2. Builds and pushes a Docker image to GHCR
+3. Runs `prisma migrate deploy`
+4. Connects to the target server over SSH and starts the app container
+
+The workflow expects GitHub secrets for:
+
+- Container/host access: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PORT`
+- Optional jump host: `JUMP_HOST`, `JUMP_USER`, `JUMP_PORT`, `JUMP_SSH_KEY`
+- Database: `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_ROOT_USER`, `DB_ROOT_PASSWORD`
+- App config: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_ADMIN_EMAIL`, `REDIS_URL`, `CHANGE_EVENTS_CHANNEL`
+
+### Option 2: Host it manually with Docker
+
+Build the production image:
+
+```bash
+docker build -f Dockerfile.prod \
+  --build-arg NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com \
+  -t doz-manager:latest .
+```
+
+Run migrations:
+
+```bash
+DB_HOST=... \
+DB_NAME=... \
+DB_ROOT_USER=... \
+DB_ROOT_PASSWORD=... \
+npx prisma migrate deploy
+```
+
+Start the app container:
+
+```bash
+docker run -d \
+  --name doz-manager-app \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e DB_HOST=... \
+  -e DB_NAME=... \
+  -e DB_USER=... \
+  -e DB_PASSWORD=... \
+  -e BETTER_AUTH_SECRET=... \
+  -e BETTER_AUTH_URL=https://your-domain.example \
+  -e NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com \
+  -e REDIS_URL=redis://your-redis-host:6379 \
+  -e CHANGE_EVENTS_CHANNEL=app:changes \
+  -e NODE_ENV=production \
+  doz-manager:latest
+```
+
+If you want to match the current GitHub Actions deployment exactly, run the container with `--network host` instead of `-p 3000:3000`.
